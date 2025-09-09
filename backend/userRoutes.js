@@ -4,16 +4,55 @@
 const express = require('express');
 const router = express.Router();
 const User = require('./User');
+const jwt = require('jsonwebtoken');
+// Login route - returns JWT and user role
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    // Create JWT
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || 'secretkey',
+      { expiresIn: '1d' }
+    );
+    res.json({ token, role: user.role });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    const user = new User({ username, email, password });
+    const { username, email, password, role } = req.body;
+    if (!username || !email || !password || !role) {
+      return res.status(400).json({ error: 'All fields (username, email, password, role) are required.' });
+    }
+    const user = new User({ username, email, password, role });
     await user.save();
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    // Duplicate key error
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyValue)[0];
+      return res.status(400).json({ error: `A user with that ${field} already exists.` });
+    }
+    // Validation errors
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(e => e.message);
+      return res.status(400).json({ error: messages.join(' ') });
+    }
+    // Log error for debugging
+    console.error('Registration error:', err);
+    res.status(400).json({ error: err.message || 'Registration failed' });
   }
 });
 
