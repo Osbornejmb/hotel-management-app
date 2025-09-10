@@ -23,9 +23,7 @@ router.patch('/:id', async (req, res) => {
 	}
 });
 
-// Add new room
-// Register a new room
-// Get all rooms
+
 router.get('/', async (req, res) => {
 	try {
 		const rooms = await Room.find();
@@ -67,6 +65,48 @@ router.post('/', async (req, res) => {
 		// Log error for debugging
 		console.error('Room registration error:', err);
 		res.status(400).json({ error: err.message || 'Room registration failed' });
+	}
+});
+
+
+// Validate room number
+router.post('/validate', async (req, res) => {
+	const { roomNumber } = req.body;
+	if (!roomNumber) {
+		return res.status(400).json({ valid: false, error: 'Room number required.' });
+	}
+	try {
+		const room = await Room.findOne({ roomNumber });
+		if (room) {
+			return res.json({ valid: true });
+		} else {
+			return res.json({ valid: false, error: 'Room not found.' });
+		}
+	} catch (err) {
+		return res.status(500).json({ valid: false, error: err.message });
+	}
+});
+
+
+// Customer room validation (POST /api/rooms/validate)
+router.post('/validate', async (req, res) => {
+	let { roomNumber } = req.body;
+	console.log('Received roomNumber for validation:', roomNumber);
+	if (!roomNumber) {
+		return res.status(400).json({ valid: false, error: 'Room number required.' });
+	}
+	roomNumber = roomNumber.trim();
+	try {
+		// Case-insensitive, trimmed match
+		const room = await Room.findOne({ roomNumber: { $regex: `^${roomNumber}$`, $options: 'i' } });
+		console.log('Room found:', room);
+		if (room) {
+			return res.json({ valid: true });
+		} else {
+			return res.json({ valid: false, error: 'Room not found.' });
+		}
+	} catch (err) {
+		return res.status(500).json({ valid: false, error: err.message });
 	}
 });
 

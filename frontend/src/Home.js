@@ -8,6 +8,9 @@ function Home() {
       <p>
         Please <Link to="/login">Login</Link> or <Link to="/register">Register</Link> to continue.
       </p>
+      <p>
+        <Link to="/customer/login">Customer Login (Room Number Only)</Link>
+      </p>
     </div>
   );
 }

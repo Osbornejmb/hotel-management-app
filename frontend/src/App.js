@@ -9,6 +9,8 @@ import RegisterPage from "./Auth/RegisterPage";
 import ProtectedRoute from "./Auth/ProtectedRoute";
 import RestaurantAdminDashboard from "./Admin/Restaurant/RestaurantAdminDashboard";
 import HotelAdminDashboard from "./Admin/Hotel/HotelAdminDashboard";
+import CustomerLogin from "./Admin/Customer/Customerlogin";
+import CustomerInterface from "./Admin/Customer/CustomerInterface";
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
         <Route path="/" element={<Home />} />
   <Route path="/login" element={<LoginPage />} />
   <Route path="/register" element={<RegisterPage />} />
+  <Route path="/customer/login" element={<CustomerLogin />} />
+  <Route path="/customer/interface" element={<CustomerInterface />} />
         <Route path="/admin/restaurant" element={
           <ProtectedRoute allowedRoles={["restaurantAdmin"]}>
             <RestaurantAdminDashboard />
