@@ -5,6 +5,9 @@ import LogoutButton from '../../Auth/LogoutButton';
 function HotelAdminDashboard() {
   const [roomNumber, setRoomNumber] = useState('');
   const [roomType, setRoomType] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [amenities, setAmenities] = useState('');
   const [status, setStatus] = useState('available');
   const [rooms, setRooms] = useState([]);
 
@@ -26,7 +29,19 @@ function HotelAdminDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const roomData = { roomNumber, roomType, status };
+    // Frontend validation
+    if (!roomNumber || !roomType || !status) {
+      alert('All fields (room number, room type, status) are required.');
+      return;
+    }
+    const roomData = {
+      roomNumber,
+      roomType,
+      description,
+      price: price ? Number(price) : undefined,
+      amenities: amenities ? amenities.split(',').map(a => a.trim()) : [],
+      status
+    };
     try {
       const response = await fetch('/api/rooms', {
         method: 'POST',
@@ -35,11 +50,15 @@ function HotelAdminDashboard() {
         },
         body: JSON.stringify(roomData),
       });
+      const result = await response.json();
       if (response.ok) {
         alert('Room added successfully!');
-        setRoomNumber('');
-        setRoomType('');
-        setStatus('available');
+  setRoomNumber('');
+  setRoomType('');
+  setDescription('');
+  setPrice('');
+  setAmenities('');
+  setStatus('available');
         // Refresh room list
         const updatedRooms = await fetch('/api/rooms');
         if (updatedRooms.ok) {
@@ -47,7 +66,7 @@ function HotelAdminDashboard() {
           setRooms(data);
         }
       } else {
-        alert('Failed to add room.');
+        alert(result.error || 'Failed to add room.');
       }
     } catch (error) {
       alert('Error adding room.');
@@ -75,11 +94,44 @@ function HotelAdminDashboard() {
           <br />
           <label>
             Room Type:
-            <input
-              type="text"
+            <select
               name="roomType"
               value={roomType}
               onChange={e => setRoomType(e.target.value)}
+            >
+              <option value="">Select type</option>
+              <option value="Standard">Standard</option>
+              <option value="Deluxe">Deluxe</option>
+            </select>
+          </label>
+          <br />
+          <label>
+            Description:
+            <input
+              type="text"
+              name="description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+          </label>
+          <br />
+          <label>
+            Price:
+            <input
+              type="number"
+              name="price"
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+            />
+          </label>
+          <br />
+          <label>
+            Amenities (comma separated):
+            <input
+              type="text"
+              name="amenities"
+              value={amenities}
+              onChange={e => setAmenities(e.target.value)}
             />
           </label>
           <br />
@@ -104,17 +156,23 @@ function HotelAdminDashboard() {
             <tr>
               <th>Room Number</th>
               <th>Room Type</th>
+              <th>Description</th>
+              <th>Price</th>
+              <th>Amenities</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {rooms.length === 0 ? (
-              <tr><td colSpan="3">No rooms found.</td></tr>
+              <tr><td colSpan="6">No rooms found.</td></tr>
             ) : (
               rooms.map(room => (
                 <tr key={room._id}>
                   <td>{room.roomNumber}</td>
                   <td>{room.roomType}</td>
+                  <td>{room.description}</td>
+                  <td>{room.price}</td>
+                  <td>{Array.isArray(room.amenities) ? room.amenities.join(', ') : ''}</td>
                   <td>{room.status}</td>
                 </tr>
               ))

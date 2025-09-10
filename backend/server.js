@@ -17,7 +17,7 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 
 // Room routes
-app.use(roomRoutes);
+app.use("/api/rooms", roomRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
