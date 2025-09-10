@@ -4,11 +4,11 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Home from "./Home";
-import LoginPage from "./LoginPage";
-import RegisterPage from "./RegisterPage";
-import ProtectedRoute from "./ProtectedRoute";
-import RestaurantAdminDashboard from "./RestaurantAdminDashboard";
-import HotelAdminDashboard from "./HotelAdminDashboard";
+import LoginPage from "./Auth/LoginPage";
+import RegisterPage from "./Auth/RegisterPage";
+import ProtectedRoute from "./Auth/ProtectedRoute";
+import RestaurantAdminDashboard from "./Admin/Restaurant/RestaurantAdminDashboard";
+import HotelAdminDashboard from "./Admin/Hotel/HotelAdminDashboard";
 
 function App() {
   return (
