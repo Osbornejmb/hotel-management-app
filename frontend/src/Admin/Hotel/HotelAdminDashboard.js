@@ -3,6 +3,30 @@ import React, { useState, useEffect } from 'react';
 import LogoutButton from '../../Auth/LogoutButton';
 
 function HotelAdminDashboard() {
+  // Book room handler
+  const handleBookRoom = async (roomId) => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'booked' })
+      });
+      if (response.ok) {
+        // Refresh room list
+        const updatedRooms = await fetch('/api/rooms');
+        if (updatedRooms.ok) {
+          const data = await updatedRooms.json();
+          setRooms(data);
+        }
+      } else {
+        alert('Failed to book room.');
+      }
+    } catch (error) {
+      alert('Error booking room.');
+      console.error(error);
+    }
+  };
+  const [filterType, setFilterType] = useState('All');
   const [roomNumber, setRoomNumber] = useState('');
   const [roomType, setRoomType] = useState('');
   const [description, setDescription] = useState('');
@@ -38,7 +62,7 @@ function HotelAdminDashboard() {
       roomNumber,
       roomType,
       description,
-      price: price ? Number(price) : undefined,
+      price: price ? Number(price) : 0,
       amenities: amenities ? amenities.split(',').map(a => a.trim()) : [],
       status
     };
@@ -80,6 +104,10 @@ function HotelAdminDashboard() {
       <h2>Hotel Admin Dashboard</h2>
       <section>
         <h3>Room Availability</h3>
+        {/* Add Room Form */}
+        <form onSubmit={handleSubmit}>
+          {/* ...existing form fields... */}
+        </form>
         {/* Add Room Form */}
         <form onSubmit={handleSubmit}>
           <label>
@@ -149,6 +177,12 @@ function HotelAdminDashboard() {
           <br />
           <button type="submit">Add Room</button>
         </form>
+          {/* Room Type Filter Buttons (centered above table) */}
+          <div style={{ margin: '2em auto 1em auto', textAlign: 'center', maxWidth: '400px' }}>
+            <button type="button" onClick={() => setFilterType('All')}>Show All</button>
+            <button type="button" onClick={() => setFilterType('Deluxe')}>Show Deluxe</button>
+            <button type="button" onClick={() => setFilterType('Standard')}>Show Standard</button>
+          </div>
         {/* Room List Table */}
         <h4>All Rooms</h4>
         <table border="1" cellPadding="8" style={{ marginTop: '1em', width: '100%', borderCollapse: 'collapse' }}>
@@ -166,16 +200,25 @@ function HotelAdminDashboard() {
             {rooms.length === 0 ? (
               <tr><td colSpan="6">No rooms found.</td></tr>
             ) : (
-              rooms.map(room => (
-                <tr key={room._id}>
-                  <td>{room.roomNumber}</td>
-                  <td>{room.roomType}</td>
-                  <td>{room.description}</td>
-                  <td>{room.price}</td>
-                  <td>{Array.isArray(room.amenities) ? room.amenities.join(', ') : ''}</td>
-                  <td>{room.status}</td>
-                </tr>
-              ))
+              rooms
+                .filter(room => filterType === 'All' || room.roomType === filterType)
+                .map(room => (
+                  <tr key={room._id}>
+                    <td>{room.roomNumber}</td>
+                    <td>{room.roomType}</td>
+                    <td>{room.description}</td>
+                    <td>{room.price}</td>
+                    <td>{Array.isArray(room.amenities) ? room.amenities.join(', ') : ''}</td>
+                    <td>
+                      {room.status}
+                      {room.status === 'available' && (
+                        <button style={{ marginLeft: '1em' }} onClick={() => handleBookRoom(room._id)}>
+                          Book
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
             )}
           </tbody>
         </table>

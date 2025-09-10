@@ -1,7 +1,27 @@
-console.log('roomRoutes loaded');
+
 const express = require('express');
 const router = express.Router();
 const Room = require('./Room');
+console.log('roomRoutes loaded');
+
+// Update room status (book room)
+router.patch('/:id', async (req, res) => {
+	try {
+		const { status } = req.body;
+		const room = await Room.findByIdAndUpdate(
+			req.params.id,
+			{ status },
+			{ new: true }
+		);
+		if (!room) {
+			return res.status(404).json({ error: 'Room not found' });
+		}
+		res.json({ message: 'Room status updated', room });
+	} catch (err) {
+		console.error('Room update error:', err);
+		res.status(400).json({ error: err.message || 'Room update failed' });
+	}
+});
 
 // Add new room
 // Register a new room
@@ -18,19 +38,26 @@ router.get('/', async (req, res) => {
 // Register a new room
 router.post('/', async (req, res) => {
 	try {
-		const { roomNumber, roomType, status } = req.body;
-		// Validate required fields
-		if (!roomNumber || !roomType || !status) {
-			return res.status(400).json({ error: 'All fields (roomNumber, roomType, status) are required.' });
-		}
-		// Check for duplicate room number
-		const existingRoom = await Room.findOne({ roomNumber });
-		if (existingRoom) {
-			return res.status(400).json({ error: 'A room with that number already exists.' });
-		}
-		const newRoom = new Room({ roomNumber, roomType, status });
-		await newRoom.save();
-		res.status(201).json({ message: 'Room added successfully' });
+			const { roomNumber, roomType, status, description, price, amenities } = req.body;
+			// Validate required fields
+			if (!roomNumber || !roomType || !status) {
+				return res.status(400).json({ error: 'All fields (roomNumber, roomType, status) are required.' });
+			}
+			// Check for duplicate room number
+			const existingRoom = await Room.findOne({ roomNumber });
+			if (existingRoom) {
+				return res.status(400).json({ error: 'A room with that number already exists.' });
+			}
+			const newRoom = new Room({
+				roomNumber,
+				roomType,
+				status,
+				description: description || '',
+				price: typeof price === 'number' ? price : (price ? Number(price) : 0),
+				amenities: Array.isArray(amenities) ? amenities : (amenities ? amenities.split(',').map(a => a.trim()) : [])
+			});
+			await newRoom.save();
+			res.status(201).json({ message: 'Room added successfully' });
 	} catch (err) {
 		// Validation errors
 		if (err.name === 'ValidationError') {
