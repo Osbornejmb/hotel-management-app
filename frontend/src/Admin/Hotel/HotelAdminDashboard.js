@@ -4,7 +4,7 @@ function HotelAdminDashboard() {
   return (
     <div>
       <LogoutButton />
-      <h2>Hotel Admin Dashboard NIGGA</h2>
+      <h2>Hotel Admin Dashboard ng mga pogi</h2>
       {/* Add hotel admin features here */}
     </div>
   );
