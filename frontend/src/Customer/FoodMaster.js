@@ -5,8 +5,8 @@ import axios from 'axios';
 const foodData = {
   breakfast: [
     { name: 'Pancakes', img: 'https://img.icons8.com/color/96/000000/pancake.png' },
-    { name: 'Omelette', img: 'https://img.icons8.com/color/96/000000/omelette.png' },
-    { name: 'Toast', img: 'https://img.icons8.com/color/96/000000/toast.png' },
+    { name: 'Omelette', img: 'https://img.icons8.com/color/96/000000/egg.png' },
+    { name: 'Toast', img: 'https://img.icons8.com/color/96/000000/bread.png' },
   ],
   lunch: [
     { name: 'Burger', img: 'https://img.icons8.com/color/96/000000/hamburger.png' },
@@ -16,17 +16,17 @@ const foodData = {
   dinner: [
     { name: 'Steak', img: 'https://img.icons8.com/color/96/000000/steak.png' },
     { name: 'Spaghetti', img: 'https://img.icons8.com/color/96/000000/spaghetti.png' },
-    { name: 'Roast Chicken', img: 'https://img.icons8.com/color/96/000000/roast-chicken.png' },
+    { name: 'Roast Chicken', img: 'https://img.icons8.com/color/96/000000/chicken.png' },
   ],
   desserts: [
-    { name: 'Ice Cream', img: 'https://img.icons8.com/color/96/000000/ice-cream.png' },
+    { name: 'Ice Cream', img: 'https://img.icons8.com/color/96/000000/snow.png' },
     { name: 'Cake', img: 'https://img.icons8.com/color/96/000000/cake.png' },
     { name: 'Donut', img: 'https://img.icons8.com/color/96/000000/doughnut.png' },
   ],
   snack: [
     { name: 'Popcorn', img: 'https://img.icons8.com/color/96/000000/popcorn.png' },
     { name: 'Chips', img: 'https://img.icons8.com/color/96/000000/potato-chips.png' },
-    { name: 'Nuts', img: 'https://img.icons8.com/color/96/000000/nuts.png' },
+    { name: 'Nuts', img: 'https://img.icons8.com/color/96/000000/nut.png' },
   ],
   beverages: [
     { name: 'Coffee', img: 'https://img.icons8.com/color/96/000000/coffee.png' },

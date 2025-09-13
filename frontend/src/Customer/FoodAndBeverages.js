@@ -72,6 +72,7 @@ function FoodAndBeverages() {
   return (
     <div style={{ textAlign: 'center', marginTop: '3rem' }}>
       <h2>Food & Beverages</h2>
+      <button onClick={() => navigate('/customer/interface')} style={{ position: 'fixed', top: '2rem', left: '2rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: 'none', background: '#2196f3', color: '#fff', fontWeight: 'bold', cursor: 'pointer', zIndex: 1100 }}>Back</button>
       <button onClick={() => setShowCart(true)} style={{ position: 'fixed', top: '2rem', right: '2rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: 'none', background: '#ff9800', color: '#fff', fontWeight: 'bold', cursor: 'pointer', zIndex: 1100 }}>
         Cart ({cart.length})
       </button>
