@@ -13,6 +13,7 @@ import CustomerLogin from "./Customer/Customerlogin";
 import CustomerInterface from "./Customer/CustomerInterface";
 import Amenities from "./Customer/Amenities";
 import FoodAndBeverages from "./Customer/FoodAndBeverages";
+import FoodMaster from "./Customer/FoodMaster";
 import ContactFrontDesk from "./Customer/ContactFrontDesk";
 import AmenityMaster from "./Customer/AmenityMaster";
 
@@ -28,6 +29,7 @@ function App() {
   <Route path="/customer/amenities" element={<Amenities />} />
   <Route path="/customer/amenities/:amenity" element={<AmenityMaster />} />
   <Route path="/customer/food" element={<FoodAndBeverages />} />
+  <Route path="/customer/food/:category" element={<FoodMaster />} />
   <Route path="/customer/contact" element={<ContactFrontDesk />} />
         <Route path="/admin/restaurant" element={
           <ProtectedRoute allowedRoles={["restaurantAdmin"]}>
