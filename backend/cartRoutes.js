@@ -1,9 +1,51 @@
-// backend/cartRoutes.js
-// Express routes for Cart operations
-
 const express = require('express');
 const router = express.Router();
 const Cart = require('./Cart');
+const Order = require('./Order');
+// Checkout cart for a room (move to orders and clear cart)
+router.post('/:roomNumber/checkout', async (req, res) => {
+  try {
+    const roomNumber = req.params.roomNumber;
+    const cart = await Cart.findOne({ roomNumber });
+    if (!cart || !cart.items.length) {
+      return res.status(400).json({ error: 'Cart is empty' });
+    }
+  // Create new order with status 'pending'
+  const order = new Order({ roomNumber, items: cart.items, status: 'pending' });
+  await order.save();
+    // Clear cart
+    cart.items = [];
+    await cart.save();
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// Get all checked-out orders (for admin)
+router.get('/orders/all', async (req, res) => {
+  try {
+    const orders = await Order.find({});
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update order status (pending -> delivered)
+router.post('/orders/:orderId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    order.status = status;
+    await order.save();
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// backend/cartRoutes.js
+// Express routes for Cart operations
 
 // Get cart for a room
 router.get('/:roomNumber', async (req, res) => {
