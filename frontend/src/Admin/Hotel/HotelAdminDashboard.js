@@ -228,7 +228,9 @@ function HotelAdminDashboard() {
                     <td>
                       {room.status}
                       {room.status === 'available' && (
-                        <button style={{ marginLeft: '1em', padding: '0.3rem 0.8rem', borderRadius: '6px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+                        <button
+                          style={{ marginLeft: '1em', padding: '0.3rem 0.8rem', borderRadius: '6px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+                          onClick={() => handleBookRoom(room._id)}
                           onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
                           onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}>
                           Book
