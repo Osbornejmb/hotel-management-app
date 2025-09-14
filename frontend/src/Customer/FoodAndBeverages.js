@@ -2,12 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+// Food data copied from FoodMaster.js
+const foodData = {
+  breakfast: [
+    { name: 'Pancakes', img: 'https://img.icons8.com/color/96/000000/pancake.png', price: 4.99 },
+    { name: 'Omelette', img: 'https://img.icons8.com/color/96/000000/egg.png', price: 5.99 },
+    { name: 'Toast', img: 'https://img.icons8.com/color/96/000000/bread.png', price: 3.49 },
+  ],
+  lunch: [
+    { name: 'Burger', img: 'https://img.icons8.com/color/96/000000/hamburger.png', price: 8.99 },
+    { name: 'Salad', img: 'https://img.icons8.com/color/96/000000/salad.png', price: 7.49 },
+    { name: 'Sandwich', img: 'https://img.icons8.com/color/96/000000/sandwich.png', price: 6.99 },
+  ],
+  dinner: [
+    { name: 'Steak', img: 'https://img.icons8.com/color/96/000000/steak.png', price: 14.99 },
+    { name: 'Spaghetti', img: 'https://img.icons8.com/color/96/000000/spaghetti.png', price: 12.99 },
+    { name: 'Roast Chicken', img: 'https://img.icons8.com/color/96/000000/chicken.png', price: 13.49 },
+  ],
+  desserts: [
+    { name: 'Ice Cream', img: 'https://img.icons8.com/color/96/000000/snow.png', price: 4.49 },
+    { name: 'Cake', img: 'https://img.icons8.com/color/96/000000/cake.png', price: 5.99 },
+    { name: 'Donut', img: 'https://img.icons8.com/color/96/000000/doughnut.png', price: 3.99 },
+  ],
+  snack: [
+    { name: 'Popcorn', img: 'https://img.icons8.com/color/96/000000/popcorn.png', price: 2.99 },
+    { name: 'Chips', img: 'https://img.icons8.com/color/96/000000/potato-chips.png', price: 2.49 },
+    { name: 'Nuts', img: 'https://img.icons8.com/color/96/000000/nut.png', price: 3.49 },
+  ],
+  beverages: [
+    { name: 'Coffee', img: 'https://img.icons8.com/color/96/000000/coffee.png', price: 2.99 },
+    { name: 'Juice', img: 'https://img.icons8.com/color/96/000000/orange-juice.png', price: 3.49 },
+    { name: 'Cocktail', img: 'https://img.icons8.com/color/96/000000/cocktail.png', price: 4.99 },
+  ],
+};
+
 function FoodAndBeverages() {
   const navigate = useNavigate();
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState('');
+  const [searchPopup, setSearchPopup] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [foodPopup, setFoodPopup] = useState(null); // For add-to-cart popup
   const roomNumber = localStorage.getItem('customerRoomNumber');
 
   useEffect(() => {
@@ -94,6 +132,18 @@ function FoodAndBeverages() {
     }
   };
 
+  // Add to cart function for food items
+  const addToCart = async (food, category) => {
+    const newCart = [...cart, { name: food.name, img: food.img, price: food.price, category }];
+    setCart(newCart);
+    setFoodPopup(null);
+    if (roomNumber) {
+      try {
+        await axios.post(`http://localhost:5000/api/cart/${roomNumber}`, { items: newCart });
+      } catch {}
+    }
+  };
+
   return (
   <div style={{ textAlign: 'center', marginTop: '3rem', background: '#111', minHeight: '100vh', color: '#FFD700' }}>
   <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Food & Beverages</h2>
@@ -110,8 +160,118 @@ function FoodAndBeverages() {
         onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>
         Status
       </button>
+      {/* Search Bar */}
+      <div style={{ margin: '2rem 0', textAlign: 'center' }}>
+        <input
+          type="text"
+          value={search}
+          onChange={e => {
+            setSearch(e.target.value);
+            if (e.target.value.trim().length > 0) {
+              // Gather only food items from all categories
+              const allFoods = Object.entries(foodData).flatMap(([catName, foods]) => foods.map(food => ({ ...food, category: catName })));
+              const results = allFoods.filter(item => item.name && item.name.toLowerCase().includes(e.target.value.toLowerCase()));
+              setSearchResults(results);
+              setSearchPopup(true);
+            } else {
+              setSearchPopup(false);
+              setSearchResults([]);
+            }
+          }}
+          placeholder="Search food..."
+          style={{
+            padding: '0.7rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', fontSize: '1rem', width: '300px', boxShadow: '0 2px 8px #FFD700', marginBottom: '1rem', outline: 'none', textAlign: 'center'
+          }}
+        />
+      </div>
+      {/* Search Popup */}
+      {searchPopup && searchResults.length > 0 && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1300 }}>
+          <div style={{ background: '#222', padding: '2rem', borderRadius: '16px', boxShadow: '0 2px 24px #FFD700', minWidth: '350px', textAlign: 'center', color: '#FFD700', border: '2px solid #FFD700' }}>
+            <h2>Search Results</h2>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {searchResults.map((item, idx) => (
+                <li key={idx} style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={item.img} alt={item.name} style={{ width: '48px', height: '48px', borderRadius: '8px', marginRight: '1rem', verticalAlign: 'middle', background: '#111', cursor: 'pointer' }}
+                    onClick={() => {
+                      setFoodPopup({ ...item });
+                      setSearchPopup(false);
+                    }}
+                  />
+                  <span style={{ color: '#FFD700', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer' }}
+                    onClick={() => {
+                      setFoodPopup({ ...item });
+                      setSearchPopup(false);
+                    }}>
+                    {item.name}
+                  </span>
+                  {item.price && <span style={{ marginLeft: '1rem', color: '#FFD700' }}>₱{item.price.toFixed(2)}</span>}
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => { setSearchPopup(false); setSearch(''); }} style={{ marginTop: '1rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+              onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+              onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Add to Cart Popup for food search */}
+      {foodPopup && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0,
+          width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', zIndex: 1400
+        }}>
+          <div style={{
+            background: '#222', padding: '2rem',
+            borderRadius: '16px', boxShadow: '0 2px 24px #FFD700',
+            minWidth: '300px', textAlign: 'center', color: '#FFD700', border: '2px solid #FFD700'
+          }}>
+            <img
+              src={foodPopup.img}
+              alt={foodPopup.name}
+              style={{
+                width: '96px', height: '96px',
+                borderRadius: '12px', marginBottom: '1rem'
+              }}
+            />
+            <h3>{foodPopup.name}</h3>
+            <p>Price: <strong>₱{foodPopup.price ? foodPopup.price.toFixed(2) : '0.00'}</strong></p>
+            <p>Add this item to your cart?</p>
+            <button
+              onClick={() => addToCart(foodPopup, foodPopup.category)}
+              style={{
+                margin: '1rem', padding: '0.5rem 1.5rem',
+                borderRadius: '8px', border: '2px solid #FFD700',
+                background: '#FFD700', color: '#222',
+                fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
+              }}
+              onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+              onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+            >
+              Add to Cart
+            </button>
+            <button
+              onClick={() => setFoodPopup(null)}
+              style={{
+                margin: '1rem', padding: '0.5rem 1.5rem',
+                borderRadius: '8px', border: '2px solid #FFD700',
+                background: '#222', color: '#FFD700',
+                fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
+              }}
+              onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+              onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem', margin: '2rem 0' }}>
-        {categories.map((cat) => (
+        {categories.filter(cat => cat.name.toLowerCase().includes(search.toLowerCase())).map((cat) => (
           <div key={cat.name} style={{ cursor: 'pointer', width: '120px', background: '#222', borderRadius: '16px', boxShadow: '0 2px 12px #FFD700', padding: '1rem', transition: 'transform 0.2s, box-shadow 0.2s' }}
             onClick={() => navigate(cat.path)}
             onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.07)'; e.currentTarget.style.boxShadow = '0 4px 24px #FFD700'; }}

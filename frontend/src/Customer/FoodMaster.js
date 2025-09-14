@@ -43,6 +43,7 @@ function FoodMaster() {
   const [showCart, setShowCart] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState('');
   const foods = foodData[category] || [];
   const roomNumber = localStorage.getItem('customerRoomNumber');
 
@@ -173,12 +174,24 @@ function FoodMaster() {
         Back
       </button>
 
+      {/* Search Bar */}
+      <div style={{ margin: '2rem 0', textAlign: 'center' }}>
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search food..."
+          style={{
+            padding: '0.7rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', fontSize: '1rem', width: '300px', boxShadow: '0 2px 8px #FFD700', marginBottom: '1rem', outline: 'none', textAlign: 'center'
+          }}
+        />
+      </div>
       {/* Food Items */}
       <div style={{
         display: 'flex', flexWrap: 'wrap',
         justifyContent: 'center', gap: '2rem', margin: '2rem 0'
       }}>
-        {foods.map((food) => (
+        {foods.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).map((food) => (
           <div
             key={food.name}
             style={{ cursor: 'pointer', width: '120px', background: '#222', borderRadius: '16px', boxShadow: '0 2px 12px #FFD700', padding: '1rem', transition: 'transform 0.2s, box-shadow 0.2s' }}
