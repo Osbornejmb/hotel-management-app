@@ -110,8 +110,8 @@ function FoodMaster() {
   };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-      <h2>{category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Food'}</h2>
+  <div style={{ textAlign: 'center', marginTop: '3rem', background: '#111', minHeight: '100vh', color: '#FFD700' }}>
+  <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>{category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Food'}</h2>
 
       {/* Cart Button */}
       <button
@@ -119,10 +119,12 @@ function FoodMaster() {
         style={{
           position: 'fixed', top: '2rem', right: '2rem',
           padding: '0.5rem 1.5rem', borderRadius: '8px',
-          border: 'none', background: '#ff9800',
-          color: '#fff', fontWeight: 'bold', cursor: 'pointer',
-          zIndex: 1100
+          border: '2px solid #FFD700', background: '#222',
+          color: '#FFD700', fontWeight: 'bold', cursor: 'pointer',
+          zIndex: 1100, boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
         }}
+        onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+        onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
       >
         Cart ({cart.length})
       </button>
@@ -133,10 +135,12 @@ function FoodMaster() {
         style={{
           position: 'fixed', top: '2rem', left: '2rem',
           padding: '0.5rem 1.5rem', borderRadius: '8px',
-          border: 'none', background: '#2196f3',
-          color: '#fff', fontWeight: 'bold', cursor: 'pointer',
-          zIndex: 1100
+          border: '2px solid #FFD700', background: '#222',
+          color: '#FFD700', fontWeight: 'bold', cursor: 'pointer',
+          zIndex: 1100, boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
         }}
+        onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+        onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
       >
         Back
       </button>
@@ -149,18 +153,20 @@ function FoodMaster() {
         {foods.map((food) => (
           <div
             key={food.name}
-            style={{ cursor: 'pointer', width: '120px' }}
+            style={{ cursor: 'pointer', width: '120px', background: '#222', borderRadius: '16px', boxShadow: '0 2px 12px #FFD700', padding: '1rem', transition: 'transform 0.2s, box-shadow 0.2s' }}
             onClick={() => handleFoodClick(food)}
+            onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.07)'; e.currentTarget.style.boxShadow = '0 4px 24px #FFD700'; }}
+            onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px #FFD700'; }}
           >
             <img
               src={food.img}
               alt={food.name}
               style={{
-                borderRadius: '12px', boxShadow: '0 2px 8px #ccc',
-                width: '96px', height: '96px'
+                borderRadius: '12px', boxShadow: '0 2px 8px #FFD700',
+                width: '96px', height: '96px', background: '#111'
               }}
             />
-            <div style={{ marginTop: '0.5rem' }}>{food.name}</div>
+            <div style={{ marginTop: '0.5rem', color: '#FFD700', fontWeight: 'bold', textShadow: '0 2px 8px #000' }}>{food.name}</div>
           </div>
         ))}
       </div>
@@ -175,9 +181,9 @@ function FoodMaster() {
           justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: '#fff', padding: '2rem',
-            borderRadius: '16px', boxShadow: '0 2px 16px #aaa',
-            minWidth: '300px', textAlign: 'center'
+            background: '#222', padding: '2rem',
+            borderRadius: '16px', boxShadow: '0 2px 24px #FFD700',
+            minWidth: '300px', textAlign: 'center', color: '#FFD700', border: '2px solid #FFD700'
           }}>
             <img
               src={popup.img}
@@ -194,10 +200,12 @@ function FoodMaster() {
               onClick={() => addToCart(popup)}
               style={{
                 margin: '1rem', padding: '0.5rem 1.5rem',
-                borderRadius: '8px', border: 'none',
-                background: '#4caf50', color: '#fff',
-                fontWeight: 'bold', cursor: 'pointer'
+                borderRadius: '8px', border: '2px solid #FFD700',
+                background: '#FFD700', color: '#222',
+                fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
               }}
+              onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+              onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
             >
               Add to Cart
             </button>
@@ -205,9 +213,12 @@ function FoodMaster() {
               onClick={closePopup}
               style={{
                 margin: '1rem', padding: '0.5rem 1.5rem',
-                borderRadius: '8px', border: 'none',
-                background: '#eee', cursor: 'pointer'
+                borderRadius: '8px', border: '2px solid #FFD700',
+                background: '#222', color: '#FFD700',
+                fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
               }}
+              onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+              onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
             >
               Cancel
             </button>
@@ -225,9 +236,9 @@ function FoodMaster() {
           justifyContent: 'center', zIndex: 1200
         }}>
           <div style={{
-            background: '#fff', padding: '2rem',
-            borderRadius: '16px', boxShadow: '0 2px 16px #aaa',
-            minWidth: '350px', textAlign: 'center'
+            background: '#222', padding: '2rem',
+            borderRadius: '16px', boxShadow: '0 2px 24px #FFD700',
+            minWidth: '350px', textAlign: 'center', color: '#FFD700', border: '2px solid #FFD700'
           }}>
             <h2>Your Cart</h2>
             {cart.length === 0 ? (
@@ -235,11 +246,11 @@ function FoodMaster() {
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
                 <thead>
-                  <tr style={{ background: '#f5f5f5' }}>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Item</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Category</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Price</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Remove</th>
+                  <tr style={{ background: '#FFD700', color: '#222' }}>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Item</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Category</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Price</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Remove</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -252,11 +263,15 @@ function FoodMaster() {
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>{item.category}</td>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</td>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>
-                        <button onClick={() => removeFromCart(idx)} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: 'none', background: '#f44336', color: '#fff', cursor: 'pointer' }}>Remove</button>
+                        <button onClick={() => removeFromCart(idx)} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+                          onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+                          onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}>
+                          Remove
+                        </button>
                       </td>
                     </tr>
                   ))}
-                  <tr style={{ fontWeight: 'bold', background: '#fafafa' }}>
+                  <tr style={{ fontWeight: 'bold', background: '#FFD700', color: '#222' }}>
                     <td colSpan={2} style={{ padding: '0.5rem', textAlign: 'right' }}>Total:</td>
                     <td style={{ padding: '0.5rem' }}>
                       ₱{cart.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
@@ -270,10 +285,12 @@ function FoodMaster() {
               onClick={() => setShowCart(false)}
               style={{
                 marginTop: '1rem', padding: '0.5rem 1.5rem',
-                borderRadius: '8px', border: 'none',
-                background: '#eee', cursor: 'pointer'
+                borderRadius: '8px', border: '2px solid #FFD700',
+                background: '#222', color: '#FFD700',
+                fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
               }}
-            >
+              onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+              onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>
               Close
             </button>
           </div>

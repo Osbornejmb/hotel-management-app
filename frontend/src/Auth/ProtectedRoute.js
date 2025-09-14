@@ -19,11 +19,23 @@ function ProtectedRoute({ children, allowedRoles }) {
   if (!token || isTokenExpired(token)) {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    return <Navigate to="/login" replace />;
+    return (
+      <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', textAlign: 'center', paddingTop: '3rem' }}>
+        <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Session Expired</h2>
+        <p style={{ color: '#FFD700', textShadow: '0 2px 8px #000' }}>Please login again.</p>
+        <Navigate to="/login" replace />
+      </div>
+    );
   }
 
   if (!allowedRoles.includes(role)) {
-    return <Navigate to="/login" replace />;
+    return (
+      <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', textAlign: 'center', paddingTop: '3rem' }}>
+        <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Access Denied</h2>
+        <p style={{ color: '#FFD700', textShadow: '0 2px 8px #000' }}>You do not have permission to view this page.</p>
+        <Navigate to="/login" replace />
+      </div>
+    );
   }
 
   return children;

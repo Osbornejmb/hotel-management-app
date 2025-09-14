@@ -99,33 +99,35 @@ function HotelAdminDashboard() {
   };
 
   return (
-    <div>
+    <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', paddingBottom: '2rem' }}>
       <LogoutButton />
-      <h2>Hotel Admin Dashboard</h2>
+      <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Hotel Admin Dashboard</h2>
       <section>
-        <h3>Room Availability</h3>
+        <h3 style={{ color: '#FFD700', textShadow: '0 2px 8px #000' }}>Room Availability</h3>
         {/* Add Room Form */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ background: '#222', padding: '2rem', borderRadius: '16px', boxShadow: '0 2px 16px #FFD700', color: '#FFD700', border: '2px solid #FFD700', marginBottom: '2rem' }}>
           {/* ...existing form fields... */}
         </form>
         {/* Add Room Form */}
-        <form onSubmit={handleSubmit}>
-          <label>
+        <form onSubmit={handleSubmit} style={{ background: '#222', padding: '2rem', borderRadius: '16px', boxShadow: '0 2px 16px #FFD700', color: '#FFD700', border: '2px solid #FFD700', marginBottom: '2rem' }}>
+          <label style={{ color: '#FFD700' }}>
             Room Number:
             <input
               type="text"
               name="roomNumber"
               value={roomNumber}
               onChange={e => setRoomNumber(e.target.value)}
+              style={{ borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', marginLeft: '1rem' }}
             />
           </label>
           <br />
-          <label>
+          <label style={{ color: '#FFD700' }}>
             Room Type:
             <select
               name="roomType"
               value={roomType}
               onChange={e => setRoomType(e.target.value)}
+              style={{ borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', marginLeft: '1rem' }}
             >
               <option value="">Select type</option>
               <option value="Standard">Standard</option>
@@ -133,61 +135,75 @@ function HotelAdminDashboard() {
             </select>
           </label>
           <br />
-          <label>
+          <label style={{ color: '#FFD700' }}>
             Description:
             <input
               type="text"
               name="description"
               value={description}
               onChange={e => setDescription(e.target.value)}
+              style={{ borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', marginLeft: '1rem' }}
             />
           </label>
           <br />
-          <label>
+          <label style={{ color: '#FFD700' }}>
             Price:
             <input
               type="number"
               name="price"
               value={price}
               onChange={e => setPrice(e.target.value)}
+              style={{ borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', marginLeft: '1rem' }}
             />
           </label>
           <br />
-          <label>
+          <label style={{ color: '#FFD700' }}>
             Amenities (comma separated):
             <input
               type="text"
               name="amenities"
               value={amenities}
               onChange={e => setAmenities(e.target.value)}
+              style={{ borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', marginLeft: '1rem' }}
             />
           </label>
           <br />
-          <label>
+          <label style={{ color: '#FFD700' }}>
             Status:
             <select
               name="status"
               value={status}
               onChange={e => setStatus(e.target.value)}
+              style={{ borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', marginLeft: '1rem' }}
             >
               <option value="available">Available</option>
               <option value="booked">Booked</option>
             </select>
           </label>
           <br />
-          <button type="submit">Add Room</button>
+          <button type="submit" style={{ padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s', marginTop: '1rem' }}
+            onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+            onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}>
+            Add Room
+          </button>
         </form>
-          {/* Room Type Filter Buttons (centered above table) */}
-          <div style={{ margin: '2em auto 1em auto', textAlign: 'center', maxWidth: '400px' }}>
-            <button type="button" onClick={() => setFilterType('All')}>Show All</button>
-            <button type="button" onClick={() => setFilterType('Deluxe')}>Show Deluxe</button>
-            <button type="button" onClick={() => setFilterType('Standard')}>Show Standard</button>
-          </div>
+        {/* Room Type Filter Buttons (centered above table) */}
+        <div style={{ margin: '2em auto 1em auto', textAlign: 'center', maxWidth: '400px' }}>
+          <button type="button" onClick={() => setFilterType('All')} style={{ padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', marginRight: '1rem', transition: 'background 0.2s, color 0.2s' }}
+            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+            onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Show All</button>
+          <button type="button" onClick={() => setFilterType('Deluxe')} style={{ padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', marginRight: '1rem', transition: 'background 0.2s, color 0.2s' }}
+            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+            onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Show Deluxe</button>
+          <button type="button" onClick={() => setFilterType('Standard')} style={{ padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+            onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Show Standard</button>
+        </div>
         {/* Room List Table */}
-        <h4>All Rooms</h4>
-        <table border="1" cellPadding="8" style={{ marginTop: '1em', width: '100%', borderCollapse: 'collapse' }}>
+        <h4 style={{ color: '#FFD700', textShadow: '0 2px 8px #000' }}>All Rooms</h4>
+        <table border="1" cellPadding="8" style={{ marginTop: '1em', width: '100%', borderCollapse: 'collapse', background: '#222', color: '#FFD700', boxShadow: '0 2px 16px #FFD700', border: '2px solid #FFD700' }}>
           <thead>
-            <tr>
+            <tr style={{ background: '#FFD700', color: '#222' }}>
               <th>Room Number</th>
               <th>Room Type</th>
               <th>Description</th>
@@ -203,7 +219,7 @@ function HotelAdminDashboard() {
               rooms
                 .filter(room => filterType === 'All' || room.roomType === filterType)
                 .map(room => (
-                  <tr key={room._id}>
+                  <tr key={room._id} style={{ background: '#222', color: '#FFD700' }}>
                     <td>{room.roomNumber}</td>
                     <td>{room.roomType}</td>
                     <td>{room.description}</td>
@@ -212,7 +228,9 @@ function HotelAdminDashboard() {
                     <td>
                       {room.status}
                       {room.status === 'available' && (
-                        <button style={{ marginLeft: '1em' }} onClick={() => handleBookRoom(room._id)}>
+                        <button style={{ marginLeft: '1em', padding: '0.3rem 0.8rem', borderRadius: '6px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+                          onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+                          onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}>
                           Book
                         </button>
                       )}

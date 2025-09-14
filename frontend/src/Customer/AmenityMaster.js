@@ -47,25 +47,27 @@ function AmenityMaster() {
 
   if (!content) {
     return (
-      <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-        <h2>Amenity Not Found</h2>
-        <p>The requested amenity does not exist.</p>
+      <div style={{ textAlign: 'center', marginTop: '3rem', background: '#111', minHeight: '100vh', color: '#FFD700' }}>
+        <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Amenity Not Found</h2>
+        <p style={{ color: '#FFD700', textShadow: '0 2px 8px #000' }}>The requested amenity does not exist.</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '60vh', marginTop: '3rem' }}>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f7f7', borderRadius: '16px 0 0 16px' }}>
-        <img src={content.img} alt={content.title} style={{ borderRadius: '16px', boxShadow: '0 2px 16px #ccc', width: '60%', maxWidth: '400px', height: 'auto' }} />
+    <div style={{ display: 'flex', minHeight: '60vh', marginTop: '3rem', background: '#111', color: '#FFD700' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#222', borderRadius: '16px 0 0 16px', boxShadow: '0 2px 16px #FFD700' }}>
+        <img src={content.img} alt={content.title} style={{ borderRadius: '16px', boxShadow: '0 2px 16px #FFD700', width: '60%', maxWidth: '400px', height: 'auto', background: '#111' }} />
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '2rem', background: '#fff', borderRadius: '0 16px 16px 0', boxShadow: '0 2px 16px #eee' }}>
-        <h2 style={{ marginBottom: '1rem' }}>{content.title}</h2>
-        <p style={{ marginBottom: '2rem', fontSize: '1.1rem' }}>{content.description}</p>
-        <p style={{ marginTop: '2rem', fontSize: '1rem', color: '#444' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '2rem', background: '#222', borderRadius: '0 16px 16px 0', boxShadow: '0 2px 16px #FFD700', color: '#FFD700' }}>
+        <h2 style={{ marginBottom: '1rem', color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>{content.title}</h2>
+        <p style={{ marginBottom: '2rem', fontSize: '1.1rem', color: '#FFD700', textShadow: '0 2px 8px #000' }}>{content.description}</p>
+        <p style={{ marginTop: '2rem', fontSize: '1rem', color: '#FFD700', textShadow: '0 2px 8px #000' }}>
           {getAmenityParagraph(amenity)}
         </p>
-        <button onClick={() => navigate('/customer/amenities')} style={{ marginTop: '2rem', padding: '0.5rem 1.5rem', fontSize: '1rem', borderRadius: '8px', border: 'none', background: '#eee', cursor: 'pointer' }}>Back to Amenities</button>
+        <button onClick={() => navigate('/customer/amenities')} style={{ marginTop: '2rem', padding: '0.5rem 1.5rem', fontSize: '1rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+          onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+          onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Back to Amenities</button>
       </div>
     </div>
   );
