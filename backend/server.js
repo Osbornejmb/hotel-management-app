@@ -7,6 +7,7 @@ const userRoutes = require("./userRoutes");
 const roomRoutes = require("./roomRoutes");
 const cartRoutes = require("./cartRoutes");
 const contactRoutes = require("./contactRoutes");
+const reservationRoutes = require("./reservationRoutes");
 
 const app = express();
 
@@ -20,8 +21,10 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
 
+
 app.use("/api/cart", cartRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/reservations", reservationRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
