@@ -17,7 +17,7 @@ function RegisterPage() {
     setError('');
     setSuccess('');
     try {
-      await axios.post('http://localhost:5000/api/users/register', form);
+  await axios.post(`${process.env.REACT_APP_API_URL}/api/users/register`, form);
       setSuccess('Registration successful! You can now login.');
       setForm({ username: '', email: '', password: '', role: 'customer' });
       setTimeout(() => navigate('/login'), 1500);

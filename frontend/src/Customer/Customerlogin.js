@@ -14,7 +14,7 @@ function CustomerLogin() {
     setLoading(true);
     try {
       // Call backend to validate room number
-      const res = await axios.post('http://localhost:5000/api/rooms/validate', { roomNumber });
+  const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/rooms/validate`, { roomNumber });
       if (res.data.valid) {
         localStorage.setItem('customerRoomNumber', roomNumber);
         navigate('/customer/interface'); 

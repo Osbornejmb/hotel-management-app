@@ -7,7 +7,7 @@ function RestaurantAdminDashboard() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/cart/orders/all');
+  const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
       const data = await res.json();
       setOrders(data);
     } catch {}
@@ -19,11 +19,11 @@ function RestaurantAdminDashboard() {
 
   const handleDeleteDelivered = async (orderId) => {
     try {
-      await fetch(`http://localhost:5000/api/cart/orders/${orderId}`, {
+  await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}`, {
         method: 'DELETE',
       });
       // Refresh orders
-      const res = await fetch('http://localhost:5000/api/cart/orders/all');
+  const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
       const data = await res.json();
       setOrders(data);
     } catch {}
@@ -31,13 +31,13 @@ function RestaurantAdminDashboard() {
 
   const handleMarkDelivered = async (orderId) => {
     try {
-      await fetch(`http://localhost:5000/api/cart/orders/${orderId}/status`, {
+  await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'delivered' })
       });
       // Refresh orders
-      const res = await fetch('http://localhost:5000/api/cart/orders/all');
+  const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
       const data = await res.json();
       setOrders(data);
     } catch {}

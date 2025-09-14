@@ -12,7 +12,7 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('http://localhost:5000/api/users/login', { email, password });
+  const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/users/login`, { email, password });
       const { token, role } = res.data;
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);

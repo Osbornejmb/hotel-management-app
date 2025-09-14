@@ -40,9 +40,9 @@ function FoodMaster() {
   // Cancel order function
   const cancelOrder = async (orderId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/cart/orders/${orderId}`);
+  await axios.delete(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}`);
       // Refresh orders list
-      const res = await axios.get('http://localhost:5000/api/cart/orders/all');
+  const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
       setOrders(res.data.filter(order => order.roomNumber === roomNumber));
     } catch {
       alert('Failed to cancel order.');
@@ -70,7 +70,7 @@ function FoodMaster() {
   // Load cart from backend on mount
   useEffect(() => {
     if (roomNumber) {
-      axios.get(`http://localhost:5000/api/cart/${roomNumber}`)
+  axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`)
         .then(res => {
           setCart(res.data?.items || []);
         })
@@ -81,7 +81,7 @@ function FoodMaster() {
   // Reload cart from backend when cart popup opens
   useEffect(() => {
     if (showCart && roomNumber) {
-      axios.get(`http://localhost:5000/api/cart/${roomNumber}`)
+  axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`)
         .then(res => {
           setCart(res.data?.items || []);
         })
@@ -92,7 +92,7 @@ function FoodMaster() {
   // Load checked-out orders for this room when status tab opens
   useEffect(() => {
     if (showStatus && roomNumber) {
-      axios.get('http://localhost:5000/api/cart/orders/all')
+  axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`)
         .then(res => {
           // Only show orders for this room
           setOrders(res.data.filter(order => order.roomNumber === roomNumber));
@@ -117,7 +117,7 @@ function FoodMaster() {
     setPopup(null);
     if (roomNumber) {
       try {
-        await axios.post(`http://localhost:5000/api/cart/${roomNumber}`, { items: newCart });
+  await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`, { items: newCart });
       } catch {}
     }
   };
@@ -125,9 +125,9 @@ function FoodMaster() {
   const removeFromCart = async (idx) => {
     if (roomNumber) {
       try {
-        await axios.delete(`http://localhost:5000/api/cart/${roomNumber}/${idx}`);
+  await axios.delete(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/${idx}`);
         // Reload cart from backend after deletion
-        const res = await axios.get(`http://localhost:5000/api/cart/${roomNumber}`);
+  const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
       } catch {
         // fallback: remove locally
@@ -340,7 +340,7 @@ function FoodMaster() {
               onClick={async () => {
                 if (roomNumber && cart.length > 0) {
                   try {
-                    await axios.post(`http://localhost:5000/api/cart/${roomNumber}/checkout`);
+                    await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
                     setCart([]);
                     alert('Checkout successful! Your order has been sent to the restaurant.');
                     setShowCart(false);
