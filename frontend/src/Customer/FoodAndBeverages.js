@@ -7,36 +7,48 @@ function FoodAndBeverages() {
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
   const roomNumber = localStorage.getItem('customerRoomNumber');
+
+  useEffect(() => {
+    if (!roomNumber) {
+      navigate('/customer/login', { replace: true });
+    }
+  }, [roomNumber, navigate]);
   const categories = [
     {
       name: 'Breakfast',
       img: 'https://img.icons8.com/color/96/000000/breakfast.png',
       path: '/customer/food/breakfast',
+      price: 8.99,
     },
     {
       name: 'Lunch',
       img: 'https://img.icons8.com/color/96/000000/lunch.png',
       path: '/customer/food/lunch',
+      price: 12.99,
     },
     {
       name: 'Dinner',
       img: 'https://img.icons8.com/color/96/000000/dinner.png',
       path: '/customer/food/dinner',
+      price: 16.99,
     },
     {
       name: 'Desserts',
       img: 'https://img.icons8.com/color/96/000000/cake.png',
       path: '/customer/food/desserts',
+      price: 6.99,
     },
     {
       name: 'Snack',
       img: 'https://img.icons8.com/color/96/000000/popcorn.png',
       path: '/customer/food/snack',
+      price: 4.99,
     },
     {
       name: 'Beverages',
       img: 'https://img.icons8.com/color/96/000000/cocktail.png',
       path: '/customer/food/beverages',
+      price: 3.99,
     },
   ];
 
@@ -92,17 +104,47 @@ function FoodAndBeverages() {
             {cart.length === 0 ? (
               <p>Your cart is empty.</p>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {cart.map((item, idx) => (
-                  <li key={idx} style={{ margin: '1rem 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ display: 'flex', alignItems: 'center' }}>
-                      <img src={item.img} alt={item.name} style={{ width: '48px', height: '48px', borderRadius: '8px', marginRight: '1rem' }} />
-                      {item.name} <span style={{ marginLeft: '0.5rem', color: '#888', fontSize: '0.9em' }}>{item.category}</span>
-                    </span>
-                    <button onClick={() => removeFromCart(idx)} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: 'none', background: '#f44336', color: '#fff', cursor: 'pointer' }}>Remove</button>
-                  </li>
-                ))}
-              </ul>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
+                <thead>
+                  <tr style={{ background: '#f5f5f5' }}>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Item</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Category</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Price</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Remove</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cart.map((item, idx) => {
+                    // Use item.price if present, fallback to category price
+                    const cat = categories.find(c => c.name === item.category) || {};
+                    const price = typeof item.price === 'number' ? item.price : (cat.price || 0);
+                    return (
+                      <tr key={idx}>
+                        <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', textAlign: 'left' }}>
+                          <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                          {item.name}
+                        </td>
+                        <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>{item.category}</td>
+                        <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>₱{price.toFixed(2)}</td>
+                        <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>
+                          <button onClick={() => removeFromCart(idx)} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: 'none', background: '#f44336', color: '#fff', cursor: 'pointer' }}>Remove</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr style={{ fontWeight: 'bold', background: '#fafafa' }}>
+                    <td colSpan={2} style={{ padding: '0.5rem', textAlign: 'right' }}>Total:</td>
+                    <td style={{ padding: '0.5rem' }}>
+                      ₱{cart.reduce((sum, item) => {
+                        const cat = categories.find(c => c.name === item.category) || {};
+                        const price = typeof item.price === 'number' ? item.price : (cat.price || 0);
+                        return sum + price;
+                      }, 0).toFixed(2)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
             )}
             <button onClick={() => setShowCart(false)} style={{ marginTop: '1rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: 'none', background: '#eee', cursor: 'pointer' }}>Close</button>
             <button onClick={() => { setShowCart(false); navigate('/customer/food/breakfast'); }} style={{ marginTop: '1rem', marginLeft: '1rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: 'none', background: '#2196f3', color: '#fff', cursor: 'pointer' }}>Add More Items</button>

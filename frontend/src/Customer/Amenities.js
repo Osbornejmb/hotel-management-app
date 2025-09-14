@@ -5,6 +5,12 @@ import { useNavigate } from 'react-router-dom';
 function Amenities() {
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    if (!localStorage.getItem('customerRoomNumber')) {
+      navigate('/customer/login', { replace: true });
+    }
+  }, [navigate]);
+
   const amenities = [
     {
       name: 'Fitness Room',

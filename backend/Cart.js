@@ -11,10 +11,11 @@ const cartSchema = new mongoose.Schema({
   },
   items: [
     {
-      name: String,
-      img: String,
-      category: String,
-      addedAt: { type: Date, default: Date.now }
+  name: String,
+  img: String,
+  category: String,
+  price: Number,
+  addedAt: { type: Date, default: Date.now }
     }
   ],
   updatedAt: {

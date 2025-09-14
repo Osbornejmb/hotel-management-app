@@ -39,6 +39,12 @@ function AmenityMaster() {
   const navigate = useNavigate();
   const content = amenityContent[amenity];
 
+  React.useEffect(() => {
+    if (!localStorage.getItem('customerRoomNumber')) {
+      navigate('/customer/login', { replace: true });
+    }
+  }, [navigate]);
+
   if (!content) {
     return (
       <div style={{ textAlign: 'center', marginTop: '3rem' }}>

@@ -4,34 +4,34 @@ import axios from 'axios';
 
 const foodData = {
   breakfast: [
-    { name: 'Pancakes', img: 'https://img.icons8.com/color/96/000000/pancake.png' },
-    { name: 'Omelette', img: 'https://img.icons8.com/color/96/000000/egg.png' },
-    { name: 'Toast', img: 'https://img.icons8.com/color/96/000000/bread.png' },
+    { name: 'Pancakes', img: 'https://img.icons8.com/color/96/000000/pancake.png', price: 4.99 },
+    { name: 'Omelette', img: 'https://img.icons8.com/color/96/000000/egg.png', price: 5.99 },
+    { name: 'Toast', img: 'https://img.icons8.com/color/96/000000/bread.png', price: 3.49 },
   ],
   lunch: [
-    { name: 'Burger', img: 'https://img.icons8.com/color/96/000000/hamburger.png' },
-    { name: 'Salad', img: 'https://img.icons8.com/color/96/000000/salad.png' },
-    { name: 'Sandwich', img: 'https://img.icons8.com/color/96/000000/sandwich.png' },
+    { name: 'Burger', img: 'https://img.icons8.com/color/96/000000/hamburger.png', price: 8.99 },
+    { name: 'Salad', img: 'https://img.icons8.com/color/96/000000/salad.png', price: 7.49 },
+    { name: 'Sandwich', img: 'https://img.icons8.com/color/96/000000/sandwich.png', price: 6.99 },
   ],
   dinner: [
-    { name: 'Steak', img: 'https://img.icons8.com/color/96/000000/steak.png' },
-    { name: 'Spaghetti', img: 'https://img.icons8.com/color/96/000000/spaghetti.png' },
-    { name: 'Roast Chicken', img: 'https://img.icons8.com/color/96/000000/chicken.png' },
+    { name: 'Steak', img: 'https://img.icons8.com/color/96/000000/steak.png', price: 14.99 },
+    { name: 'Spaghetti', img: 'https://img.icons8.com/color/96/000000/spaghetti.png', price: 12.99 },
+    { name: 'Roast Chicken', img: 'https://img.icons8.com/color/96/000000/chicken.png', price: 13.49 },
   ],
   desserts: [
-    { name: 'Ice Cream', img: 'https://img.icons8.com/color/96/000000/snow.png' },
-    { name: 'Cake', img: 'https://img.icons8.com/color/96/000000/cake.png' },
-    { name: 'Donut', img: 'https://img.icons8.com/color/96/000000/doughnut.png' },
+    { name: 'Ice Cream', img: 'https://img.icons8.com/color/96/000000/snow.png', price: 4.49 },
+    { name: 'Cake', img: 'https://img.icons8.com/color/96/000000/cake.png', price: 5.99 },
+    { name: 'Donut', img: 'https://img.icons8.com/color/96/000000/doughnut.png', price: 3.99 },
   ],
   snack: [
-    { name: 'Popcorn', img: 'https://img.icons8.com/color/96/000000/popcorn.png' },
-    { name: 'Chips', img: 'https://img.icons8.com/color/96/000000/potato-chips.png' },
-    { name: 'Nuts', img: 'https://img.icons8.com/color/96/000000/nut.png' },
+    { name: 'Popcorn', img: 'https://img.icons8.com/color/96/000000/popcorn.png', price: 2.99 },
+    { name: 'Chips', img: 'https://img.icons8.com/color/96/000000/potato-chips.png', price: 2.49 },
+    { name: 'Nuts', img: 'https://img.icons8.com/color/96/000000/nut.png', price: 3.49 },
   ],
   beverages: [
-    { name: 'Coffee', img: 'https://img.icons8.com/color/96/000000/coffee.png' },
-    { name: 'Juice', img: 'https://img.icons8.com/color/96/000000/orange-juice.png' },
-    { name: 'Cocktail', img: 'https://img.icons8.com/color/96/000000/cocktail.png' },
+    { name: 'Coffee', img: 'https://img.icons8.com/color/96/000000/coffee.png', price: 2.99 },
+    { name: 'Juice', img: 'https://img.icons8.com/color/96/000000/orange-juice.png', price: 3.49 },
+    { name: 'Cocktail', img: 'https://img.icons8.com/color/96/000000/cocktail.png', price: 4.99 },
   ],
 };
 
@@ -43,6 +43,12 @@ function FoodMaster() {
   const [showCart, setShowCart] = useState(false);
   const foods = foodData[category] || [];
   const roomNumber = localStorage.getItem('customerRoomNumber');
+
+  useEffect(() => {
+    if (!roomNumber) {
+      navigate('/customer/login', { replace: true });
+    }
+  }, [roomNumber, navigate]);
 
   // Load cart from backend on mount
   useEffect(() => {
@@ -77,7 +83,7 @@ function FoodMaster() {
   };
 
   const addToCart = async (food) => {
-    const newCart = [...cart, { name: food.name, img: food.img }];
+    const newCart = [...cart, { name: food.name, img: food.img, price: food.price, category }];
     setCart(newCart);
     setPopup(null);
     if (roomNumber) {
@@ -182,6 +188,7 @@ function FoodMaster() {
               }}
             />
             <h3>{popup.name}</h3>
+            <p>Price: <strong>₱{popup.price ? popup.price.toFixed(2) : '0.00'}</strong></p>
             <p>Add this item to your cart?</p>
             <button
               onClick={() => addToCart(popup)}
@@ -226,39 +233,38 @@ function FoodMaster() {
             {cart.length === 0 ? (
               <p>Your cart is empty.</p>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {cart.map((item, idx) => (
-                  <li
-                    key={idx}
-                    style={{
-                      margin: '1rem 0', display: 'flex',
-                      alignItems: 'center', justifyContent: 'space-between'
-                    }}
-                  >
-                    <span style={{ display: 'flex', alignItems: 'center' }}>
-                      <img
-                        src={item.img}
-                        alt={item.name}
-                        style={{
-                          width: '48px', height: '48px',
-                          borderRadius: '8px', marginRight: '1rem'
-                        }}
-                      />
-                      {item.name}
-                    </span>
-                    <button
-                      onClick={() => removeFromCart(idx)}
-                      style={{
-                        padding: '0.3rem 0.8rem', borderRadius: '6px',
-                        border: 'none', background: '#f44336',
-                        color: '#fff', cursor: 'pointer'
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
+                <thead>
+                  <tr style={{ background: '#f5f5f5' }}>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Item</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Category</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Price</th>
+                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #ddd' }}>Remove</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cart.map((item, idx) => (
+                    <tr key={idx}>
+                      <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', textAlign: 'left' }}>
+                        <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        {item.name}
+                      </td>
+                      <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>{item.category}</td>
+                      <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</td>
+                      <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>
+                        <button onClick={() => removeFromCart(idx)} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: 'none', background: '#f44336', color: '#fff', cursor: 'pointer' }}>Remove</button>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr style={{ fontWeight: 'bold', background: '#fafafa' }}>
+                    <td colSpan={2} style={{ padding: '0.5rem', textAlign: 'right' }}>Total:</td>
+                    <td style={{ padding: '0.5rem' }}>
+                      ₱{cart.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
             )}
             <button
               onClick={() => setShowCart(false)}
