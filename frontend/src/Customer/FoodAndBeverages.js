@@ -37,6 +37,20 @@ const foodData = {
 };
 
 function FoodAndBeverages() {
+  // ...existing code...
+  // Cancel order function
+  const cancelOrder = async (orderId) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/cart/orders/${orderId}`);
+      // Refresh orders list
+      const res = await axios.get('http://localhost:5000/api/cart/orders/all');
+      setOrders(res.data.filter(order => order.roomNumber === roomNumber));
+    } catch {
+      alert('Failed to cancel order.');
+    }
+  };
+  // Tab state for status popup
+  const [tab, setTab] = useState('pending');
   const navigate = useNavigate();
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
@@ -352,55 +366,103 @@ function FoodAndBeverages() {
             <button onClick={() => setShowCart(false)} style={{ marginTop: '1rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
               onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
               onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Close</button>
-            <button onClick={() => { setShowCart(false); navigate('/customer/food/breakfast'); }} style={{ marginTop: '1rem', marginLeft: '1rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
-              onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
-              onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}>Add More Items</button>
           </div>
         </div>
       )}
 
-      {/* Status Popup */}
+      {/* Status Popup with tabs for Pending and Delivered */}
       {showStatus && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
-    <div style={{ background: '#222', padding: '2rem', borderRadius: '16px', boxShadow: '0 2px 24px #FFD700', minWidth: '350px', textAlign: 'center', color: '#FFD700', border: '2px solid #FFD700' }}>
+        <div style={{
+          position: 'fixed', top: 0, left: 0,
+          width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', zIndex: 1200
+        }}>
+          <div style={{
+            background: '#222', padding: '2rem',
+            borderRadius: '16px', boxShadow: '0 2px 24px #FFD700',
+            minWidth: '350px', textAlign: 'center', color: '#FFD700', border: '2px solid #FFD700'
+          }}>
             <h2>Order Status</h2>
+            {/* Tabs */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <button
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', fontWeight: 'bold', cursor: 'pointer', marginRight: '1rem', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
+                }}
+                onClick={() => setTab('pending')}
+                onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+                onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+              >Pending</button>
+              <button
+                style={{
+                  padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
+                }}
+                onClick={() => setTab('delivered')}
+                onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+                onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+              >Delivered</button>
+            </div>
+            {/* Orders Table, scrollable if too many items */}
             {orders.length === 0 ? (
               <p>No checked-out orders yet.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
-                <thead>
-                  <tr style={{ background: '#FFD700', color: '#222' }}>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Items</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Total Price</th>
-                    <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order, idx) => {
-                    const totalPrice = order.items.reduce((sum, item) => sum + (item.price || 0), 0);
-                    return (
-                      <tr key={order._id || idx}>
-                        <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>
-                          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                            {order.items.map((item, i) => (
-                              <li key={i} style={{ marginBottom: '0.5rem' }}>
-                                <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                                <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> <span style={{ color: '#FFD700' }}>({item.category})</span> - <span style={{ color: '#FFD700' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </td>
-                        <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>₱{totalPrice.toFixed(2)}</td>
-                        <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>{order.status || 'pending'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
+                  <thead>
+                    <tr style={{ background: '#FFD700', color: '#222' }}>
+                      <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Items</th>
+                      <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Total Price</th>
+                      <th style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered'))).map((order, idx) => {
+                      const totalPrice = order.items.reduce((sum, item) => sum + (item.price || 0), 0);
+                      return (
+                        <tr key={order._id || idx}>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                              {order.items.map((item, i) => (
+                                <li key={i} style={{ marginBottom: '0.5rem' }}>
+                                  <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                                  <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> <span style={{ color: '#FFD700' }}>({item.category})</span> - <span style={{ color: '#FFD700' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>₱{totalPrice.toFixed(2)}</td>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                            {order.status || 'pending'}
+                            {tab === 'pending' && (
+                              <button
+                                style={{ marginLeft: '1rem', padding: '0.3rem 1rem', borderRadius: '6px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+                                onClick={() => cancelOrder(order._id)}
+                                onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
+                                onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
+                              >Cancel</button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
-            <button onClick={() => setShowStatus(false)} style={{ marginTop: '1rem', padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
+            <button
+              onClick={() => setShowStatus(false)}
+              style={{
+                marginTop: '1rem', padding: '0.5rem 1.5rem',
+                borderRadius: '8px', border: '2px solid #FFD700',
+                background: '#222', color: '#FFD700',
+                fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s'
+              }}
               onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
-              onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Close</button>
+              onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>
+              Close
+            </button>
           </div>
         </div>
       )}
