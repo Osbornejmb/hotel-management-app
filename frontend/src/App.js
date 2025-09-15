@@ -9,6 +9,7 @@ import RegisterPage from "./Auth/RegisterPage";
 import ProtectedRoute from "./Auth/ProtectedRoute";
 import RestaurantAdminDashboard from "./Admin/Restaurant/RestaurantAdminDashboard";
 import HotelAdminDashboard from "./Admin/Hotel/HotelAdminDashboard";
+import EmployeeAdminDashboard from "./Admin/Employee/EmployeeAdminDashboard";
 import CustomerLogin from "./Admin/Customer/Customerlogin";
 import CustomerInterface from "./Admin/Customer/CustomerInterface";
 
@@ -29,6 +30,11 @@ function App() {
         <Route path="/admin/hotel" element={
           <ProtectedRoute allowedRoles={["hotelAdmin"]}>
             <HotelAdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/employee" element={
+          <ProtectedRoute allowedRoles={["employeeAdmin"]}>
+            <EmployeeAdminDashboard />
           </ProtectedRoute>
         } />
         <Route path="*" element={<Home />} />

@@ -16,9 +16,10 @@ function LoginPage() {
       const { token, role } = res.data;
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
-  if (role === 'restaurantAdmin') navigate('/admin/restaurant');
-  else if (role === 'hotelAdmin') navigate('/admin/hotel');
-  else setError('Unknown role');
+      if (role === 'restaurantAdmin') navigate('/admin/restaurant');
+      else if (role === 'hotelAdmin') navigate('/admin/hotel');
+      else if (role === 'employeeAdmin') navigate('/admin/employee');
+      else setError('Unknown role');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     }
