@@ -203,23 +203,18 @@ function FoodAndBeverages() {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1300 }}>
           <div style={{ background: '#222', padding: '2rem', borderRadius: '16px', boxShadow: '0 2px 24px #FFD700', minWidth: '350px', textAlign: 'center', color: '#FFD700', border: '2px solid #FFD700' }}>
             <h2>Search Results</h2>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem' }}>
               {searchResults.map((item, idx) => (
-                <li key={idx} style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img src={item.img} alt={item.name} style={{ width: '48px', height: '48px', borderRadius: '8px', marginRight: '1rem', verticalAlign: 'middle', background: '#111', cursor: 'pointer' }}
-                    onClick={() => {
-                      setFoodPopup({ ...item });
-                      setSearchPopup(false);
-                    }}
-                  />
-                  <span style={{ color: '#FFD700', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer' }}
-                    onClick={() => {
-                      setFoodPopup({ ...item });
-                      setSearchPopup(false);
-                    }}>
-                    {item.name}
-                  </span>
-                  {item.price && <span style={{ marginLeft: '1rem', color: '#FFD700' }}>₱{item.price.toFixed(2)}</span>}
+                <li key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#222', borderRadius: '16px', boxShadow: '0 2px 12px #FFD700', padding: '1rem', minWidth: '120px', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer' }}
+                  onClick={() => {
+                    setFoodPopup({ ...item });
+                    setSearchPopup(false);
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.07)'; e.currentTarget.style.boxShadow = '0 4px 24px #FFD700'; }}
+                  onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px #FFD700'; }}>
+                  <img src={item.img} alt={item.name} style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#111', marginBottom: '0.5rem' }} />
+                  <span style={{ color: '#FFD700', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>{item.name}</span>
+                  {item.price && <span style={{ color: '#FFD700' }}>₱{item.price.toFixed(2)}</span>}
                 </li>
               ))}
             </ul>
