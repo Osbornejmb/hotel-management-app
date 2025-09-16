@@ -1,4 +1,5 @@
 import React from 'react';
+import './RestaurantAdminDashboard.css';
 import LogoutButton from '../../Auth/LogoutButton';
 
 function RestaurantAdminDashboard() {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './RegisterPage.css';
 
 function RegisterPage() {
   const [form, setForm] = useState({ username: '', email: '', password: '', role: 'restaurantAdmin' });
@@ -27,24 +28,54 @@ function RegisterPage() {
   };
 
   return (
-    <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', textAlign: 'center', paddingTop: '3rem' }}>
-      <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Register</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'inline-block', background: '#222', padding: '2rem', borderRadius: '16px', boxShadow: '0 2px 16px #FFD700', color: '#FFD700', border: '2px solid #FFD700' }}>
-        <input name="username" placeholder="Username" value={form.username} onChange={handleChange} required style={{ marginBottom: '1rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', width: '100%' }} />
-        <input name="email" placeholder="Email" value={form.email} onChange={handleChange} required type="email" style={{ marginBottom: '1rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', width: '100%' }} />
-        <input name="password" placeholder="Password" value={form.password} onChange={handleChange} required type="password" style={{ marginBottom: '1rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', width: '100%' }} />
-        <select name="role" value={form.role} onChange={handleChange} required style={{ marginBottom: '1rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #FFD700', background: '#111', color: '#FFD700', width: '100%' }}>
+    <div className="register-container">
+      <h2 className="register-title">Register</h2>
+      <form onSubmit={handleSubmit} className="register-form">
+        <input
+          name="username"
+          placeholder="Username"
+          value={form.username}
+          onChange={handleChange}
+          required
+          className="register-input"
+        />
+        <input
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+          type="email"
+          className="register-input"
+        />
+        <input
+          name="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+          type="password"
+          className="register-input"
+        />
+        <select
+          name="role"
+          value={form.role}
+          onChange={handleChange}
+          required
+          className="register-select"
+        >
           <option value="restaurantAdmin">Restaurant Admin</option>
           <option value="hotelAdmin">Hotel Admin</option>
         </select>
-        <button type="submit" style={{ padding: '0.5rem 1.5rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#FFD700', color: '#222', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s', width: '100%' }}
-          onMouseOver={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
-          onMouseOut={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}>
+        <button
+          type="submit"
+          className="register-button"
+        >
           Register
         </button>
       </form>
-      {error && <p style={{color:'#f44336', textShadow: '0 2px 8px #000', marginTop: '1rem'}}>{error}</p>}
-      {success && <p style={{color:'#4caf50', textShadow: '0 2px 8px #000', marginTop: '1rem'}}>{success}</p>}
+      {error && <p className="register-error">{error}</p>}
+      {success && <p className="register-success">{success}</p>}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import './HotelAdminDashboard.css';
 import LogoutButton from '../../Auth/LogoutButton';
 
 function HotelAdminDashboard() {
