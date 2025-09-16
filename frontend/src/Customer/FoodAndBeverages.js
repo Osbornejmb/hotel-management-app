@@ -36,20 +36,7 @@ const foodData = {
     { name: 'Cocktail', img: 'https://img.icons8.com/color/96/000000/cocktail.png', price: 4.99 },
   ],
 };
-
 function FoodAndBeverages() {
-  // ...existing code...
-  // Cancel order function
-  const cancelOrder = async (orderId) => {
-    try {
-  await axios.delete(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}`);
-      // Refresh orders list
-  const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
-      setOrders(res.data.filter(order => order.roomNumber === roomNumber));
-    } catch {
-      alert('Failed to cancel order.');
-    }
-  };
   // Tab state for status popup
   const [tab, setTab] = useState('pending');
   const navigate = useNavigate();
@@ -62,6 +49,18 @@ function FoodAndBeverages() {
   const [searchResults, setSearchResults] = useState([]);
   const [foodPopup, setFoodPopup] = useState(null); // For add-to-cart popup
   const roomNumber = localStorage.getItem('customerRoomNumber');
+
+  // Cancel order function
+  const cancelOrder = async (orderId) => {
+    try {
+      await axios.delete(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}`);
+      // Refresh orders list
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
+      setOrders(res.data.filter(order => order.roomNumber === roomNumber));
+    } catch {
+      alert('Failed to cancel order.');
+    }
+  };
 
   useEffect(() => {
     if (!roomNumber) {
