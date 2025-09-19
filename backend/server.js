@@ -8,6 +8,7 @@ const roomRoutes = require("./roomRoutes");
 const cartRoutes = require("./cartRoutes");
 const contactRoutes = require("./contactRoutes");
 const reservationRoutes = require("./reservationRoutes");
+const foodRoutes = require("./foodRoutes");
 
 const app = express();
 
@@ -24,7 +25,9 @@ app.use("/api/rooms", roomRoutes);
 
 app.use("/api/cart", cartRoutes);
 app.use("/api/contact", contactRoutes);
+
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/food", foodRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))

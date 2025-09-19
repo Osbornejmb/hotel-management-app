@@ -1,40 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import './FoodAndBeverages.css';
 
-// Food data copied from FoodMaster.js
-const foodData = {
-  breakfast: [
-    { name: 'Pancakes', img: 'https://img.icons8.com/color/96/000000/pancake.png', price: 4.99 },
-    { name: 'Omelette', img: 'https://img.icons8.com/color/96/000000/egg.png', price: 5.99 },
-    { name: 'Toast', img: 'https://img.icons8.com/color/96/000000/bread.png', price: 3.49 },
-  ],
-  lunch: [
-    { name: 'Burger', img: 'https://img.icons8.com/color/96/000000/hamburger.png', price: 8.99 },
-    { name: 'Salad', img: 'https://img.icons8.com/color/96/000000/salad.png', price: 7.49 },
-    { name: 'Sandwich', img: 'https://img.icons8.com/color/96/000000/sandwich.png', price: 6.99 },
-  ],
-  dinner: [
-    { name: 'Steak', img: 'https://img.icons8.com/color/96/000000/steak.png', price: 14.99 },
-    { name: 'Spaghetti', img: 'https://img.icons8.com/color/96/000000/spaghetti.png', price: 12.99 },
-    { name: 'Roast Chicken', img: 'https://img.icons8.com/color/96/000000/chicken.png', price: 13.49 },
-  ],
-  desserts: [
-    { name: 'Ice Cream', img: 'https://img.icons8.com/color/96/000000/snow.png', price: 4.49 },
-    { name: 'Cake', img: 'https://img.icons8.com/color/96/000000/cake.png', price: 5.99 },
-    { name: 'Donut', img: 'https://img.icons8.com/color/96/000000/doughnut.png', price: 3.99 },
-  ],
-  snack: [
-    { name: 'Popcorn', img: 'https://img.icons8.com/color/96/000000/popcorn.png', price: 2.99 },
-    { name: 'Chips', img: 'https://img.icons8.com/color/96/000000/potato-chips.png', price: 2.49 },
-    { name: 'Nuts', img: 'https://img.icons8.com/color/96/000000/nut.png', price: 3.49 },
-  ],
-  beverages: [
-    { name: 'Coffee', img: 'https://img.icons8.com/color/96/000000/coffee.png', price: 2.99 },
-    { name: 'Juice', img: 'https://img.icons8.com/color/96/000000/orange-juice.png', price: 3.49 },
-    { name: 'Cocktail', img: 'https://img.icons8.com/color/96/000000/cocktail.png', price: 4.99 },
-  ],
+// Food data from backend
+const initialFoodData = {
+  breakfast: [],
+  lunch: [],
+  dinner: [],
+  desserts: [],
+  snack: [],
+  beverages: []
 };
 function FoodAndBeverages() {
   // Tab state for status popup
@@ -48,7 +23,14 @@ function FoodAndBeverages() {
   const [searchPopup, setSearchPopup] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [foodPopup, setFoodPopup] = useState(null); // For add-to-cart popup
+  const [foodData, setFoodData] = useState(initialFoodData);
   const roomNumber = localStorage.getItem('customerRoomNumber');
+  // Fetch food items from backend
+  useEffect(() => {
+    axios.get(`${process.env.REACT_APP_API_URL}/api/food`)
+      .then(res => setFoodData(res.data))
+      .catch(() => setFoodData(initialFoodData));
+  }, []);
 
   // Cancel order function
   const cancelOrder = async (orderId) => {

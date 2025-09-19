@@ -1,38 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+export default FoodMaster;
 
-const foodData = {
-  breakfast: [
-    { name: 'Pancakes', img: 'https://img.icons8.com/color/96/000000/pancake.png', price: 4.99, details: 'Fluffy pancakes served with syrup and butter.' },
-    { name: 'Omelette', img: 'https://img.icons8.com/color/96/000000/egg.png', price: 5.99, details: 'Three-egg omelette with your choice of fillings.' },
-    { name: 'Toast', img: 'https://img.icons8.com/color/96/000000/bread.png', price: 3.49, details: 'Golden brown toast served with jam or butter.' },
-  ],
-  lunch: [
-    { name: 'Burger', img: 'https://img.icons8.com/color/96/000000/hamburger.png', price: 8.99, details: 'Juicy beef burger with lettuce, tomato, and cheese.' },
-    { name: 'Salad', img: 'https://img.icons8.com/color/96/000000/salad.png', price: 7.49, details: 'Fresh garden salad with vinaigrette dressing.' },
-    { name: 'Sandwich', img: 'https://img.icons8.com/color/96/000000/sandwich.png', price: 6.99, details: 'Classic sandwich with ham, cheese, and veggies.' },
-  ],
-  dinner: [
-    { name: 'Steak', img: 'https://img.icons8.com/color/96/000000/steak.png', price: 14.99, details: 'Grilled steak cooked to your liking.' },
-    { name: 'Spaghetti', img: 'https://img.icons8.com/color/96/000000/spaghetti.png', price: 12.99, details: 'Spaghetti pasta with rich tomato sauce.' },
-    { name: 'Roast Chicken', img: 'https://img.icons8.com/color/96/000000/chicken.png', price: 13.49, details: 'Tender roast chicken served with sides.' },
-  ],
-  desserts: [
-    { name: 'Ice Cream', img: 'https://img.icons8.com/color/96/000000/snow.png', price: 4.49, details: 'Creamy ice cream in assorted flavors.' },
-    { name: 'Cake', img: 'https://img.icons8.com/color/96/000000/cake.png', price: 5.99, details: 'Moist cake with frosting.' },
-    { name: 'Donut', img: 'https://img.icons8.com/color/96/000000/doughnut.png', price: 3.99, details: 'Sweet donut with glaze or sprinkles.' },
-  ],
-  snack: [
-    { name: 'Popcorn', img: 'https://img.icons8.com/color/96/000000/popcorn.png', price: 2.99, details: 'Freshly popped popcorn with butter.' },
-    { name: 'Chips', img: 'https://img.icons8.com/color/96/000000/potato-chips.png', price: 2.49, details: 'Crispy potato chips lightly salted.' },
-    { name: 'Nuts', img: 'https://img.icons8.com/color/96/000000/nut.png', price: 3.49, details: 'Assorted roasted nuts.' },
-  ],
-  beverages: [
-    { name: 'Coffee', img: 'https://img.icons8.com/color/96/000000/coffee.png', price: 2.99, details: 'Hot brewed coffee.' },
-    { name: 'Juice', img: 'https://img.icons8.com/color/96/000000/orange-juice.png', price: 3.49, details: 'Freshly squeezed fruit juice.' },
-    { name: 'Cocktail', img: 'https://img.icons8.com/color/96/000000/cocktail.png', price: 4.99, details: 'Refreshing cocktail with mixed spirits.' },
-  ],
+
+const initialFoodData = {
+  breakfast: [],
+  lunch: [],
+  dinner: [],
+  desserts: [],
+  snack: [],
+  beverages: []
 };
 
 function FoodMaster() {
@@ -58,7 +36,15 @@ function FoodMaster() {
   const [showStatus, setShowStatus] = useState(false);
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState('');
+  const [foodData, setFoodData] = useState(initialFoodData);
   const foods = foodData[category] || [];
+
+  // Fetch food items from backend on mount
+  useEffect(() => {
+    axios.get(`${process.env.REACT_APP_API_URL}/api/food`)
+      .then(res => setFoodData(res.data))
+      .catch(() => setFoodData(initialFoodData));
+  }, []);
   const roomNumber = localStorage.getItem('customerRoomNumber');
 
   useEffect(() => {
@@ -479,5 +465,3 @@ function FoodMaster() {
     </div>
   );
 }
-
-export default FoodMaster;
