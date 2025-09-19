@@ -13,12 +13,14 @@ function LoginPage() {
     setError('');
     try {
       const res = await axios.post('http://localhost:5000/api/users/login', { email, password });
-      const { token, role } = res.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+  const { token, role, username, name } = res.data;
+  localStorage.setItem('token', token);
+  localStorage.setItem('role', role);
+  if (username) localStorage.setItem('username', username);
+  if (name) localStorage.setItem('name', name);
       if (role === 'restaurantAdmin') navigate('/admin/restaurant');
       else if (role === 'hotelAdmin') navigate('/admin/hotel');
-      else if (role === 'employeeAdmin') navigate('/admin/employee');
+  else if (role === 'employeeAdmin' || role === 'employee') navigate('/admin/employee');
       else setError('Unknown role');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
