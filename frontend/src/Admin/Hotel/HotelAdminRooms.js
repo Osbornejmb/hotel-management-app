@@ -79,35 +79,34 @@ function HotelAdminRooms() {
   }, []);
 
   return (
-    <div style={{ background: '#f5f5f5', minHeight: '100vh' }}>
-     
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '2rem' }}>
-        <h2 style={{ color: '#222', fontWeight: 700, marginBottom: '2rem', textAlign: 'center' }}>ROOMS PAGE TEST LABEL</h2>
+    <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', paddingBottom: '2rem' }}>
+      <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px', textAlign: 'center', marginTop: '2rem', marginBottom: '2rem' }}>Hotel Admin Rooms</h2>
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {loading ? (
-          <div style={{ color: '#222', fontWeight: 600 }}>Loading rooms...</div>
+          <div style={{ color: '#FFD700', fontWeight: 600 }}>Loading rooms...</div>
         ) : error ? (
-          <div style={{ color: 'red', fontWeight: 600 }}>{error}</div>
+          <div style={{ color: '#f44336', fontWeight: 600 }}>{error}</div>
         ) : rooms.length === 0 ? (
-          <div style={{ color: '#222', fontWeight: 600 }}>No rooms found in the database.</div>
+          <div style={{ color: '#FFD700', fontWeight: 600 }}>No rooms found in the database.</div>
         ) : (
-          <table style={{ borderCollapse: 'collapse', width: '90%', maxWidth: '1200px', background: '#fff', boxShadow: '0 2px 8px #bbb', borderRadius: '10px', overflow: 'hidden' }}>
+          <table style={{ borderCollapse: 'collapse', width: '90%', maxWidth: '1200px', background: '#222', boxShadow: '0 2px 16px #FFD700', borderRadius: '10px', overflow: 'hidden', color: '#FFD700', marginBottom: '2rem' }}>
             <thead style={{ background: '#FFD700', color: '#222' }}>
               <tr>
-                <th style={{ padding: '0.8rem', border: '1px solid #ddd' }}>Room Number</th>
-                <th style={{ padding: '0.8rem', border: '1px solid #ddd' }}>Room Type</th>
-                <th style={{ padding: '0.8rem', border: '1px solid #ddd' }}>Description</th>
-                <th style={{ padding: '0.8rem', border: '1px solid #ddd' }}>Amenities</th>
-                <th style={{ padding: '0.8rem', border: '1px solid #ddd' }}>Status</th>
+                <th style={{ padding: '0.8rem', borderBottom: '1px solid #FFD700' }}>Room Number</th>
+                <th style={{ padding: '0.8rem', borderBottom: '1px solid #FFD700' }}>Room Type</th>
+                <th style={{ padding: '0.8rem', borderBottom: '1px solid #FFD700' }}>Description</th>
+                <th style={{ padding: '0.8rem', borderBottom: '1px solid #FFD700' }}>Amenities</th>
+                <th style={{ padding: '0.8rem', borderBottom: '1px solid #FFD700' }}>Status</th>
               </tr>
             </thead>
             <tbody>
               {rooms.map(room => (
-                <tr key={room._id} style={{ background: '#f9f9f9', color: '#222' }}>
-                  <td style={{ padding: '0.7rem', border: '1px solid #ddd', textAlign: 'center' }}>{room.roomNumber}</td>
-                  <td style={{ padding: '0.7rem', border: '1px solid #ddd', textAlign: 'center' }}>{room.roomType}</td>
-                  <td style={{ padding: '0.7rem', border: '1px solid #ddd', textAlign: 'center' }}>{room.description || '-'}</td>
-                  <td style={{ padding: '0.7rem', border: '1px solid #ddd', textAlign: 'center' }}>{room.amenities && room.amenities.length > 0 ? room.amenities.join(', ') : '-'}</td>
-                  <td style={{ padding: '0.7rem', border: '1px solid #ddd', textAlign: 'center' }}>{room.status}</td>
+                <tr key={room._id} style={{ background: '#222', color: '#FFD700' }}>
+                  <td style={{ padding: '0.7rem', borderBottom: '1px solid #FFD700', textAlign: 'center' }}>{room.roomNumber}</td>
+                  <td style={{ padding: '0.7rem', borderBottom: '1px solid #FFD700', textAlign: 'center' }}>{room.roomType}</td>
+                  <td style={{ padding: '0.7rem', borderBottom: '1px solid #FFD700', textAlign: 'center' }}>{room.description || '-'}</td>
+                  <td style={{ padding: '0.7rem', borderBottom: '1px solid #FFD700', textAlign: 'center' }}>{room.amenities && room.amenities.length > 0 ? room.amenities.join(', ') : '-'}</td>
+                  <td style={{ padding: '0.7rem', borderBottom: '1px solid #FFD700', textAlign: 'center' }}>{room.status}</td>
                 </tr>
               ))}
             </tbody>
