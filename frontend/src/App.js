@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
@@ -16,6 +14,10 @@ import FoodAndBeverages from "./Customer/FoodAndBeverages";
 import FoodMaster from "./Customer/FoodMaster";
 import ContactFrontDesk from "./Customer/ContactFrontDesk";
 import AmenityMaster from "./Customer/AmenityMaster";
+import HotelAdminRooms from "./Admin/Hotel/HotelAdminRooms";
+import HotelAdminHousekeeping from "./Admin/Hotel/HotelAdminHousekeeping";
+import HotelAdminMaintenance from "./Admin/Hotel/HotelAdminMaintenance";
+import HotelAdminBookingHistory from "./Admin/Hotel/HotelAdminBookingHistory";
 
 function App() {
   return (
@@ -39,6 +41,26 @@ function App() {
         <Route path="/admin/hotel" element={
           <ProtectedRoute allowedRoles={["hotelAdmin"]}>
             <HotelAdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/hotel/rooms" element={
+          <ProtectedRoute allowedRoles={["hotelAdmin"]}>
+            <HotelAdminRooms />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/hotel/housekeeping" element={
+          <ProtectedRoute allowedRoles={["hotelAdmin"]}>
+            <HotelAdminHousekeeping />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/hotel/maintenance" element={
+          <ProtectedRoute allowedRoles={["hotelAdmin"]}>
+            <HotelAdminMaintenance />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/hotel/booking-history" element={
+          <ProtectedRoute allowedRoles={["hotelAdmin"]}>
+            <HotelAdminBookingHistory />
           </ProtectedRoute>
         } />
         <Route path="*" element={<Home />} />
