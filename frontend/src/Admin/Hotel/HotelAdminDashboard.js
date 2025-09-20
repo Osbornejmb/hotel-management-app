@@ -3,12 +3,9 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LogoutButton from '../../Auth/LogoutButton';
 
-function HotelAdminDashboard() {
+function HotelAdminDashboard({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  // Determine current page for highlighting
-  // We'll use the pathname to determine which button to highlight
-  // For this file, assume /admin/hotel is the dashboard
   const sidebarButtons = [
     { name: 'Dashboard', path: '/admin/hotel' },
     { name: 'Rooms', path: '/admin/hotel/rooms' },
@@ -16,7 +13,6 @@ function HotelAdminDashboard() {
     { name: 'Maintenance', path: '/admin/hotel/maintenance' },
     { name: 'Booking history', path: '/admin/hotel/booking-history' },
   ];
-
   return (
     <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', paddingBottom: '2rem', display: 'flex' }}>
       {/* Sidebar */}
@@ -101,7 +97,9 @@ function HotelAdminDashboard() {
           <span style={{ fontSize: '2.5rem', fontWeight: 'bold', letterSpacing: '4px', color: '#FFD700', textShadow: '0 2px 8px #000' }}>Lumine</span>
           <span style={{ fontSize: '1rem', color: '#FFD700', opacity: 0.8, marginTop: '0.3rem', letterSpacing: '2px' }}>room management</span>
         </nav>
-        {/* Main content can go here */}
+        <div style={{ padding: '2rem' }}>
+          {children}
+        </div>
       </div>
     </div>
   );
