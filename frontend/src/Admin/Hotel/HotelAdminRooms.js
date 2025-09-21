@@ -7,10 +7,10 @@ function RoomCard({ room, onManage }) {
       background: '#fff',
       borderRadius: '12px',
       boxShadow: '0 4px 16px #bbb',
-      padding: '1.6rem 1.6rem 1.1rem 1.6rem',
+      padding: '1.1rem 1.1rem 0.7rem 1.1rem',
       margin: '1rem',
       width: '250px',
-      minHeight: '300px',
+      minHeight: '200px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'flex-start',
@@ -20,6 +20,25 @@ function RoomCard({ room, onManage }) {
       <div style={{ position: 'absolute', top: '1.2rem', right: '1.2rem', fontWeight: 500, color: '#444', fontSize: '1.1rem', textAlign: 'right' }}>
         {room.roomType} <br />
         <span style={{ fontSize: '0.95rem', color: '#222', fontWeight: 400 }}>({room.description || '2 pax'})</span>
+      </div>
+      {/* Room status indicator below description, on its own line */}
+      <div style={{ marginTop: '2.7rem' }} />
+      <div style={{
+        fontWeight: 700,
+        fontSize: '1.08rem',
+        color: room.status === 'booked' ? '#fff' : room.status === 'available' ? '#fff' : '#222',
+        background: room.status === 'booked' ? '#e74c3c' : room.status === 'available' ? '#27ae60' : '#fff',
+        border: room.status === 'under maintenance' ? '1px solid #bbb' : 'none',
+        borderRadius: 7,
+        padding: '0.18rem 0.7rem',
+        display: 'inline-block',
+        boxShadow: room.status === 'under maintenance' ? '0 2px 8px #eee' : '0 2px 8px #ccc',
+        marginBottom: '0.5rem',
+        marginLeft: 0,
+      }}>
+        {room.status === 'booked' && 'Booked'}
+        {room.status === 'available' && 'Available'}
+        {room.status === 'under maintenance' && 'Under Maintenance'}
       </div>
       <div style={{ marginTop: '2.5rem', fontWeight: 600, color: '#222' }}>Amenities:</div>
       <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.98rem', color: '#222' }}>
@@ -59,6 +78,99 @@ function RoomCard({ room, onManage }) {
 }
 
 function HotelAdminRooms() {
+  // Handler for checkout button (calls backend to update room and customer status)
+  const handleCheckout = async () => {
+    if (!selectedRoom) return;
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/checkout/checkout`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomNumber: selectedRoom.roomNumber })
+      });
+      if (res.ok) {
+        setShowCheckoutModal(true);
+        // Refresh rooms list after successful checkout
+        const roomsRes = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
+        if (roomsRes.ok) {
+          const data = await roomsRes.json();
+          setRooms(data);
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        alert(`Checkout failed: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert('Checkout failed.');
+    }
+  };
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showUpdatedModal, setShowUpdatedModal] = useState(false);
+  const [bookingCheckoutDate, setBookingCheckoutDate] = useState('');
+  // State for extend stay
+  const [extendDateTime, setExtendDateTime] = useState('');
+
+  // Handler to update customer check-out in database
+  const handleExtendStay = async () => {
+    if (!extendDateTime || !selectedRoom) return;
+    try {
+      // Find the customer for this room (assumes only one active customer per room)
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/customers/extend`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomNumber: selectedRoom.roomNumber, newCheckout: extendDateTime })
+      });
+      if (res.ok) {
+        setShowUpdatedModal(true);
+        setExtendDateTime('');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        alert(`Failed to update: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert('Failed to update check-out.');
+    }
+  };
+  // State for booking form
+  const [bookingName, setBookingName] = useState('');
+  const [bookingContact, setBookingContact] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Helper to update room status in state after booking
+  const updateRoomStatus = (roomId, newStatus, guestName, guestContact) => {
+    setRooms(prevRooms => prevRooms.map(r =>
+      r._id === roomId ? { ...r, status: newStatus, guestName, guestContact } : r
+    ));
+  };
+
+  // Book room handler
+  const handleBookRoom = async () => {
+  if (!bookingName || !bookingContact || !bookingCheckoutDate) return;
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/${selectedRoom._id}/book`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestName: bookingName, guestContact: bookingContact, checkoutDate: bookingCheckoutDate })
+      });
+      if (res.ok) {
+        updateRoomStatus(selectedRoom._id, 'booked', bookingName, bookingContact);
+        setShowSuccessModal(true);
+        // Do NOT close manage modal yet; wait for success modal to be dismissed
+        setBookingName('');
+        setBookingContact('');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Booking failed:', errorData);
+        alert(`Booking failed: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert('Booking failed.');
+    }
+  };
+  // State for booking form
+const [customerName, setCustomerName] = useState('');
+const [customerContact, setCustomerContact] = useState('');
+const [customerCheckinDate, setCustomerCheckinDate] = useState('');
+
   const [showModal, setShowModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [rooms, setRooms] = useState([]);
@@ -68,7 +180,7 @@ function HotelAdminRooms() {
   useEffect(() => {
     async function fetchRooms() {
       try {
-        const res = await fetch('/api/rooms');
+  const res = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
         if (!res.ok) throw new Error('Failed to fetch rooms');
         const data = await res.json();
         console.log('Fetched rooms:', data); // Debug log
@@ -140,43 +252,176 @@ function HotelAdminRooms() {
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Room Type: <span style={{ fontWeight: 400 }}>{selectedRoom.roomType} ({selectedRoom.description || '2 pax'})</span></div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Amenities: <span style={{ fontWeight: 400 }}>{selectedRoom.amenities?.join(', ') || 'None'}</span></div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Facilities: <span style={{ fontWeight: 400 }}>{selectedRoom.facilities?.join(', ') || 'None'}</span></div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.availability || 'N/A'}</span></div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.status || 'N/A'}</span></div>
               {/* Form fields and dropdowns will go here */}
               <div style={{ marginTop: '1.5rem' }}>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ fontWeight: 600 }}>Assign Housekeeping</label><br />
-                  <select style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}>
-                    <option value="">Select employee</option>
-                    {/* Housekeeping options will go here */}
-                  </select>
-                </div>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ fontWeight: 600 }}>Assign Maintenance</label><br />
-                  <select style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}>
-                    <option value="">Select employee</option>
-                    {/* Maintenance options will go here */}
-                  </select>
-                </div>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ fontWeight: 600 }}>Extend Stay</label><br />
-                  <input type="text" style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }} placeholder="Select date/time" />
-                </div>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '1.2rem' }}>
-                  <button style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #bfb' }}>Mark as Available</button>
-                  <button style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #fbb' }}>Checkout</button>
-                </div>
-                <div style={{ marginTop: '2rem', background: '#fafafa', borderRadius: 8, boxShadow: '0 2px 8px #eee', padding: '1rem' }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>ACTIVITY LOG:</div>
-                  {/* Activity log entries will go here */}
-                  <div style={{ fontSize: '0.98rem', color: '#444' }}>[Activity log here]</div>
+                {selectedRoom.status === 'available' ? (
+                  <>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Guest Name</label><br />
+                      <input
+                        type="text"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        placeholder="Enter guest name"
+                        value={bookingName}
+                        onChange={e => setBookingName(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Contact Number</label><br />
+                      <input
+                        type="text"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        placeholder="Enter contact number"
+                        value={bookingContact}
+                        onChange={e => setBookingContact(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Check-out Date</label><br />
+                      <input
+                        type="date"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        value={bookingCheckoutDate || ''}
+                        onChange={e => setBookingCheckoutDate(e.target.value)}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Extend Stay</label><br />
+                      <input
+                        type="date"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        value={extendDateTime || ''}
+                        onChange={e => setExtendDateTime(e.target.value)}
+                      />
+                      <button
+                        style={{ marginTop: 8, background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.4rem 1.2rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}
+                        onClick={handleExtendStay}
+                        disabled={!extendDateTime}
+                      >Update</button>
+                    </div>
+                  </>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
+                  {selectedRoom.status === 'booked' && (
+                    <button
+                      style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #fbb' }}
+                      onClick={handleCheckout}
+                    >Checkout</button>
+                  )}
+      {/* Done Checkout Modal */}
+      {showCheckoutModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px #888',
+            padding: '2.5rem 2.5rem 2rem 2.5rem',
+            minWidth: '320px',
+            maxWidth: '95vw',
+            position: 'relative',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Done checkout!</div>
+            <button onClick={() => setShowCheckoutModal(false)} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+          </div>
+        </div>
+      )}
+
+      {/* Updated Checkout Date Modal */}
+      {showUpdatedModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px #888',
+            padding: '2.5rem 2.5rem 2rem 2.5rem',
+            minWidth: '320px',
+            maxWidth: '95vw',
+            position: 'relative',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#2980b9', marginBottom: '1.2rem' }}>Checkout date updated!</div>
+            <button onClick={() => setShowUpdatedModal(false)} style={{ background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+          </div>
+        </div>
+      )}
+                  {selectedRoom.status === 'available' && (
+                    <button
+                      style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #bfb' }}
+                      onClick={handleBookRoom}
+                      disabled={!bookingName || !bookingContact}
+                    >
+                      Book
+                    </button>
+                  )}
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px #888',
+            padding: '2.5rem 2.5rem 2rem 2.5rem',
+            minWidth: '320px',
+            maxWidth: '95vw',
+            position: 'relative',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Booked successfully!</div>
+            <button onClick={() => { setShowSuccessModal(false); setShowModal(false); }} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+          </div>
+        </div>
+      )}
+
+                  {selectedRoom.status === 'under maintenance' && (
+                    <button style={{ background: '#888', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #ccc' }}>Assign</button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
       </div>
+
     </HotelAdminDashboard>
   );
-}
 
+}
 export default HotelAdminRooms;

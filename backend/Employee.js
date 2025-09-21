@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const EmployeeSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  role: { type: String, enum: ['housekeeping', 'maintenance'], required: true },
+  role: { type: String, enum: ['Housekeeping', 'Maintenance'], required: true },
   // Add other fields as needed
 });
 

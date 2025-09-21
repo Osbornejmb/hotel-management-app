@@ -1,8 +1,47 @@
-
 const express = require('express');
 const router = express.Router();
 const Room = require('./Room');
+const Customer = require('./Customer');
 console.log('roomRoutes loaded');
+
+// Book a room: update status to 'booked' and save guest info
+router.put('/:id/book', async (req, res) => {
+	try {
+		const { guestName, guestContact, checkoutDate } = req.body;
+		console.log('Booking request:', { guestName, guestContact, checkoutDate });
+		const room = await Room.findById(req.params.id);
+		if (!room) {
+			return res.status(404).json({ error: 'Room not found' });
+		}
+				room.status = 'booked';
+				await room.save();
+
+						// Save customer info in Customers collection
+						const checkinDate = new Date();
+						const checkinTime = checkinDate.toLocaleTimeString();
+								const customer = new Customer({
+									name: guestName,
+									contactNumber: guestContact,
+									roomNumber: room.roomNumber,
+									checkinDate,
+									checkinTime,
+									checkoutDate,
+									status: 'checked in'
+								});
+								try {
+									await customer.save();
+									console.log('Customer saved:', customer);
+								} catch (err) {
+									console.error('Error saving customer:', err);
+								}
+
+				res.json({ message: 'Room booked successfully', room, customer });
+	} catch (err) {
+		console.error('Booking error:', err);
+		res.status(400).json({ error: err.message || 'Booking failed' });
+	}
+});
+
 
 // Update room status (book room)
 router.patch('/:id', async (req, res) => {
