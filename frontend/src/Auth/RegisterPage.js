@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './RegisterPage.css';
 
 function RegisterPage() {
   const [form, setForm] = useState({ username: '', email: '', password: '', role: 'restaurantAdmin' });
@@ -17,7 +18,7 @@ function RegisterPage() {
     setError('');
     setSuccess('');
     try {
-      await axios.post('http://localhost:5000/api/users/register', form);
+  await axios.post(`${process.env.REACT_APP_API_URL}/api/users/register`, form);
       setSuccess('Registration successful! You can now login.');
       setForm({ username: '', email: '', password: '', role: 'customer' });
       setTimeout(() => navigate('/login'), 1500);
@@ -27,21 +28,55 @@ function RegisterPage() {
   };
 
   return (
-    <div>
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <input name="username" placeholder="Username" value={form.username} onChange={handleChange} required />
-        <input name="email" placeholder="Email" value={form.email} onChange={handleChange} required type="email" />
-        <input name="password" placeholder="Password" value={form.password} onChange={handleChange} required type="password" />
-        <select name="role" value={form.role} onChange={handleChange} required>
+    <div className="register-container">
+      <h2 className="register-title">Register</h2>
+      <form onSubmit={handleSubmit} className="register-form">
+        <input
+          name="username"
+          placeholder="Username"
+          value={form.username}
+          onChange={handleChange}
+          required
+          className="register-input"
+        />
+        <input
+          name="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+          type="email"
+          className="register-input"
+        />
+        <input
+          name="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+          type="password"
+          className="register-input"
+        />
+        <select
+          name="role"
+          value={form.role}
+          onChange={handleChange}
+          required
+          className="register-select"
+        >
           <option value="restaurantAdmin">Restaurant Admin</option>
           <option value="hotelAdmin">Hotel Admin</option>
           <option value="employeeAdmin">Employee Admin</option> {/* Added employeeAdmin role */}
         </select>
-        <button type="submit">Register</button>
+        <button
+          type="submit"
+          className="register-button"
+        >
+          Register
+        </button>
       </form>
-      {error && <p style={{color:'red'}}>{error}</p>}
-      {success && <p style={{color:'green'}}>{success}</p>}
+      {error && <p className="register-error">{error}</p>}
+      {success && <p className="register-success">{success}</p>}
     </div>
   );
 }

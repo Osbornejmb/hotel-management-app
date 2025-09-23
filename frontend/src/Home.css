@@ -1,0 +1,26 @@
+/* Styles for Home page */
+.home-container {
+	text-align: center;
+	margin-top: 3rem;
+	background: #111;
+	min-height: 100vh;
+	color: #FFD700;
+}
+
+.home-title {
+	color: #FFD700;
+	text-shadow: 0 2px 8px #000;
+	letter-spacing: 2px;
+}
+
+.home-text {
+	color: #FFD700;
+	text-shadow: 0 2px 8px #000;
+}
+
+.home-link {
+	color: #FFD700;
+	font-weight: bold;
+	text-decoration: underline;
+	text-shadow: 0 2px 8px #000;
+}

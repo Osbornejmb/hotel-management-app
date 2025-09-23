@@ -1,0 +1,22 @@
+{
+  "breakfast": [
+    {
+      "name": "test",
+      "price": 12,
+      "img": "https://img.icons8.com/color/96/000000/pool.png",
+      "details": "test"
+    }
+  ],
+  "lunch": [],
+  "dinner": [],
+  "desserts": [],
+  "snack": [],
+  "beverages": [
+    {
+      "name": "test",
+      "price": 100,
+      "img": "https://img.icons8.com/color/96/000000/pool.png",
+      "details": "testingtestingpool"
+    }
+  ]
+}

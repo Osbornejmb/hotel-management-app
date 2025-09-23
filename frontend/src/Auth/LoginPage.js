@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './LoginPage.css';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     try {
+<<<<<<< HEAD
       const res = await axios.post('http://localhost:5000/api/users/login', { email, password });
   const { token, role, username, name } = res.data;
   localStorage.setItem('token', token);
@@ -22,22 +24,48 @@ function LoginPage() {
       else if (role === 'hotelAdmin') navigate('/admin/hotel');
   else if (role === 'employeeAdmin' || role === 'employee') navigate('/admin/employee');
       else setError('Unknown role');
+=======
+  const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/users/login`, { email, password });
+      const { token, role } = res.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
+  if (role === 'restaurantAdmin') navigate('/admin/restaurant');
+  else if (role === 'hotelAdmin') navigate('/admin/hotel');
+  else setError('Unknown role');
+>>>>>>> 14dcae8e53acda0b405c271f37cdeb462f02c64e
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     }
   };
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email}
-          onChange={e => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password}
-          onChange={e => setPassword(e.target.value)} required />
-        <button type="submit">Login</button>
+    <div className="login-container">
+      <h2 className="login-title">Login</h2>
+      <form onSubmit={handleSubmit} className="login-form">
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          className="login-input"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          className="login-input"
+        />
+        <button
+          type="submit"
+          className="login-button"
+        >
+          Login
+        </button>
       </form>
-      {error && <p style={{color:'red'}}>{error}</p>}
+      {error && <p className="login-error">{error}</p>}
     </div>
   );
 }
