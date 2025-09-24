@@ -195,259 +195,248 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
   }, []);
 
   return (
-<HotelAdminDashboard>
-  <div
-    style={{
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      marginTop: '2rem',
-    }}
-  >
-    {loading ? (
-      <div style={{ color: '#FFD700', fontWeight: 600 }}>Loading rooms...</div>
-    ) : error ? (
-      <div style={{ color: '#f44336', fontWeight: 600 }}>{error}</div>
-    ) : rooms.length === 0 ? (
-      <div style={{ color: '#FFD700', fontWeight: 600 }}>
-        No rooms found in the database.
-      </div>
-    ) : (
+    <HotelAdminDashboard>
       <div
         style={{
           width: '100%',
           display: 'flex',
-          justifyContent: 'flex-start',
-          paddingLeft: '15vw',
+          flexDirection: 'column',
+          alignItems: 'center',
+          marginTop: '2rem',
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            gridTemplateRows: 'repeat(2, 1fr)',
-            gap: '1.2rem',
-            maxWidth: '1400px',
-          }}
-        >
-          {rooms.slice(0, 10).map((room) => (
-            <RoomCard
-              key={room._id}
-              room={room}
-              onManage={(room) => {
-                setSelectedRoom(room);
-                setShowModal(true);
+        {loading ? (
+          <div style={{ color: '#FFD700', fontWeight: 600 }}>Loading rooms...</div>
+        ) : error ? (
+          <div style={{ color: '#f44336', fontWeight: 600 }}>{error}</div>
+        ) : rooms.length === 0 ? (
+          <div style={{ color: '#FFD700', fontWeight: 600 }}>
+            No rooms found in the database.
+          </div>
+        ) : (
+          <div
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'flex-start',
+              paddingLeft: '15vw',
+            }}
+          >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(5, 1fr)',
+                gridTemplateRows: 'repeat(2, 1fr)',
+                gap: '1.2rem',
+                maxWidth: '1400px',
               }}
-            />
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-</HotelAdminDashboard>
-
+            >
+              {rooms.slice(0, 10).map((room) => (
+                <RoomCard
+                  key={room._id}
+                  room={room}
+                  onManage={(room) => {
+                    setSelectedRoom(room);
+                    setShowModal(true);
+                  }}
+                />
               ))}
             </div>
           </div>
         )}
-
-        {/* Modal for managing room */}
-        {showModal && selectedRoom && (
+      </div>
+      {/* Modal for managing room */}
+      {showModal && selectedRoom && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
           <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
+            background: '#fff',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px #888',
+            padding: '2.5rem 2.5rem 2rem 2.5rem',
+            minWidth: '400px',
+            maxWidth: '95vw',
+            position: 'relative',
           }}>
-            <div style={{
-              background: '#fff',
-              borderRadius: '16px',
-              boxShadow: '0 8px 32px #888',
-              padding: '2.5rem 2.5rem 2rem 2.5rem',
-              minWidth: '400px',
-              maxWidth: '95vw',
-              position: 'relative',
-            }}>
-              <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 10, right: 10, background: '#f44', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>X</button>
-              <div style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Room {selectedRoom.roomNumber} <span style={{ color: '#1a7cff', fontSize: '1rem', fontWeight: 600, marginLeft: 10 }}>{selectedRoom.status === 'Occupied' ? '• Occupied' : ''}</span></div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Room Type: <span style={{ fontWeight: 400 }}>{selectedRoom.roomType} ({selectedRoom.description || '2 pax'})</span></div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Amenities: <span style={{ fontWeight: 400 }}>{selectedRoom.amenities?.join(', ') || 'None'}</span></div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Facilities: <span style={{ fontWeight: 400 }}>{selectedRoom.facilities?.join(', ') || 'None'}</span></div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.status || 'N/A'}</span></div>
-              {/* Form fields and dropdowns will go here */}
-              <div style={{ marginTop: '1.5rem' }}>
-                {selectedRoom.status === 'available' ? (
-                  <>
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 600 }}>Guest Name</label><br />
-                      <input
-                        type="text"
-                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                        placeholder="Enter guest name"
-                        value={bookingName}
-                        onChange={e => setBookingName(e.target.value)}
-                      />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 600 }}>Contact Number</label><br />
-                      <input
-                        type="text"
-                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                        placeholder="Enter contact number"
-                        value={bookingContact}
-                        onChange={e => setBookingContact(e.target.value)}
-                      />
-                    </div>
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 600 }}>Check-out Date</label><br />
-                      <input
-                        type="date"
-                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                        value={bookingCheckoutDate || ''}
-                        onChange={e => setBookingCheckoutDate(e.target.value)}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 600 }}>Extend Stay</label><br />
-                      <input
-                        type="date"
-                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                        value={extendDateTime || ''}
-                        onChange={e => setExtendDateTime(e.target.value)}
-                      />
-                      <button
-                        style={{ marginTop: 8, background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.4rem 1.2rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}
-                        onClick={handleExtendStay}
-                        disabled={!extendDateTime}
-                      >Update</button>
-                    </div>
-                  </>
+            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 10, right: 10, background: '#f44', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>X</button>
+            <div style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Room {selectedRoom.roomNumber} <span style={{ color: '#1a7cff', fontSize: '1rem', fontWeight: 600, marginLeft: 10 }}>{selectedRoom.status === 'Occupied' ? '• Occupied' : ''}</span></div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Room Type: <span style={{ fontWeight: 400 }}>{selectedRoom.roomType} ({selectedRoom.description || '2 pax'})</span></div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Amenities: <span style={{ fontWeight: 400 }}>{selectedRoom.amenities?.join(', ') || 'None'}</span></div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Facilities: <span style={{ fontWeight: 400 }}>{selectedRoom.facilities?.join(', ') || 'None'}</span></div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.status || 'N/A'}</span></div>
+            {/* Form fields and dropdowns will go here */}
+            <div style={{ marginTop: '1.5rem' }}>
+              {selectedRoom.status === 'available' ? (
+                <>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ fontWeight: 600 }}>Guest Name</label><br />
+                    <input
+                      type="text"
+                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                      placeholder="Enter guest name"
+                      value={bookingName}
+                      onChange={e => setBookingName(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ fontWeight: 600 }}>Contact Number</label><br />
+                    <input
+                      type="text"
+                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                      placeholder="Enter contact number"
+                      value={bookingContact}
+                      onChange={e => setBookingContact(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ fontWeight: 600 }}>Check-out Date</label><br />
+                    <input
+                      type="date"
+                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                      value={bookingCheckoutDate || ''}
+                      onChange={e => setBookingCheckoutDate(e.target.value)}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ fontWeight: 600 }}>Extend Stay</label><br />
+                    <input
+                      type="date"
+                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                      value={extendDateTime || ''}
+                      onChange={e => setExtendDateTime(e.target.value)}
+                    />
+                    <button
+                      style={{ marginTop: 8, background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.4rem 1.2rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}
+                      onClick={handleExtendStay}
+                      disabled={!extendDateTime}
+                    >Update</button>
+                  </div>
+                </>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
+                {selectedRoom.status === 'booked' && (
+                  <button
+                    style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #fbb' }}
+                    onClick={handleCheckout}
+                  >Checkout</button>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
-                  {selectedRoom.status === 'booked' && (
-                    <button
-                      style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #fbb' }}
-                      onClick={handleCheckout}
-                    >Checkout</button>
-                  )}
-      {/* Done Checkout Modal */}
-      {showCheckoutModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '16px',
-            boxShadow: '0 8px 32px #888',
-            padding: '2.5rem 2.5rem 2rem 2.5rem',
-            minWidth: '320px',
-            maxWidth: '95vw',
-            position: 'relative',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Done checkout!</div>
-            <button onClick={() => setShowCheckoutModal(false)} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
-          </div>
-        </div>
-      )}
-
-      {/* Updated Checkout Date Modal */}
-      {showUpdatedModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '16px',
-            boxShadow: '0 8px 32px #888',
-            padding: '2.5rem 2.5rem 2rem 2.5rem',
-            minWidth: '320px',
-            maxWidth: '95vw',
-            position: 'relative',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#2980b9', marginBottom: '1.2rem' }}>Checkout date updated!</div>
-            <button onClick={() => setShowUpdatedModal(false)} style={{ background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
-          </div>
-        </div>
-      )}
-                  {selectedRoom.status === 'available' && (
-                    <button
-                      style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #bfb' }}
-                      onClick={handleBookRoom}
-                      disabled={!bookingName || !bookingContact}
-                    >
-                      Book
-                    </button>
-                  )}
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '16px',
-            boxShadow: '0 8px 32px #888',
-            padding: '2.5rem 2.5rem 2rem 2.5rem',
-            minWidth: '320px',
-            maxWidth: '95vw',
-            position: 'relative',
-            textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Booked successfully!</div>
-            <button onClick={() => { setShowSuccessModal(false); setShowModal(false); }} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
-          </div>
-        </div>
-      )}
-
-                  {selectedRoom.status === 'under maintenance' && (
-                    <button style={{ background: '#888', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #ccc' }}>Assign</button>
-                  )}
-                </div>
+                {/* Done Checkout Modal */}
+                {showCheckoutModal && (
+                  <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(0,0,0,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000
+                  }}>
+                    <div style={{
+                      background: '#fff',
+                      borderRadius: '16px',
+                      boxShadow: '0 8px 32px #888',
+                      padding: '2.5rem 2.5rem 2rem 2.5rem',
+                      minWidth: '320px',
+                      maxWidth: '95vw',
+                      position: 'relative',
+                      textAlign: 'center',
+                    }}>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Done checkout!</div>
+                      <button onClick={() => setShowCheckoutModal(false)} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+                    </div>
+                  </div>
+                )}
+                {/* Updated Checkout Date Modal */}
+                {showUpdatedModal && (
+                  <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(0,0,0,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000
+                  }}>
+                    <div style={{
+                      background: '#fff',
+                      borderRadius: '16px',
+                      boxShadow: '0 8px 32px #888',
+                      padding: '2.5rem 2.5rem 2rem 2.5rem',
+                      minWidth: '320px',
+                      maxWidth: '95vw',
+                      position: 'relative',
+                      textAlign: 'center',
+                    }}>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#2980b9', marginBottom: '1.2rem' }}>Checkout date updated!</div>
+                      <button onClick={() => setShowUpdatedModal(false)} style={{ background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+                    </div>
+                  </div>
+                )}
+                {selectedRoom.status === 'available' && (
+                  <button
+                    style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #bfb' }}
+                    onClick={handleBookRoom}
+                    disabled={!bookingName || !bookingContact}
+                  >
+                    Book
+                  </button>
+                )}
+                {/* Success Modal */}
+                {showSuccessModal && (
+                  <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(0,0,0,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000
+                  }}>
+                    <div style={{
+                      background: '#fff',
+                      borderRadius: '16px',
+                      boxShadow: '0 8px 32px #888',
+                      padding: '2.5rem 2.5rem 2rem 2.5rem',
+                      minWidth: '320px',
+                      maxWidth: '95vw',
+                      position: 'relative',
+                      textAlign: 'center',
+                    }}>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Booked successfully!</div>
+                      <button onClick={() => { setShowSuccessModal(false); setShowModal(false); }} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+                    </div>
+                  </div>
+                )}
+                {selectedRoom.status === 'under maintenance' && (
+                  <button style={{ background: '#888', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #ccc' }}>Assign</button>
+                )}
               </div>
             </div>
           </div>
-        )}
-      </div>
-
+        </div>
+      )}
     </HotelAdminDashboard>
   );
 
