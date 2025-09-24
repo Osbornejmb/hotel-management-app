@@ -195,30 +195,58 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
   }, []);
 
   return (
-    <HotelAdminDashboard>
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '2rem' }}>
-        {loading ? (
-          <div style={{ color: '#222', fontWeight: 600 }}>Loading rooms...</div>
-        ) : error ? (
-          <div style={{ color: 'red', fontWeight: 600 }}>{error}</div>
-        ) : rooms.length === 0 ? (
-          <div style={{ color: '#222', fontWeight: 600 }}>No rooms found in the database.</div>
-        ) : (
-          <div style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'flex-start',
-            paddingLeft: '15vw',
-          }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              gridTemplateRows: 'repeat(2, 1fr)',
-              gap: '1.2rem',
-              maxWidth: '1400px',
-            }}>
-              {rooms.slice(0, 10).map(room => (
-                <RoomCard key={room._id} room={room} onManage={(room) => { setSelectedRoom(room); setShowModal(true); }} />
+<HotelAdminDashboard>
+  <div
+    style={{
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      marginTop: '2rem',
+    }}
+  >
+    {loading ? (
+      <div style={{ color: '#FFD700', fontWeight: 600 }}>Loading rooms...</div>
+    ) : error ? (
+      <div style={{ color: '#f44336', fontWeight: 600 }}>{error}</div>
+    ) : rooms.length === 0 ? (
+      <div style={{ color: '#FFD700', fontWeight: 600 }}>
+        No rooms found in the database.
+      </div>
+    ) : (
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'flex-start',
+          paddingLeft: '15vw',
+        }}
+      >
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gridTemplateRows: 'repeat(2, 1fr)',
+            gap: '1.2rem',
+            maxWidth: '1400px',
+          }}
+        >
+          {rooms.slice(0, 10).map((room) => (
+            <RoomCard
+              key={room._id}
+              room={room}
+              onManage={(room) => {
+                setSelectedRoom(room);
+                setShowModal(true);
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</HotelAdminDashboard>
+
               ))}
             </div>
           </div>
