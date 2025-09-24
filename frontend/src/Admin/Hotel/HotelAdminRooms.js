@@ -78,6 +78,38 @@ function RoomCard({ room, onManage }) {
 }
 
 function HotelAdminRooms() {
+  // Fetch all employees on initial load
+  useEffect(() => {
+    async function fetchAllEmployees() {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/employees`);
+        if (res.ok) {
+          const data = await res.json();
+          setEmployees(data);
+        }
+      } catch (err) {}
+    }
+    fetchAllEmployees();
+  }, []);
+  // State for job and employees
+  const [job, setJob] = useState('Housekeeping');
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState('');
+
+  // Fetch employees when job changes
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/employees?department=${job}`);
+        if (res.ok) {
+          const data = await res.json();
+          setEmployees(data);
+          setSelectedEmployee(data[0]?.fullName || '');
+        }
+      } catch (err) {}
+    }
+    fetchEmployees();
+  }, [job]);
   // Handler for checkout button (calls backend to update room and customer status)
   const handleCheckout = async () => {
     if (!selectedRoom) return;
@@ -167,9 +199,6 @@ function HotelAdminRooms() {
     }
   };
   // State for booking form
-const [customerName, setCustomerName] = useState('');
-const [customerContact, setCustomerContact] = useState('');
-const [customerCheckinDate, setCustomerCheckinDate] = useState('');
 
   const [showModal, setShowModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -227,16 +256,16 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
         {/* Modal for managing room */}
         {showModal && selectedRoom && (
           <div style={{
-            position: 'fixed',
+            position: 'absolute',
             top: 0,
             left: 0,
-            width: '100vw',
-            height: '100vh',
+            width: '100%',
+            height: '100%',
             background: 'rgba(0,0,0,0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000
+            zIndex: 1000,
           }}>
             <div style={{
               background: '#fff',
@@ -255,7 +284,7 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.status || 'N/A'}</span></div>
               {/* Form fields and dropdowns will go here */}
               <div style={{ marginTop: '1.5rem' }}>
-                {selectedRoom.status === 'available' ? (
+                {selectedRoom.status === 'available' && (
                   <>
                     <div style={{ marginBottom: '1rem' }}>
                       <label style={{ fontWeight: 600 }}>Guest Name</label><br />
@@ -287,21 +316,18 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
                       />
                     </div>
                   </>
-                ) : (
+                )}
+                {selectedRoom.status === 'booked' && (
                   <>
                     <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 600 }}>Extend Stay</label><br />
+                      <label style={{ fontWeight: 600 }}>Extend Stay (New Checkout Date & Time)</label><br />
                       <input
                         type="date"
                         style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                        value={extendDateTime || ''}
+                        value={extendDateTime}
                         onChange={e => setExtendDateTime(e.target.value)}
                       />
-                      <button
-                        style={{ marginTop: 8, background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.4rem 1.2rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}
-                        onClick={handleExtendStay}
-                        disabled={!extendDateTime}
-                      >Update</button>
+                      <button style={{ background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.4rem 1.2rem', fontWeight: 600, marginTop: '0.5rem', cursor: 'pointer' }} onClick={handleExtendStay} disabled={!extendDateTime}>Extend Stay</button>
                     </div>
                   </>
                 )}
@@ -337,7 +363,7 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
             textAlign: 'center',
           }}>
             <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Done checkout!</div>
-            <button onClick={() => setShowCheckoutModal(false)} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+            <button onClick={() => { setShowCheckoutModal(false); setShowModal(false); }} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
           </div>
         </div>
       )}
@@ -410,9 +436,7 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
         </div>
       )}
 
-                  {selectedRoom.status === 'under maintenance' && (
-                    <button style={{ background: '#888', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #ccc' }}>Assign</button>
-                  )}
+                  {/* Under maintenance modal button removed as requested */}
                 </div>
               </div>
             </div>

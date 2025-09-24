@@ -26,16 +26,18 @@ router.put('/checkout', async (req, res) => {
     const mostRecentCustomer = await Customer.findOne({ roomNumber }).sort({ checkinDate: -1 });
     let updatedCustomer = null;
     if (mostRecentCustomer) {
+      // Set status to checked out and updatedCheckoutDate to today
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
       updatedCustomer = await Customer.findByIdAndUpdate(
         mostRecentCustomer._id,
-        { $set: { status: 'checked out' } },
+        { $set: { status: 'checked out', updatedCheckoutDate: today } },
         { new: true }
       );
-      console.log('Customer status set to checked out:', updatedCustomer);
+      console.log('Customer status set to checked out and updatedCheckoutDate:', updatedCustomer);
     } else {
       console.error('Customer not found for checkout:', roomNumber);
     }
-    res.json({ message: 'Checked out', room, customer });
+  res.json({ message: 'Checked out', room, customer: updatedCustomer });
   } catch (err) {
     console.error('Checkout error:', err);
     res.status(500).json({ error: err.message });
