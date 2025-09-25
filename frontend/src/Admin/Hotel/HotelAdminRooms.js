@@ -78,7 +78,98 @@ function RoomCard({ room, onManage }) {
 }
 
 function HotelAdminRooms() {
-  // Handler for checkout button (calls backend to update room and customer status)
+  // Fetch all employees on initial load
+  useEffect(() => {
+    async function fetchAllEmployees() {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/employees`);
+        if (res.ok) {
+          const data = await res.json();
+          setEmployees(data);
+        }
+      } catch (err) {}
+    }
+    fetchAllEmployees();
+  }, []);
+
+  const [job, setJob] = useState('Housekeeping');
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState('');
+
+  useEffect(() => {
+    async function fetchEmployees() {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/employees?department=${job}`);
+        if (res.ok) {
+          const data = await res.json();
+          setEmployees(data);
+          setSelectedEmployee(data[0]?.fullName || '');
+        }
+      } catch (err) {}
+    }
+    fetchEmployees();
+  }, [job]);
+
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showUpdatedModal, setShowUpdatedModal] = useState(false);
+  const [bookingCheckoutDate, setBookingCheckoutDate] = useState('');
+  const [extendDateTime, setExtendDateTime] = useState('');
+  const [bookingName, setBookingName] = useState('');
+  const [bookingContact, setBookingContact] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const [showModal, setShowModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function fetchRooms() {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
+        if (!res.ok) throw new Error('Failed to fetch rooms');
+        const data = await res.json();
+        console.log('Fetched rooms:', data);
+        setRooms(data);
+      } catch (err) {
+        setError('Could not load rooms.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchRooms();
+  }, []);
+
+  const updateRoomStatus = (roomId, newStatus, guestName, guestContact) => {
+    setRooms(prevRooms => prevRooms.map(r =>
+      r._id === roomId ? { ...r, status: newStatus, guestName, guestContact } : r
+    ));
+  };
+
+  const handleBookRoom = async () => {
+    if (!bookingName || !bookingContact || !bookingCheckoutDate) return;
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/${selectedRoom._id}/book`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestName: bookingName, guestContact: bookingContact, checkoutDate: bookingCheckoutDate })
+      });
+      if (res.ok) {
+        updateRoomStatus(selectedRoom._id, 'booked', bookingName, bookingContact);
+        setShowSuccessModal(true);
+        setBookingName('');
+        setBookingContact('');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Booking failed:', errorData);
+        alert(`Booking failed: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert('Booking failed.');
+    }
+  };
+
   const handleCheckout = async () => {
     if (!selectedRoom) return;
     try {
@@ -89,7 +180,6 @@ function HotelAdminRooms() {
       });
       if (res.ok) {
         setShowCheckoutModal(true);
-        // Refresh rooms list after successful checkout
         const roomsRes = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
         if (roomsRes.ok) {
           const data = await roomsRes.json();
@@ -103,17 +193,10 @@ function HotelAdminRooms() {
       alert('Checkout failed.');
     }
   };
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [showUpdatedModal, setShowUpdatedModal] = useState(false);
-  const [bookingCheckoutDate, setBookingCheckoutDate] = useState('');
-  // State for extend stay
-  const [extendDateTime, setExtendDateTime] = useState('');
 
-  // Handler to update customer check-out in database
   const handleExtendStay = async () => {
     if (!extendDateTime || !selectedRoom) return;
     try {
-      // Find the customer for this room (assumes only one active customer per room)
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/customers/extend`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -130,69 +213,6 @@ function HotelAdminRooms() {
       alert('Failed to update check-out.');
     }
   };
-  // State for booking form
-  const [bookingName, setBookingName] = useState('');
-  const [bookingContact, setBookingContact] = useState('');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  // Helper to update room status in state after booking
-  const updateRoomStatus = (roomId, newStatus, guestName, guestContact) => {
-    setRooms(prevRooms => prevRooms.map(r =>
-      r._id === roomId ? { ...r, status: newStatus, guestName, guestContact } : r
-    ));
-  };
-
-  // Book room handler
-  const handleBookRoom = async () => {
-  if (!bookingName || !bookingContact || !bookingCheckoutDate) return;
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/${selectedRoom._id}/book`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestName: bookingName, guestContact: bookingContact, checkoutDate: bookingCheckoutDate })
-      });
-      if (res.ok) {
-        updateRoomStatus(selectedRoom._id, 'booked', bookingName, bookingContact);
-        setShowSuccessModal(true);
-        // Do NOT close manage modal yet; wait for success modal to be dismissed
-        setBookingName('');
-        setBookingContact('');
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        console.error('Booking failed:', errorData);
-        alert(`Booking failed: ${errorData.error || 'Unknown error'}`);
-      }
-    } catch (err) {
-      alert('Booking failed.');
-    }
-  };
-  // State for booking form
-const [customerName, setCustomerName] = useState('');
-const [customerContact, setCustomerContact] = useState('');
-const [customerCheckinDate, setCustomerCheckinDate] = useState('');
-
-  const [showModal, setShowModal] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState(null);
-  const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    async function fetchRooms() {
-      try {
-  const res = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
-        if (!res.ok) throw new Error('Failed to fetch rooms');
-        const data = await res.json();
-        console.log('Fetched rooms:', data); // Debug log
-        setRooms(data);
-      } catch (err) {
-        setError('Could not load rooms.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchRooms();
-  }, []);
 
   return (
     <HotelAdminDashboard>
@@ -244,163 +264,103 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
             </div>
           </div>
         )}
-      </div>
-      {/* Modal for managing room */}
-      {showModal && selectedRoom && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
+
+        {/* Modal for managing room */}
+        {showModal && selectedRoom && (
           <div style={{
-            background: '#fff',
-            borderRadius: '16px',
-            boxShadow: '0 8px 32px #888',
-            padding: '2.5rem 2.5rem 2rem 2.5rem',
-            minWidth: '400px',
-            maxWidth: '95vw',
-            position: 'relative',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
           }}>
-            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 10, right: 10, background: '#f44', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>X</button>
-            <div style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Room {selectedRoom.roomNumber} <span style={{ color: '#1a7cff', fontSize: '1rem', fontWeight: 600, marginLeft: 10 }}>{selectedRoom.status === 'Occupied' ? '• Occupied' : ''}</span></div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Room Type: <span style={{ fontWeight: 400 }}>{selectedRoom.roomType} ({selectedRoom.description || '2 pax'})</span></div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Amenities: <span style={{ fontWeight: 400 }}>{selectedRoom.amenities?.join(', ') || 'None'}</span></div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Facilities: <span style={{ fontWeight: 400 }}>{selectedRoom.facilities?.join(', ') || 'None'}</span></div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.status || 'N/A'}</span></div>
-            {/* Form fields and dropdowns will go here */}
-            <div style={{ marginTop: '1.5rem' }}>
-              {selectedRoom.status === 'available' ? (
-                <>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ fontWeight: 600 }}>Guest Name</label><br />
-                    <input
-                      type="text"
-                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                      placeholder="Enter guest name"
-                      value={bookingName}
-                      onChange={e => setBookingName(e.target.value)}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ fontWeight: 600 }}>Contact Number</label><br />
-                    <input
-                      type="text"
-                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                      placeholder="Enter contact number"
-                      value={bookingContact}
-                      onChange={e => setBookingContact(e.target.value)}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ fontWeight: 600 }}>Check-out Date</label><br />
-                    <input
-                      type="date"
-                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                      value={bookingCheckoutDate || ''}
-                      onChange={e => setBookingCheckoutDate(e.target.value)}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ fontWeight: 600 }}>Extend Stay</label><br />
-                    <input
-                      type="date"
-                      style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
-                      value={extendDateTime || ''}
-                      onChange={e => setExtendDateTime(e.target.value)}
-                    />
-                    <button
-                      style={{ marginTop: 8, background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.4rem 1.2rem', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}
-                      onClick={handleExtendStay}
-                      disabled={!extendDateTime}
-                    >Update</button>
-                  </div>
-                </>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
-                {selectedRoom.status === 'booked' && (
-                  <button
-                    style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #fbb' }}
-                    onClick={handleCheckout}
-                  >Checkout</button>
-                )}
-                {/* Done Checkout Modal */}
-                {showCheckoutModal && (
-                  <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100vw',
-                    height: '100vh',
-                    background: 'rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 2000
-                  }}>
-                    <div style={{
-                      background: '#fff',
-                      borderRadius: '16px',
-                      boxShadow: '0 8px 32px #888',
-                      padding: '2.5rem 2.5rem 2rem 2.5rem',
-                      minWidth: '320px',
-                      maxWidth: '95vw',
-                      position: 'relative',
-                      textAlign: 'center',
-                    }}>
-                      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>Done checkout!</div>
-                      <button onClick={() => setShowCheckoutModal(false)} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
-                    </div>
-                  </div>
-                )}
-                {/* Updated Checkout Date Modal */}
-                {showUpdatedModal && (
-                  <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100vw',
-                    height: '100vh',
-                    background: 'rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 2000
-                  }}>
-                    <div style={{
-                      background: '#fff',
-                      borderRadius: '16px',
-                      boxShadow: '0 8px 32px #888',
-                      padding: '2.5rem 2.5rem 2rem 2.5rem',
-                      minWidth: '320px',
-                      maxWidth: '95vw',
-                      position: 'relative',
-                      textAlign: 'center',
-                    }}>
-                      <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#2980b9', marginBottom: '1.2rem' }}>Checkout date updated!</div>
-                      <button onClick={() => setShowUpdatedModal(false)} style={{ background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
-                    </div>
-                  </div>
-                )}
+            <div style={{
+              background: '#fff',
+              borderRadius: '16px',
+              boxShadow: '0 8px 32px #888',
+              padding: '2.5rem 2.5rem 2rem 2.5rem',
+              minWidth: '400px',
+              maxWidth: '95vw',
+              position: 'relative',
+            }}>
+              <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 10, right: 10, background: '#f44', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>X</button>
+              <div style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Room {selectedRoom.roomNumber} <span style={{ color: '#1a7cff', fontSize: '1rem', fontWeight: 600, marginLeft: 10 }}>{selectedRoom.status === 'Occupied' ? '• Occupied' : ''}</span></div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Room Type: <span style={{ fontWeight: 400 }}>{selectedRoom.roomType} ({selectedRoom.description || '2 pax'})</span></div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Amenities: <span style={{ fontWeight: 400 }}>{selectedRoom.amenities?.join(', ') || 'None'}</span></div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Facilities: <span style={{ fontWeight: 400 }}>{selectedRoom.facilities?.join(', ') || 'None'}</span></div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.status || 'N/A'}</span></div>
+              
+              <div style={{ marginTop: '1.5rem' }}>
                 {selectedRoom.status === 'available' && (
-                  <button
-                    style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #bfb' }}
-                    onClick={handleBookRoom}
-                    disabled={!bookingName || !bookingContact}
-                  >
-                    Book
-                  </button>
+                  <>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Guest Name</label><br />
+                      <input
+                        type="text"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        placeholder="Enter guest name"
+                        value={bookingName}
+                        onChange={e => setBookingName(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Contact Number</label><br />
+                      <input
+                        type="text"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        placeholder="Enter contact number"
+                        value={bookingContact}
+                        onChange={e => setBookingContact(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Check-out Date</label><br />
+                      <input
+                        type="date"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        value={bookingCheckoutDate || ''}
+                        onChange={e => setBookingCheckoutDate(e.target.value)}
+                      />
+                    </div>
+                  </>
                 )}
-                {/* Success Modal */}
+                {selectedRoom.status === 'booked' && (
+                  <>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 600 }}>Extend Stay (New Checkout Date & Time)</label><br />
+                      <input
+                        type="date"
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 6, border: '1px solid #ccc' }}
+                        value={extendDateTime}
+                        onChange={e => setExtendDateTime(e.target.value)}
+                      />
+                      <button style={{ background: '#2980b9', color: '#fff', border: 'none', borderRadius: 7, padding: '0.4rem 1.2rem', fontWeight: 600, marginTop: '0.5rem', cursor: 'pointer' }} onClick={handleExtendStay} disabled={!extendDateTime}>Extend Stay</button>
+                    </div>
+                  </>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
+                  {selectedRoom.status === 'booked' && (
+                    <button
+                      style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #fbb' }}
+                      onClick={handleCheckout}
+                    >Checkout</button>
+                  )}
+                  {selectedRoom.status === 'available' && (
+                    <button
+                      style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #bfb' }}
+                      onClick={handleBookRoom}
+                      disabled={!bookingName || !bookingContact}
+                    >
+                      Book
+                    </button>
+                  )}
+                </div>
+
                 {showSuccessModal && (
                   <div style={{
                     position: 'fixed',
@@ -429,16 +389,13 @@ const [customerCheckinDate, setCustomerCheckinDate] = useState('');
                     </div>
                   </div>
                 )}
-                {selectedRoom.status === 'under maintenance' && (
-                  <button style={{ background: '#888', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #ccc' }}>Assign</button>
-                )}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </HotelAdminDashboard>
   );
-
 }
+
 export default HotelAdminRooms;

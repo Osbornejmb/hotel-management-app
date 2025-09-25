@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const Customer = require('./Customer');
 
+// Get all customers (for booking history)
+router.get('/', async (req, res) => {
+  try {
+    const customers = await Customer.find({});
+    res.json(customers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Extend customer check-out date/time
 router.put('/extend', async (req, res) => {
   const { roomNumber, newCheckout } = req.body;

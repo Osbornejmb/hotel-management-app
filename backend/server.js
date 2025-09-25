@@ -1,11 +1,12 @@
 
-require("dotenv").config();
+require("dotenv").config({ path: __dirname + "/.env" });
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const userRoutes = require("./userRoutes");
 const roomRoutes = require("./roomRoutes");
 const cartRoutes = require("./cartRoutes");
+const employeeRoutes = require("./employeeRoutes");
 const contactRoutes = require("./contactRoutes");
 const reservationRoutes = require("./reservationRoutes");
 const customerRoutes = require("./customerRoutes");
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/employees", employeeRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/customers", customerRoutes);

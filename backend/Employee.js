@@ -2,8 +2,9 @@ const mongoose = require('mongoose');
 
 const EmployeeSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  role: { type: String, enum: ['Housekeeping', 'Maintenance'], required: true },
+  role: { type: String, enum: ['housekeeping', 'maintenance'], required: false },
+  department: { type: String, required: true },
   // Add other fields as needed
 });
 
-module.exports = mongoose.model('Employee', EmployeeSchema);
+module.exports = mongoose.model('employee', EmployeeSchema);

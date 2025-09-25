@@ -13,8 +13,10 @@ router.put('/:id/book', async (req, res) => {
 		if (!room) {
 			return res.status(404).json({ error: 'Room not found' });
 		}
-				room.status = 'booked';
-				await room.save();
+			room.status = 'booked';
+			room.guestName = guestName;
+			room.guestContact = guestContact;
+			await room.save();
 
 						// Save customer info in Customers collection
 						const checkinDate = new Date();
