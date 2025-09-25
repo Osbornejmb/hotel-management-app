@@ -1,0 +1,55 @@
+/* HotelAdminRooms Responsive Layout */
+
+.hotel-admin-rooms-container {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  box-sizing: border-box;
+  padding-top: 2rem;
+}
+
+.hotel-admin-rooms-grid {
+  width: 100vw;
+  max-width: 100vw;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+  justify-items: center;
+  align-items: stretch;
+  padding: 0 2vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  background: transparent;
+}
+
+@media (max-width: 1200px) {
+  .hotel-admin-rooms-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.2rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .hotel-admin-rooms-container {
+    padding-top: 1rem;
+  }
+  .hotel-admin-rooms-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0 1vw;
+  }
+}
+
+@media (max-width: 500px) {
+  .hotel-admin-rooms-container {
+    padding-top: 0.5rem;
+  }
+  .hotel-admin-rooms-grid {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+    padding: 0 0.5vw;
+  }
+}

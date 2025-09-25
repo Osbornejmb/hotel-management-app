@@ -10,10 +10,10 @@ const roomSchema = new mongoose.Schema({
 		unique: true
 	},
 	roomType: {
-		type: String,
-		enum: ['Standard', 'Deluxe'],
-		required: true
-	},
+ 		type: String,
+ 		enum: ['Standard', 'Deluxe', 'Economy room', 'Deluxe room', 'Suite room'],
+ 		required: true
+ 	},
 	description: {
 		type: String,
 		required: false
@@ -28,9 +28,17 @@ const roomSchema = new mongoose.Schema({
 	},
 	status: {
 		type: String,
-		enum: ['available', 'booked'],
+		enum: ['available', 'booked', 'under maintenance'],
 		default: 'available',
 		required: true
+	},
+	guestName: {
+		type: String,
+		required: false
+	},
+	guestContact: {
+		type: String,
+		required: false
 	},
 	createdAt: {
 		type: Date,

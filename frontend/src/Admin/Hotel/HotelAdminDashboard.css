@@ -1,1 +1,62 @@
-/* Styles for HotelAdminDashboard */
+/* Responsive layout for HotelAdminDashboard */
+
+.hotel-admin-dashboard-root {
+	min-height: 100vh;
+	width: 100vw;
+	display: flex;
+	background: #111;
+	color: #FFD700;
+	box-sizing: border-box;
+}
+
+.hotel-admin-dashboard-sidebar {
+	width: 220px;
+	min-height: 100vh;
+	background: #181818;
+	box-shadow: 2px 0 8px #FFD700;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding-top: 2.5rem;
+}
+
+.hotel-admin-dashboard-main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.hotel-admin-dashboard-content {
+	padding: 2rem;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+	.hotel-admin-dashboard-sidebar {
+		width: 60px;
+		padding-top: 1rem;
+	}
+	.hotel-admin-dashboard-content {
+		padding: 1rem 0.5rem;
+	}
+}
+
+@media (max-width: 600px) {
+	.hotel-admin-dashboard-root {
+		flex-direction: column;
+	}
+	.hotel-admin-dashboard-sidebar {
+		width: 100vw;
+		min-height: 60px;
+		flex-direction: row;
+		justify-content: space-around;
+		align-items: center;
+		padding: 0.5rem 0;
+		box-shadow: 0 2px 8px #FFD700;
+	}
+	.hotel-admin-dashboard-main {
+		width: 100vw;
+	}
+}

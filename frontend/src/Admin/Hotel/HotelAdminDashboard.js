@@ -2,13 +2,11 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LogoutButton from '../../Auth/LogoutButton';
+import './HotelAdminDashboard.css';
 
-function HotelAdminDashboard() {
+function HotelAdminDashboard({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  // Determine current page for highlighting
-  // We'll use the pathname to determine which button to highlight
-  // For this file, assume /admin/hotel is the dashboard
   const sidebarButtons = [
     { name: 'Dashboard', path: '/admin/hotel' },
     { name: 'Rooms', path: '/admin/hotel/rooms' },
@@ -16,11 +14,10 @@ function HotelAdminDashboard() {
     { name: 'Maintenance', path: '/admin/hotel/maintenance' },
     { name: 'Booking history', path: '/admin/hotel/booking-history' },
   ];
-
   return (
-    <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', paddingBottom: '2rem', display: 'flex' }}>
+    <div className="hotel-admin-dashboard-root">
       {/* Sidebar */}
-      <aside style={{ width: '220px', background: '#181818', minHeight: '100vh', boxShadow: '2px 0 8px #FFD700', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '2.5rem' }}>
+      <aside className="hotel-admin-dashboard-sidebar">
         {sidebarButtons.map(btn => (
           <button
             key={btn.name}
@@ -58,7 +55,7 @@ function HotelAdminDashboard() {
         ))}
       </aside>
       {/* Main content area */}
-      <div style={{ flex: 1 }}>
+      <div className="hotel-admin-dashboard-main">
         <nav
           style={{
             width: '100%',
@@ -101,7 +98,9 @@ function HotelAdminDashboard() {
           <span style={{ fontSize: '2.5rem', fontWeight: 'bold', letterSpacing: '4px', color: '#FFD700', textShadow: '0 2px 8px #000' }}>Lumine</span>
           <span style={{ fontSize: '1rem', color: '#FFD700', opacity: 0.8, marginTop: '0.3rem', letterSpacing: '2px' }}>room management</span>
         </nav>
-        {/* Main content can go here */}
+        <div className="hotel-admin-dashboard-content">
+          {children}
+        </div>
       </div>
     </div>
   );
