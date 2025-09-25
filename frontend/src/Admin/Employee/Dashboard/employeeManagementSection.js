@@ -1,22 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// Helper function to fetch employees
-async function fetchEmployeesBasic() {
-  try {
-    const res = await fetch('/api/users');
-    if (!res.ok) return [];
-    const data = await res.json();
-    const onlyEmployees = data.filter(u => (u.role || '').toLowerCase() === 'employee');
-    return onlyEmployees.map(u => ({
-      id: u._id || u.id || u.username,
-      name: u.name || u.username,
-      formattedId: typeof u.employeeId === 'number' ? String(u.employeeId).padStart(4, '0') : (u._id || u.username)
-    }));
-  } catch (err) {
-    console.error('fetchEmployeesBasic error', err);
-    return [];
-  }
-}
+
 
 const EmployeeManagementSection = () => {
   const [employees, setEmployees] = useState([]);
@@ -347,7 +331,9 @@ const EmployeeManagementSection = () => {
           <h3 style={{ marginTop: 0, marginBottom: 20, fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
             Add New Employee
           </h3>
-          <div onSubmit={handleSubmit}>
+          
+          {/* Add Employee */}
+          <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
               <input 
                 name="id" 
@@ -371,6 +357,7 @@ const EmployeeManagementSection = () => {
                 style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
               />
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
               <input 
                 name="username" 
@@ -395,6 +382,7 @@ const EmployeeManagementSection = () => {
                 style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
               />
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
               <select 
                 name="jobTitle" 
@@ -405,9 +393,10 @@ const EmployeeManagementSection = () => {
                 <option value="Cleaner">Cleaner</option>
                 <option value="Clerk">Clerk</option>
                 <option value="Maintenance">Maintenance</option>
-                <option value="Manager">Manager</option>
                 <option value="Staff">Staff</option>
               </select>
+
+              {/* Roles */}
               <select 
                 name="role" 
                 value={form.role} 
@@ -419,6 +408,7 @@ const EmployeeManagementSection = () => {
                 <option value="hotelAdmin">Hotel Admin</option>
                 <option value="restaurantAdmin">Restaurant Admin</option>
               </select>
+
               <select 
                 name="status" 
                 value={form.status} 
@@ -429,6 +419,7 @@ const EmployeeManagementSection = () => {
                 <option value="INACTIVE">INACTIVE</option>
               </select>
             </div>
+
             <div style={{ display: "flex", gap: 12 }}>
               <button 
                 type="submit" 
@@ -460,7 +451,7 @@ const EmployeeManagementSection = () => {
                 Cancel
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

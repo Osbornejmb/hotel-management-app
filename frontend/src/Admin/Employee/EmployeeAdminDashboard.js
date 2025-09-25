@@ -22,7 +22,7 @@ function EmployeeAdminDashboard() {
       case 'room': return <RoomAssignmentSection />;
       case 'profile': return <ProfileSection />;
       default: return <DashboardSection />;
-    }
+}
   };
 
   return (
