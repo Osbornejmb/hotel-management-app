@@ -13,26 +13,19 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-<<<<<<< HEAD
-      const res = await axios.post('http://localhost:5000/api/users/login', { email, password });
-  const { token, role, username, name } = res.data;
-  localStorage.setItem('token', token);
-  localStorage.setItem('role', role);
-  if (username) localStorage.setItem('username', username);
-  if (name) localStorage.setItem('name', name);
-      if (role === 'restaurantAdmin') navigate('/admin/restaurant');
-      else if (role === 'hotelAdmin') navigate('/admin/hotel');
-  else if (role === 'employeeAdmin' || role === 'employee') navigate('/admin/employee');
-      else setError('Unknown role');
-=======
-  const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/users/login`, { email, password });
-      const { token, role } = res.data;
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const res = await axios.post(`${apiBase}/api/users/login`, { email, password });
+      const { token, role, username, name } = res.data;
+
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
-  if (role === 'restaurantAdmin') navigate('/admin/restaurant');
-  else if (role === 'hotelAdmin') navigate('/admin/hotel');
-  else setError('Unknown role');
->>>>>>> 14dcae8e53acda0b405c271f37cdeb462f02c64e
+      if (username) localStorage.setItem('username', username);
+      if (name) localStorage.setItem('name', name);
+
+      if (role === 'restaurantAdmin') navigate('/admin/restaurant');
+      else if (role === 'hotelAdmin') navigate('/admin/hotel');
+      else if (role === 'employeeAdmin' || role === 'employee') navigate('/admin/employee');
+      else setError('Unknown role');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     }
