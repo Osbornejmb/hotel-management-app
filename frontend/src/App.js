@@ -13,7 +13,6 @@ import Facilities from "./Customer/Facilities";
 import FoodAndBeverages from "./Customer/FoodAndBeverages";
 import FoodMaster from "./Customer/FoodMaster";
 import ContactFrontDesk from "./Customer/ContactFrontDesk";
-import FacilityMaster from "./Customer/FacilityMaster";
 import HotelAdminRooms from "./Admin/Hotel/HotelAdminRooms";
 import HotelAdminHousekeeping from "./Admin/Hotel/HotelAdminHousekeeping";
 import HotelAdminMaintenance from "./Admin/Hotel/HotelAdminMaintenance";
@@ -29,7 +28,6 @@ function App() {
   <Route path="/customer/login" element={<CustomerLogin />} />
   <Route path="/customer/interface" element={<CustomerInterface />} />
   <Route path="/customer/facilities" element={<Facilities />} />
-  <Route path="/customer/facilities/:facility" element={<FacilityMaster />} />
   <Route path="/customer/food" element={<FoodAndBeverages />} />
   <Route path="/customer/food/:category" element={<FoodMaster />} />
   <Route path="/customer/contact" element={<ContactFrontDesk />} />
