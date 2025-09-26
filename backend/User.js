@@ -72,3 +72,51 @@ UserSchema.methods.comparePassword = function (candidatePassword) {
 };
 
 module.exports = mongoose.model('User', UserSchema);
+const EmployeeSchema = new mongoose.Schema({
+  // human-friendly employee id with prefix, e.g. "E002"
+  employeeId: { type: String, unique: true, sparse: true },
+
+  // full name to display in UI
+  fullName: { type: String, required: true },
+
+  // job classification / title (e.g. Room Attendant, Cleaner)
+  position: { type: String, default: 'Staff' },
+
+  // department (e.g. Housekeeping, Front Desk)
+  department: { type: String, default: '' },
+
+  // contact phone number recorded as string
+  contactNumber: { type: String, default: '' },
+
+  // email for contact / login reference
+  email: { type: String, default: '' },
+
+  // current employment status
+  status: { type: String, enum: ['active', 'inactive', 'terminated'], default: 'active' },
+
+  // hire date
+  dateHired: { type: Date },
+
+  // shift assignment (Morning, Evening, Night, etc.)
+  shift: { type: String, default: '' },
+
+  // free-text notes about the employee
+  notes: { type: String, default: '' },
+
+  // optional link to a User account (if you keep auth in users collection)
+  userRef: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// Add indexes if desired:
+// EmployeeSchema.index({ employeeId: 1 }, { unique: true, sparse: true });
+
+/* 
+  NOTE FOR MAINTAINERS:
+  - To add more job classes or fields, update the `position` or add a new field here.
+  - If you prefer an enum for `position`, replace type: String with enum: [ 'Cleaner','Clerk', ... ]
+*/
+
+module.exports = mongoose.model('Employee', EmployeeSchema);
