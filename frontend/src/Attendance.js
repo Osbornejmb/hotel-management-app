@@ -7,7 +7,7 @@ const Attendance = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!employeeId) return;
     setLoading(true);
     setMessage('');
@@ -18,6 +18,7 @@ const Attendance = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeId })
       });
+      if (!res.ok) throw new Error('Server error');
       const data = await res.json();
       if (data.error) {
         setMessage(data.error);
@@ -27,9 +28,6 @@ const Attendance = () => {
       } else if (data.status === 'clocked-out') {
         setMessage(`Thank You, ${data.employeeName}`);
         setDetails({ label: 'Clocked Out', time: new Date(data.clockOut).toLocaleTimeString(), total: data.totalHours.toFixed(2) });
-      } else if (data.status === 'already-clocked-out') {
-        setMessage(`Already clocked out, ${data.employeeName}`);
-        setDetails({ label: 'Clocked Out', time: new Date(data.clockOut).toLocaleTimeString(), total: data.totalHours.toFixed(2) });
       }
       setEmployeeId('');
       setTimeout(() => {
@@ -37,7 +35,7 @@ const Attendance = () => {
         setDetails(null);
       }, 5000);
     } catch (err) {
-      setMessage('Error connecting to server');
+      setMessage('Error connecting to server.');
     }
     setLoading(false);
   };
@@ -45,19 +43,28 @@ const Attendance = () => {
   return (
     <div style={{ maxWidth: 400, margin: '40px auto', textAlign: 'center' }}>
       <h2>Employee Attendance</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Enter Employee ID"
-          value={employeeId}
-          onChange={e => setEmployeeId(e.target.value)}
-          disabled={loading}
-          style={{ padding: '10px', width: '80%', fontSize: '1rem' }}
-        />
-        <button type="submit" disabled={loading || !employeeId} style={{ marginLeft: 10, padding: '10px 20px' }}>
-          Submit
-        </button>
-      </form>
+      <input
+        type="password"
+        placeholder="Enter Employee ID"
+        value={employeeId}
+        onChange={e => {
+          const val = e.target.value;
+          setEmployeeId(val);
+          if (val.length === 10 && !loading) {
+            handleSubmit();
+            setEmployeeId('');
+          }
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && employeeId.length === 10 && !loading) {
+            handleSubmit();
+            setEmployeeId('');
+          }
+        }}
+        maxLength={10}
+        disabled={loading}
+        style={{ padding: '10px', width: '80%', fontSize: '1rem' }}
+      />
       {message && <div style={{ marginTop: 30, fontSize: '1.2rem', fontWeight: 'bold' }}>{message}</div>}
       {details && (
         <div style={{ marginTop: 10 }}>
