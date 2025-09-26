@@ -30,9 +30,9 @@ function RoomCard({ room, onManage }) {
         {room.status === 'available' && 'Available'}
         {room.status === 'under maintenance' && 'Under Maintenance'}
       </div>
-      <div style={{ marginTop: '2.5rem', fontWeight: 600, color: '#222' }}>Amenities:</div>
+      <div style={{ marginTop: '2.5rem', fontWeight: 600, color: '#222' }}>Facilities:</div>
       <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.98rem', color: '#222' }}>
-        {room.amenities && room.amenities.length > 0 ? room.amenities.map((a, i) => <li key={i}>{a}</li>) : <li>None</li>}
+        {room.facilities && room.facilities.length > 0 ? room.facilities.map((f, i) => <li key={i}>{f}</li>) : <li>None</li>}
       </ul>
       <div style={{ fontWeight: 600, color: '#222', marginTop: '0.5rem' }}>Facilities:</div>
       <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.98rem', color: '#222' }}>
@@ -333,7 +333,7 @@ function HotelAdminRooms() {
               <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: 10, right: 10, background: '#f44', color: '#fff', border: 'none', borderRadius: '50%', width: 28, height: 28, fontWeight: 700, fontSize: 18, cursor: 'pointer' }}>X</button>
               <div style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Room {selectedRoom.roomNumber} <span style={{ color: '#1a7cff', fontSize: '1rem', fontWeight: 600, marginLeft: 10 }}>{selectedRoom.status === 'Occupied' ? '• Occupied' : ''}</span></div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Room Type: <span style={{ fontWeight: 400 }}>{selectedRoom.roomType} ({selectedRoom.description || '2 pax'})</span></div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Amenities: <span style={{ fontWeight: 400 }}>{selectedRoom.amenities?.join(', ') || 'None'}</span></div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Facilities: <span style={{ fontWeight: 400 }}>{selectedRoom.facilities?.join(', ') || 'None'}</span></div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Facilities: <span style={{ fontWeight: 400 }}>{selectedRoom.facilities?.join(', ') || 'None'}</span></div>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>Availability: <span style={{ fontWeight: 400 }}>{selectedRoom.status || 'N/A'}</span></div>
               

@@ -33,11 +33,11 @@ function CustomerInterface() {
         onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}>Logout</button>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', margin: '2rem 0' }}>
         <div style={{ cursor: 'pointer', width: '120px', background: '#222', borderRadius: '16px', boxShadow: '0 2px 12px #FFD700', padding: '1rem', transition: 'transform 0.2s, box-shadow 0.2s' }}
-          onClick={() => handleNavigate('/customer/amenities')}
+          onClick={() => handleNavigate('/customer/facilities')}
           onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.07)'; e.currentTarget.style.boxShadow = '0 4px 24px #FFD700'; }}
           onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px #FFD700'; }}>
-          <img src="https://img.icons8.com/color/96/000000/room.png" alt="Amenities" style={{ borderRadius: '12px', boxShadow: '0 2px 8px #FFD700', background: '#111' }} />
-          <div style={{ marginTop: '0.5rem', color: '#FFD700', fontWeight: 'bold', textShadow: '0 2px 8px #000' }}>Amenities</div>
+          <img src="https://img.icons8.com/color/96/000000/room.png" alt="Facilities" style={{ borderRadius: '12px', boxShadow: '0 2px 8px #FFD700', background: '#111' }} />
+          <div style={{ marginTop: '0.5rem', color: '#FFD700', fontWeight: 'bold', textShadow: '0 2px 8px #000' }}>Facilities</div>
         </div>
         <div style={{ cursor: 'pointer', width: '120px', background: '#222', borderRadius: '16px', boxShadow: '0 2px 12px #FFD700', padding: '1rem', transition: 'transform 0.2s, box-shadow 0.2s' }}
           onClick={() => handleNavigate('/customer/food')}

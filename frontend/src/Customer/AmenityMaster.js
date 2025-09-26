@@ -1,50 +1,56 @@
+// This file has been removed as part of the migration process.
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const amenityContent = {
-  fitness: {
-    title: 'Fitness Room',
-    description: 'Access our state-of-the-art fitness room. Reserve equipment or request a personal trainer. (Feature coming soon)',
+const facilityContent = {
+  Restaurant: {
+    title: 'Restaurant',
+    description: 'Enjoy freshly cooked meals every day at our restaurant, where good food and comfort come together for a satisfying dining experience.',
+    img: 'https://img.icons8.com/color/96/000000/restaurant.png',
+  },
+  Pool: {
+    title: 'Swimming Pool',
+    description: 'Take a refreshing dip or spend a relaxing afternoon by the pool, perfect for unwinding with family and friends.',
+    img: 'https://img.icons8.com/color/96/000000/pool.png',
+  },
+  Fitness: {
+    title: 'Fitness Center',
+    description: 'Stay active during your stay with our fitness center, offering the equipment you need for a simple workout or a full routine.',
     img: 'https://img.icons8.com/color/96/000000/dumbbell.png',
   },
-  spa: {
-    title: 'Spa',
-    description: 'Relax and rejuvenate in our spa. Book massages, facials, and more. (Feature coming soon)',
-    img: 'https://img.icons8.com/color/96/000000/spa.png',
-  },
-  conference: {
-    title: 'Conference',
-    description: 'Reserve our conference facilities for meetings and events. (Feature coming soon)',
-    img: 'https://img.icons8.com/color/96/000000/conference-call.png',
-  },
-  parking: {
+  Parking: {
     title: 'Parking',
-    description: 'Request parking space or valet service. (Feature coming soon)',
+    description: 'Enjoy the convenience of secure on-site parking, giving you peace of mind while you focus on your stay.',
     img: 'https://img.icons8.com/color/96/000000/parking.png',
   },
-  'kids-playroom': {
-    title: 'Kids Playroom',
-    description: 'Let your children enjoy our safe and fun playroom. (Feature coming soon)',
-    img: 'https://img.icons8.com/color/96/000000/toy-car.png',
+  Garden: {
+    title: 'Garden',
+    description: 'Step into our garden and enjoy a peaceful space filled with greenery, ideal for a morning walk or quiet relaxation.',
+    img: 'https://img.icons8.com/color/96/000000/garden.png',
   },
-  pool: {
-    title: 'Pool',
-    description: 'Enjoy our swimming pool. Request towels or poolside service. (Feature coming soon)',
-    img: 'https://img.icons8.com/color/96/000000/swimming-pool.png',
+  Playground: {
+    title: 'Playground',
+    description: 'Let the kids have fun in our playground, a safe and lively spot where they can laugh, play, and make new friends.',
+    img: 'https://img.icons8.com/color/96/000000/playground.png',
+  },
+  FrontDesk: {
+    title: 'Front Desk',
+    description: 'Our friendly front desk team is available around the clock to assist you with anything you need, anytime.',
+    img: 'https://img.icons8.com/color/96/000000/front-desk.png',
   },
 };
 
-function AmenityMaster() {
-  const { amenity } = useParams();
+function FacilityMaster() {
+  const { facility } = useParams();
   const navigate = useNavigate();
-  const content = amenityContent[amenity];
-  // No reservation state needed
+  const content = facilityContent[facility];
+
 
   if (!content) {
     return (
       <div style={{ textAlign: 'center', marginTop: '3rem', background: '#111', minHeight: '100vh', color: '#FFD700' }}>
-        <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Amenity Not Found</h2>
-        <p style={{ color: '#FFD700', textShadow: '0 2px 8px #000' }}>The requested amenity does not exist.</p>
+        <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Facility Not Found</h2>
+        <p style={{ color: '#FFD700', textShadow: '0 2px 8px #000' }}>The requested facility does not exist.</p>
       </div>
     );
   }
@@ -70,4 +76,4 @@ function AmenityMaster() {
 }
 
 
-export default AmenityMaster;
+export default FacilityMaster;
