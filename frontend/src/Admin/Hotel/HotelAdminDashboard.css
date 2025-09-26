@@ -1,1 +1,106 @@
+/* Root container for the hotel admin dashboard */
+.hotel-admin-dashboard-root {
+	background: #111;
+	min-height: 100px;
+	color: #FFD700;
+	padding-bottom: 2rem;
+	display: flex;
+	width: 100vw;
+	overflow-x: hidden;
+}
+
+/* Sidebar styles */
+.hotel-admin-dashboard-sidebar {
+	width: 220px;
+	background: #181818;
+	min-height: 100vh;
+	box-shadow: 2px 0 8px #FFD700;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding-top: 2.5rem;
+}
+.hotel-admin-dashboard-sidebar-btn {
+	width: 170px;
+	margin: 0.5rem 0;
+	padding: 0.8rem 0;
+	border-radius: 8px;
+	border: 2px solid #333;
+	background: #222;
+	color: #FFD700;
+	font-weight: bold;
+	font-size: 1.1rem;
+	cursor: pointer;
+	letter-spacing: 1px;
+	transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
+	box-shadow: none;
+}
+.hotel-admin-dashboard-sidebar-btn.selected,
+.hotel-admin-dashboard-sidebar-btn:hover {
+	background: #FFD700;
+	color: #222;
+	border: 2px solid #FFD700;
+	box-shadow: 0 2px 8px #FFD700;
+}
+
+/* Main content area */
+.hotel-admin-dashboard-main {
+	flex: 1;
+}
+
+/* Top nav bar */
+.hotel-admin-dashboard-nav {
+	width: 100%;
+	background: #222;
+	padding: 1.5rem 0 2.5rem 0;
+	position: relative;
+	box-shadow: 0 2px 8px #FFD700;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+.hotel-admin-dashboard-logout-btn {
+	position: absolute;
+	top: 1.2rem;
+	right: 2rem;
+}
+.hotel-admin-dashboard-home-btn {
+	position: absolute;
+	top: 1.2rem;
+	left: 2rem;
+}
+.hotel-admin-dashboard-home-btn-actual {
+	background: #FFD700;
+	color: #222;
+	border: none;
+	border-radius: 8px;
+	padding: 0.5rem 1.2rem;
+	font-weight: bold;
+	font-size: 1rem;
+	cursor: pointer;
+	box-shadow: 0 2px 8px #FFD700;
+	letter-spacing: 1px;
+	transition: background 0.2s, color 0.2s;
+}
+.hotel-admin-dashboard-home-btn-actual:hover {
+	background: #222;
+	color: #FFD700;
+}
+.hotel-admin-dashboard-title {
+	font-size: 2.5rem;
+	font-weight: bold;
+	letter-spacing: 4px;
+	color: #FFD700;
+	text-shadow: 0 2px 8px #000;
+}
+.hotel-admin-dashboard-subtitle {
+	font-size: 1rem;
+	color: #FFD700;
+	opacity: 0.8;
+	margin-top: 0.3rem;
+	letter-spacing: 2px;
+}
+.hotel-admin-dashboard-content {
+	padding: 2rem;
+}
 /* Styles for HotelAdminDashboard */

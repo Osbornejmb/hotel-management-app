@@ -1,0 +1,42 @@
+/* Styles for HotelAdminBookingHistory */
+.booking-history-container {
+  width: 100%;
+  padding: 2rem;
+}
+.booking-history-title {
+  color: #a57c2b;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+}
+.booking-history-search {
+  width: 350px;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 1.2rem;
+}
+.booking-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #ccc;
+  overflow: hidden;
+}
+.booking-history-table th, .booking-history-table td {
+  padding: 0.7rem;
+  text-align: center;
+}
+.booking-history-table thead tr {
+  background: #e3c78a;
+  color: #222;
+  font-weight: 700;
+}
+.booking-history-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+.booking-history-table-empty {
+  text-align: center;
+  padding: 1.5rem;
+  color: #888;
+}
