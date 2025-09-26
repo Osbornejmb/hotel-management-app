@@ -14,7 +14,7 @@ function HotelAdminDashboard({ children }) {
     { name: 'Booking history', path: '/admin/hotel/booking-history' },
   ];
   return (
-    <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', paddingBottom: '2rem', display: 'flex' }}>
+    <div style={{ background: '#111', minHeight: '100px', color: '#FFD700', paddingBottom: '2rem', display: 'flex', width: "100vm", overflowX: "hidden" }}>
       {/* Sidebar */}
       <aside style={{ width: '220px', background: '#181818', minHeight: '100vh', boxShadow: '2px 0 8px #FFD700', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '2.5rem' }}>
         {sidebarButtons.map(btn => (

@@ -1,0 +1,184 @@
+.room-card-v2-list {
+	margin: 0.2em 0 0.2em 1.1em;
+	padding-left: 1em;
+	font-size: 0.93rem;
+	color: #444;
+	list-style-type: disc;
+}
+.room-card-v2-list li {
+	margin-bottom: 0.1em;
+	padding-left: 0;
+}
+.room-card-v2-type-desc {
+	font-size: 0.8em;
+	color: #555;
+	margin-top: 0.18em;
+	text-align: right;
+	font-weight: 500;
+	white-space: nowrap;
+}
+.room-card-v2-type-upper {
+	font-size: 0.9em;
+	font-weight: 700;
+	color: #a57c2b;
+	background: #f7f1e1;
+	border-radius: 7px;
+	padding: 0.18em 0.7em;
+	margin-left: 0.5em;
+	white-space: nowrap;
+	align-self: flex-start;
+}
+/* New v2 Room Card and Grid Styles */
+.hotel-admin-rooms-content {
+	padding: 2.5rem 2rem 2rem 2rem;
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+.hotel-admin-rooms-title {
+	color: #a57c2b;
+	font-weight: 700;
+	margin-bottom: 1.2rem;
+}
+.hotel-admin-rooms-loading,
+.hotel-admin-rooms-error {
+	color: #222;
+	font-weight: 600;
+	margin: 2rem 0;
+}
+.hotel-admin-rooms-grid {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	grid-template-rows: repeat(2, 1fr);
+	gap: 2.2vw 1.5vw;
+	width: 100%;
+	max-width: 1800px;
+	margin-left: auto;
+	margin-right: auto;
+	align-items: stretch;
+	height: 60vw;
+	min-height: 350px;
+	max-height: 90vh;
+	flex: 1 0 auto;
+}
+.room-card-v2 {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 0;
+    height: 100%;
+    aspect-ratio: 0.75/1; /* Even slimmer rectangle */
+    border-radius: 14px;
+    box-shadow: 0 3px 12px #bbb;
+    padding: 0.4vw 0.3vw 0.3vw 0.3vw; /* Tighter padding */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+    font-size: 0.65vw; /* Smaller font */
+    background: #fff;
+    transition: box-shadow 0.2s;
+}
+@media (max-width: 1100px) {
+    .hotel-admin-rooms-grid {
+        height: 80vw;
+        gap: 2.8vw 1.8vw;
+    }
+    .room-card-v2 {
+        font-size: 0.9vw;
+        padding: 1vw 0.6vw 0.6vw 0.6vw;
+    }
+}
+@media (max-width: 800px) {
+    .hotel-admin-rooms-grid {
+        height: 120vw;
+        gap: 3vw 2vw;
+    }
+    .room-card-v2 {
+        font-size: 1.2vw;
+        padding: 1.5vw 0.9vw 0.9vw 0.9vw;
+    }
+}
+@media (max-width: 600px) {
+    .hotel-admin-rooms-grid {
+        height: 180vw;
+        gap: 4vw 2vw;
+    }
+    .room-card-v2 {
+        font-size: 1.8vw;
+        padding: 2vw 1vw 1vw 1vw;
+    }
+}
+
+.room-card-v2:hover {
+	box-shadow: 0 4px 16px #888;
+}
+.room-card-v2-number {
+	font-size: 2.1rem;
+	font-weight: 700;
+	margin-bottom: 0.2rem;
+}
+.room-card-v2-type {
+	font-size: 1.05rem;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}
+.room-card-v2-amenities,
+.room-card-v2-facilities {
+	font-size: 0.93rem;
+	margin-bottom: 0.2rem;
+}
+.room-card-v2-manage {
+	margin-top: auto;
+	align-self: flex-end;
+	background: #eee;
+	color: #444;
+	border: none;
+	border-radius: 7px;
+	padding: 0.25rem 0.9rem;
+	font-weight: 600;
+	font-size: 0.98rem;
+	box-shadow: 1px 2px 4px #ccc;
+	cursor: pointer;
+	margin-bottom: 0.1rem;
+	margin-right: 0.1rem;
+	transition: background 0.2s, color 0.2s;
+}
+.room-card-v2-manage:hover {
+	background: #bbb;
+	color: #fff;
+}
+/* Card color variants */
+.room-card-blue { background: #e6f0fa; border: 2px solid #2980b9; }
+.room-card-red { background: #fae6e6; border: 2px solid #e74c3c; }
+.room-card-green { background: #e6fae6; border: 2px solid #27ae60; }
+.room-card-gray { background: #f4f4f4; border: 2px solid #bbb; }
+
+.hotel-admin-rooms-floor-selector {
+	display: flex;
+	gap: 0.5rem;
+	margin-top: 2.5rem;
+	justify-content: center;
+	align-items: center;
+	width: 100%;
+	position: relative;
+	bottom: 0;
+	left: 0;
+	margin-bottom: 0.5rem;
+}
+.hotel-admin-rooms-floor-btn {
+	background: #eee;
+	color: #444;
+	border: none;
+	border-radius: 6px;
+	padding: 0.5rem 1.1rem;
+	font-weight: 600;
+	font-size: 1.05rem;
+	cursor: pointer;
+	transition: background 0.2s, color 0.2s;
+}
+.hotel-admin-rooms-floor-btn.selected,
+.hotel-admin-rooms-floor-btn:hover {
+	background: #a57c2b;
+	color: #fff;
+}
