@@ -1,21 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import HotelAdminDashboard from './HotelAdminDashboard';
+import './RoomCard.css';
+import './HotelAdminRooms.css';
 
 function RoomCard({ room, onManage }) {
   return (
-    <div style={{
-      background: '#fff',
-      borderRadius: '12px',
-      boxShadow: '0 4px 16px #bbb',
-      padding: '1.1rem 1.1rem 0.7rem 1.1rem',
-      margin: '1rem',
-      width: '250px',
-      minHeight: '200px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      position: 'relative',
-    }}>
+    <div className="room-card">
       <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#444', textShadow: '0 2px 8px #ccc', lineHeight: 1 }}>{room.roomNumber}</div>
       <div style={{ position: 'absolute', top: '1.2rem', right: '1.2rem', fontWeight: 500, color: '#444', fontSize: '1.1rem', textAlign: 'right' }}>
         {room.roomType} <br />
@@ -27,7 +17,7 @@ function RoomCard({ room, onManage }) {
         fontWeight: 700,
         fontSize: '1.08rem',
         color: room.status === 'booked' ? '#fff' : room.status === 'available' ? '#fff' : '#222',
-        background: room.status === 'booked' ? '#e74c3c' : room.status === 'available' ? '#27ae60' : '#fff',
+  background: room.status === 'booked' ? '#e74c3c' : room.status === 'available' ? '#27ae60' : 'transparent',
         border: room.status === 'under maintenance' ? '1px solid #bbb' : 'none',
         borderRadius: 7,
         padding: '0.18rem 0.7rem',
@@ -194,37 +184,106 @@ function HotelAdminRooms() {
     }
   };
 
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // 'extend' or 'checkout'
+
+  const [showActionSuccess, setShowActionSuccess] = useState(false);
+  const [actionSuccessMessage, setActionSuccessMessage] = useState('');
+
   const handleExtendStay = async () => {
     if (!extendDateTime || !selectedRoom) return;
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/customers/extend`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomNumber: selectedRoom.roomNumber, newCheckout: extendDateTime })
-      });
-      if (res.ok) {
-        setShowUpdatedModal(true);
-        setExtendDateTime('');
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        alert(`Failed to update: ${errorData.error || 'Unknown error'}`);
-      }
-    } catch (err) {
-      alert('Failed to update check-out.');
-    }
+    setConfirmAction('extend');
+    setShowConfirmModal(true);
   };
+
+  const handleCheckoutWithConfirm = async () => {
+    setConfirmAction('checkout');
+    setShowConfirmModal(true);
+  };
+
+  // Actually perform the confirmed action
+  const doConfirmedAction = async () => {
+    if (confirmAction === 'extend') {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/customers/extend`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomNumber: selectedRoom.roomNumber, newCheckout: extendDateTime })
+        });
+        if (res.ok) {
+          setShowUpdatedModal(false);
+          setExtendDateTime('');
+          setShowActionSuccess(true);
+          setActionSuccessMessage('Checkout date updated successfully!');
+        } else {
+          const errorData = await res.json().catch(() => ({}));
+          alert(`Failed to update: ${errorData.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert('Failed to update check-out.');
+      }
+    } else if (confirmAction === 'checkout') {
+      if (!selectedRoom) return;
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/checkout/checkout`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomNumber: selectedRoom.roomNumber })
+        });
+        if (res.ok) {
+          const roomsRes = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
+          if (roomsRes.ok) {
+            const data = await roomsRes.json();
+            setRooms(data);
+          }
+          setShowCheckoutModal(false);
+          setShowActionSuccess(true);
+          setActionSuccessMessage('Checked out successfully!');
+        } else {
+          const errorData = await res.json().catch(() => ({}));
+          alert(`Checkout failed: ${errorData.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert('Checkout failed.');
+      }
+    }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+  };
+      {/* Success Confirmation Modal */}
+      {showActionSuccess && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 4000
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px #888',
+            padding: '2.5rem 2.5rem 2rem 2.5rem',
+            minWidth: '320px',
+            maxWidth: '95vw',
+            position: 'relative',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#27ae60', marginBottom: '1.2rem' }}>{actionSuccessMessage}</div>
+            <button onClick={() => { setShowActionSuccess(false); setShowModal(false); }} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginTop: '1rem' }}>OK</button>
+          </div>
+        </div>
+      )}
 
   return (
     <HotelAdminDashboard>
-      <div
-        style={{
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          marginTop: '2rem',
-        }}
-      >
+  <div className="hotel-admin-rooms-container">
         {loading ? (
           <div style={{ color: '#FFD700', fontWeight: 600 }}>Loading rooms...</div>
         ) : error ? (
@@ -234,34 +293,17 @@ function HotelAdminRooms() {
             No rooms found in the database.
           </div>
         ) : (
-          <div
-            style={{
-              width: '100%',
-              display: 'flex',
-              justifyContent: 'flex-start',
-              paddingLeft: '15vw',
-            }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(5, 1fr)',
-                gridTemplateRows: 'repeat(2, 1fr)',
-                gap: '1.2rem',
-                maxWidth: '1400px',
-              }}
-            >
-              {rooms.slice(0, 10).map((room) => (
-                <RoomCard
-                  key={room._id}
-                  room={room}
-                  onManage={(room) => {
-                    setSelectedRoom(room);
-                    setShowModal(true);
-                  }}
-                />
-              ))}
-            </div>
+          <div className="hotel-admin-rooms-grid">
+            {rooms.slice(0, 10).map((room) => (
+              <RoomCard
+                key={room._id}
+                room={room}
+                onManage={(room) => {
+                  setSelectedRoom(room);
+                  setShowModal(true);
+                }}
+              />
+            ))}
           </div>
         )}
 
@@ -347,9 +389,46 @@ function HotelAdminRooms() {
                   {selectedRoom.status === 'booked' && (
                     <button
                       style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #fbb' }}
-                      onClick={handleCheckout}
+                      onClick={handleCheckoutWithConfirm}
                     >Checkout</button>
                   )}
+      {/* Confirmation Modal (moved outside modal content for correct JSX structure) */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 3000
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px #888',
+            padding: '2rem 2.5rem',
+            minWidth: '320px',
+            maxWidth: '95vw',
+            position: 'relative',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#222', marginBottom: '1.2rem' }}>
+              {confirmAction === 'extend' ? 'Confirm update checkout date?' : 'Confirm checkout?'}
+            </div>
+            <div style={{ marginBottom: '1.2rem', color: '#444' }}>
+              {confirmAction === 'extend'
+                ? `Are you sure you want to update the checkout date to ${extendDateTime}?`
+                : 'Are you sure you want to check out this room?'}
+            </div>
+            <button onClick={doConfirmedAction} style={{ background: '#27ae60', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', marginRight: '1rem' }}>Yes</button>
+            <button onClick={() => { setShowConfirmModal(false); setConfirmAction(null); }} style={{ background: '#f44', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer' }}>No</button>
+          </div>
+        </div>
+  )}
                   {selectedRoom.status === 'available' && (
                     <button
                       style={{ background: '#2ecc40', color: '#fff', border: 'none', borderRadius: 7, padding: '0.6rem 1.5rem', fontWeight: 700, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 2px 8px #bfb' }}

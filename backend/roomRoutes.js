@@ -7,8 +7,12 @@ console.log('roomRoutes loaded');
 // Book a room: update status to 'booked' and save guest info
 router.put('/:id/book', async (req, res) => {
 	try {
-		const { guestName, guestContact, checkoutDate } = req.body;
-		console.log('Booking request:', { guestName, guestContact, checkoutDate });
+				let { guestName, guestContact, checkoutDate } = req.body;
+				// Patch: Always save checkoutDate as 'YYYY-MM-DDT12:00:00' to avoid timezone regression
+				if (checkoutDate && checkoutDate.length === 10) {
+					checkoutDate = checkoutDate + 'T12:00:00';
+				}
+				console.log('Booking request:', { guestName, guestContact, checkoutDate });
 		const room = await Room.findById(req.params.id);
 		if (!room) {
 			return res.status(404).json({ error: 'Room not found' });

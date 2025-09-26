@@ -57,8 +57,8 @@ function HotelAdminBookingHistory() {
                   <td style={{ textAlign: 'center' }}>{c.checkinDate ? new Date(c.checkinDate).toLocaleDateString() : ''}</td>
                   <td style={{ textAlign: 'center' }}>
                     {c.updatedCheckoutDate
-                      ? new Date(c.updatedCheckoutDate).toLocaleDateString()
-                      : (c.checkoutDate ? new Date(c.checkoutDate).toLocaleDateString() : '')}
+                      ? c.updatedCheckoutDate
+                      : (c.checkoutDate ? c.checkoutDate : '')}
                   </td>
                   <td style={{ textAlign: 'center' }}>{c.status || ''}</td>
                 </tr>
