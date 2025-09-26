@@ -6,6 +6,8 @@ require("dotenv").config();
 const userRoutes = require("./userRoutes");
 const roomRoutes = require("./roomRoutes");
 
+const attendanceRoutes = require("./attendanceRoutes");
+
 const app = express();
 
 app.use(cors());
@@ -18,6 +20,9 @@ app.use("/api/users", userRoutes);
 
 // Room routes
 app.use("/api/rooms", roomRoutes);
+
+// Attendance routes
+app.use("/api/attendance", attendanceRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))

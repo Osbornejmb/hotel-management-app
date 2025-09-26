@@ -1,81 +1,62 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-// Attendance Schema
-const attendanceSchema = new mongoose.Schema({
-  employeeId: { type: String, required: true },
-  clockIn: { type: Date },
-  clockOut: { type: Date },
-  totalHours: { type: Number }
-});
-
-const Attendance = mongoose.model("Attendance", attendanceSchema);
-
-// Employee Schema (reference your existing collection)
-const employeeSchema = new mongoose.Schema({
+// Employee
+const Employee = require('./employee'); // Employee model
+// Attendance
+const Attendance = mongoose.model('Attendance', new mongoose.Schema({
   employeeId: String,
-  fullName: String,
-  position: String,
-  department: String,
-  contactNumber: String,
-  email: String,
-  dateHired: Date,
-  status: String,
-  shift: String,
-  notes: String
-});
+  employeeName: String,
+  clockIn: Date,
+  clockOut: Date,
+  totalHours: Number,
+  date: String // YYYY-MM-DD
+}));
 
-const Employee = mongoose.model("Employee", employeeSchema, "employee");
+// Helper to get current date string
+function getDateString() {
+  const now = new Date();
+  return now.toISOString().split('T')[0];
+}
 
-router.post("/tap", async (req, res) => {
-  try {
-    const { employeeId } = req.body;
+router.post('/attendance', async (req, res) => {
+  const { employeeId } = req.body;
+  if (!employeeId) return res.status(400).json({ error: 'employeeId required' });
 
-    if (!employeeId) {
-      return res.status(400).json({ message: "Employee ID is required" });
-    }
+  // Find employee
+  const employee = await Employee.findOne({ employeeId });
+  if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
-    const employee = await Employee.findOne({ employeeId });
-    if (!employee) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
+  const today = getDateString();
+  // Find latest attendance for today
+  let attendance = await Attendance.findOne({ employeeId, date: today }).sort({ clockIn: -1 });
 
-    let activeSession = await Attendance.findOne({
+  if (!attendance || (attendance && attendance.clockOut)) {
+    // Clock in (first time today or after clocking out)
+    attendance = new Attendance({
       employeeId,
-      clockOut: { $exists: false }
+      employeeName: employee.employeeName,
+      clockIn: new Date(),
+      date: today
     });
-
-    let attendanceRecord;
-
-    if (!activeSession) {
-      // CLOCK IN
-      attendanceRecord = new Attendance({
-        employeeId,
-        clockIn: new Date()
-      });
-      await attendanceRecord.save();
-      return res.json({
-        message: "Clocked in",
-        employee: employee.fullName,
-        data: attendanceRecord
-      });
-    } else {
-      // CLOCK OUT
-      activeSession.clockOut = new Date();
-      const diffMs = activeSession.clockOut - activeSession.clockIn;
-      activeSession.totalHours = diffMs / (1000 * 60 * 60);
-      await activeSession.save();
-
-      return res.json({
-        message: "Clocked out",
-        employee: employee.fullName,
-        data: activeSession
-      });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    await attendance.save();
+    return res.json({
+      status: 'clocked-in',
+      employeeName: employee.employeeName,
+      clockIn: attendance.clockIn
+    });
+  } else if (!attendance.clockOut) {
+    // Clock out
+    attendance.clockOut = new Date();
+    attendance.totalHours = (attendance.clockOut - attendance.clockIn) / (1000 * 60 * 60); // hours
+    await attendance.save();
+    return res.json({
+      status: 'clocked-out',
+      employeeName: employee.employeeName,
+      clockOut: attendance.clockOut,
+      totalHours: attendance.totalHours
+    });
   }
 });
 

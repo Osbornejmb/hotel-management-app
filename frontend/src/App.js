@@ -8,19 +8,18 @@ import RestaurantAdminDashboard from "./Admin/Restaurant/RestaurantAdminDashboar
 import HotelAdminDashboard from "./Admin/Hotel/HotelAdminDashboard";
 import CustomerLogin from "./Admin/Customer/Customerlogin";
 import CustomerInterface from "./Admin/Customer/CustomerInterface";
-import AttendancePage from "./AttendancePage";
+import Attendance from "./Attendance";
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* 👇 Default route now points to AttendancePage */}
-        <Route path="/" element={<AttendancePage />} />
+  <Route path="/" element={<Attendance />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/customer/login" element={<CustomerLogin />} />
         <Route path="/customer/interface" element={<CustomerInterface />} />
-        <Route path="/attendance" element={<AttendancePage />} />
+  <Route path="/attendance" element={<Attendance />} />
         <Route
           path="/admin/restaurant"
           element={
@@ -37,8 +36,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* 👇 Fallback also goes to AttendancePage */}
-        <Route path="*" element={<AttendancePage />} />
+        <Route path="*" element={<Attendance />} />
       </Routes>
     </Router>
   );
