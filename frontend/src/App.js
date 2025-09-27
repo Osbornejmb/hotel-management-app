@@ -115,7 +115,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         {/* Fallback */}
         <Route path="*" element={<Home />} />
       </Routes>
