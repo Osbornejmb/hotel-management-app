@@ -18,6 +18,7 @@ export default function HotelAdminRooms() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedFloor, setSelectedFloor] = useState(1);
+  const [selectedType, setSelectedType] = useState('economy');
   const [modalRoom, setModalRoom] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, jobType: '', room: null });
   const [actionLoading, setActionLoading] = useState(false);
@@ -40,10 +41,15 @@ export default function HotelAdminRooms() {
     fetchRooms();
   }, []);
 
-  // Filter rooms by selected floor (assuming roomNumber starts with floor number)
+  // Filter rooms by selected floor and type
   const filteredRooms = rooms.filter(r => {
     if (!r.roomNumber) return false;
-    return String(r.roomNumber).startsWith(String(selectedFloor));
+    // Extract leading number from roomNumber (e.g., 'P-101' -> 1)
+    const match = String(r.roomNumber).match(/(\d+)/);
+    if (!match) return false;
+    const floorMatch = match[0][0] === String(selectedFloor);
+  const typeMatch = r.roomType && r.roomType.toLowerCase() === selectedType;
+  return floorMatch && typeMatch;
   });
 
   return (
@@ -61,11 +67,27 @@ export default function HotelAdminRooms() {
                 <div style={{display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.2rem'}}>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0}}>
                     <div className="room-card-v2-number">{room.roomNumber}</div>
-                    <div className={`room-card-v2-status room-card-v2-status-${room.status || 'unknown'}`}>{room.status ? room.status.charAt(0).toUpperCase() + room.status.slice(1) : 'Unknown'}</div>
+                    <div className={`room-card-v2-status room-card-v2-status-${room.isBooked ? 'booked' : 'available'}`}>{room.isBooked ? 'Booked' : 'Available'}</div>
+                    {room.description && (
+                      <div
+                        className="room-card-v2-desc-below-status"
+                        style={{
+                          fontSize: '0.95em',
+                          color: '#666',
+                          marginTop: '0.2em',
+                          marginBottom: '0.2em',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          width: '100%'
+                        }}
+                      >
+                        {room.description}
+                      </div>
+                    )}
                   </div>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}>
                     <div className="room-card-v2-type-upper">{room.roomType}</div>
-                    <div className="room-card-v2-type-desc">{room.description || '2 pax'}</div>
                   </div>
                 </div>
                 <div className="room-card-v2-amenities">
@@ -78,32 +100,48 @@ export default function HotelAdminRooms() {
                     <span> None</span>
                   )}
                 </div>
-                <div className="room-card-v2-facilities">
-                  <b>Facilities:</b>
-                  {room.facilities && room.facilities.length > 0 ? (
-                    <ul className="room-card-v2-list">
-                      {room.facilities.map((f, i) => <li key={i}>{f}</li>)}
-                    </ul>
-                  ) : (
-                    <span> None</span>
-                  )}
-                </div>
                 {/* Add more info as needed, e.g. guest, status, etc. */}
                 <button className="room-card-v2-manage" onClick={() => setModalRoom(room)}>Manage</button>
               </div>
             ))}
           </div>
         )}
-        <div className="hotel-admin-rooms-floor-selector">
-          {floors.map(f => (
-            <button
-              key={f}
-              className={`hotel-admin-rooms-floor-btn${selectedFloor === f ? ' selected' : ''}`}
-              onClick={() => setSelectedFloor(f)}
-            >
-              {f}F
-            </button>
-          ))}
+        {/* Floating bottom filter buttons, no panel */}
+        <div style={{
+          position: 'fixed',
+          left: 220,
+          bottom: 20,
+          width: 'calc(100vw - 220px)',
+          zIndex: 99,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          pointerEvents: 'none',
+        }}>
+          <div style={{ display: 'flex', gap: '0.7rem', justifyContent: 'center', marginBottom: '0.3rem', pointerEvents: 'auto' }}>
+            {floors.map(f => (
+              <button
+                key={f}
+                className={`hotel-admin-rooms-floor-btn${selectedFloor === f ? ' selected' : ''}`}
+                onClick={() => setSelectedFloor(f)}
+                style={{ boxShadow: '0 2px 8px #bbb', background: '#fff' }}
+              >
+                {f}F
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '0.7rem', justifyContent: 'center', pointerEvents: 'auto' }}>
+            {['economy', 'deluxe', 'suite', 'presidential'].map(type => (
+              <button
+                key={type}
+                className={`hotel-admin-rooms-floor-btn${selectedType === type ? ' selected' : ''}`}
+                onClick={() => setSelectedType(type)}
+                style={{ textTransform: 'capitalize', boxShadow: '0 2px 8px #bbb', background: '#fff' }}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
         </div>
       {/* Modal Placeholder */}
       {modalRoom && (
@@ -114,11 +152,10 @@ export default function HotelAdminRooms() {
 
       <div className="room-modal-section">
         <div><strong>Room Type:</strong> {modalRoom.roomType}</div>
-        <div><strong>Description:</strong> {modalRoom.description || '2 pax'}</div>
-        <div><strong>Status:</strong> {modalRoom.status}</div>
-        <div><strong>Availability:</strong> {modalRoom.isAvailable ? 'Yes - Ready for Check-in' : 'No'}</div>
+        <div><strong>Description:</strong> {modalRoom.description || ''}</div>
+        <div><strong>Status:</strong> {modalRoom.isBooked ? 'Booked' : 'Available'}</div>
+        <div><strong>Price:</strong> {modalRoom.price ? `₱${modalRoom.price}` : 'N/A'}</div>
         <div><strong>Amenities:</strong> {modalRoom.amenities?.join(', ') || 'None'}</div>
-        <div><strong>Facilities:</strong> {modalRoom.facilities?.join(', ') || 'None'}</div>
       </div>
 
       <div className="room-modal-actions-right">

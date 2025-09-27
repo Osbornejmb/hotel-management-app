@@ -15,40 +15,46 @@
         { name: 'Booking history', path: '/admin/hotel/booking-history' },
       ];
       return (
-        <div className="hotel-admin-dashboard-root">
-          {/* Sidebar */}
-          <aside className="hotel-admin-dashboard-sidebar">
-            {sidebarButtons.map(btn => (
+        <div className="hotel-admin-dashboard-root gold-theme">
+          {/* Top navbar full width */}
+          <nav className="hotel-admin-dashboard-nav gold-theme" style={{width: '100vw', position: 'fixed', top: 0, left: 0, zIndex: 100}}>
+            {/* Home icon */}
+            <div className="hotel-admin-dashboard-home-btn">
               <button
-                key={btn.name}
-                className={`hotel-admin-dashboard-sidebar-btn${location.pathname === btn.path ? ' selected' : ''}`}
-                onClick={() => navigate(btn.path)}
+                onClick={() => navigate('/admin/hotel')}
+                className="hotel-admin-dashboard-home-btn-actual"
+                title="Home"
+                style={{ fontSize: '1.5rem', background: 'none', border: 'none', color: '#fff' }}
               >
-                {btn.name}
+                <span role="img" aria-label="home">🏠</span>
               </button>
-            ))}
-          </aside>
-          {/* Main content area */}
-          <div className="hotel-admin-dashboard-main">
-            <nav className="hotel-admin-dashboard-nav">
-              {/* Logout button in upper right */}
-              <div className="hotel-admin-dashboard-logout-btn">
-                <LogoutButton />
-              </div>
-              {/* Home button in upper left */}
-              <div className="hotel-admin-dashboard-home-btn">
+            </div>
+            {/* Title and subtitle */}
+            <span className="hotel-admin-dashboard-title gold-theme">Lumine</span>
+            <span className="hotel-admin-dashboard-subtitle gold-theme">Room Management</span>
+            {/* Logout button in upper right */}
+            <div className="hotel-admin-dashboard-logout-btn">
+              <LogoutButton />
+            </div>
+          </nav>
+          {/* Sidebar below navbar */}
+          <div style={{display: 'flex', width: '100vw', marginTop: '110px'}}>
+            <aside className="hotel-admin-dashboard-sidebar gold-theme">
+              {sidebarButtons.map(btn => (
                 <button
-                  onClick={() => navigate('/admin/hotel')}
-                  className="hotel-admin-dashboard-home-btn-actual"
+                  key={btn.name}
+                  className={`hotel-admin-dashboard-sidebar-btn${location.pathname === btn.path ? ' selected' : ''}`}
+                  onClick={() => navigate(btn.path)}
                 >
-                  Home
+                  {btn.name}
                 </button>
+              ))}
+            </aside>
+            {/* Main content area */}
+            <div className="hotel-admin-dashboard-main">
+              <div className="hotel-admin-dashboard-content gold-theme">
+                {children}
               </div>
-              <span className="hotel-admin-dashboard-title">Lumine</span>
-              <span className="hotel-admin-dashboard-subtitle">room management</span>
-            </nav>
-            <div className="hotel-admin-dashboard-content">
-              {children}
             </div>
           </div>
         </div>

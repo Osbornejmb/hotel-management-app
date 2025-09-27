@@ -238,10 +238,11 @@
 }
 /* New v2 Room Card and Grid Styles */
 .hotel-admin-rooms-content {
-	padding: 2.5rem 2rem 2rem 2rem;
-	display: flex;
-	flex-direction: column;
-	min-height: 100vh;
+    padding: 2.5rem 2rem 2rem 2rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow: hidden;
 }
 .hotel-admin-rooms-title {
 	color: #a57c2b;
@@ -255,26 +256,26 @@
 	margin: 2rem 0;
 }
 .hotel-admin-rooms-grid {
-	display: grid;
-	grid-template-columns: repeat(5, 1fr);
-	grid-template-rows: repeat(2, 1fr);
-	gap: 2.2vw 1.5vw;
-	width: 100%;
-	max-width: 1800px;
-	margin-left: auto;
-	margin-right: auto;
-	align-items: stretch;
-	height: 60vw;
-	min-height: 350px;
-	max-height: 90vh;
-	flex: 1 0 auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0.4vw 1.5vw; /* even smaller vertical gap */
+    width: 100%;
+    max-width: 1800px;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: stretch;
+    height: 60vw;
+    min-height: 350px;
+    max-height: 80vh;
+    flex: 1 0 auto;
 }
 .room-card-v2 {
     width: 100%;
     min-width: 0;
     max-width: 100%;
     min-height: 0;
-    height: 85%;
+    height: 90%; /* smaller cards */
     aspect-ratio: 0.75/1; /* Even slimmer rectangle */
     border-radius: 14px;
     box-shadow: 0 3px 12px #bbb;
@@ -385,8 +386,14 @@
 	cursor: pointer;
 	transition: background 0.2s, color 0.2s;
 }
-.hotel-admin-rooms-floor-btn.selected,
+.hotel-admin-rooms-floor-btn.selected {
+    background: #fff;
+    color: #b48a2c;
+    border: 2px solid #b48a2c;
+    font-weight: bold;
+    box-shadow: 0 2px 8px #b48a2c;
+}
 .hotel-admin-rooms-floor-btn:hover {
-	background: #a57c2b;
-	color: #fff;
+    background: #a57c2b;
+    color: #fff;
 }
