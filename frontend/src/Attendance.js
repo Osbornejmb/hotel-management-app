@@ -6,38 +6,36 @@ const Attendance = () => {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async () => {
     if (!employeeId) return;
     setLoading(true);
     setMessage('');
     setDetails(null);
     try {
-      const res = await fetch('/api/attendance', {
+      const response = await fetch('/api/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeId })
       });
-      if (!res.ok) throw new Error('Server error');
-      const data = await res.json();
-      if (data.error) {
-        setMessage(data.error);
-      } else if (data.status === 'clocked-in') {
-        setMessage(`Good Morning, ${data.employeeName}`);
-        setDetails({ label: 'Clocked In', time: new Date(data.clockIn).toLocaleTimeString() });
-      } else if (data.status === 'clocked-out') {
-        setMessage(`Thank You, ${data.employeeName}`);
-        setDetails({ label: 'Clocked Out', time: new Date(data.clockOut).toLocaleTimeString(), total: data.totalHours.toFixed(2) });
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.status === 'clocked-in') {
+          setMessage(`Welcome, ${data.employeeName}! You are clocked in.`);
+          setDetails({ label: 'Clocked In', time: new Date(data.clockIn).toLocaleTimeString() });
+        } else if (data.status === 'clocked-out') {
+          setMessage(`Thank You, ${data.employeeName}! You are clocked out.`);
+          setDetails({ label: 'Clocked Out', time: new Date(data.clockOut).toLocaleTimeString(), total: data.totalHours.toFixed(2) });
+        }
+      } else {
+        setMessage(data.error || 'An error occurred.');
       }
+    } catch (error) {
+      setMessage('Failed to connect to the server.');
+    } finally {
+      setLoading(false);
       setEmployeeId('');
-      setTimeout(() => {
-        setMessage('');
-        setDetails(null);
-      }, 5000);
-    } catch (err) {
-      setMessage('Error connecting to server.');
     }
-    setLoading(false);
   };
 
   return (
@@ -47,25 +45,17 @@ const Attendance = () => {
         type="password"
         placeholder="Enter Employee ID"
         value={employeeId}
-        onChange={e => {
-          const val = e.target.value;
-          setEmployeeId(val);
-          if (val.length === 10 && !loading) {
-            handleSubmit();
-            setEmployeeId('');
-          }
-        }}
-        onKeyDown={e => {
+        onChange={(e) => setEmployeeId(e.target.value)}
+        onKeyDown={(e) => {
           if (e.key === 'Enter' && employeeId.length === 10 && !loading) {
             handleSubmit();
-            setEmployeeId('');
           }
         }}
         maxLength={10}
         disabled={loading}
         style={{ padding: '10px', width: '80%', fontSize: '1rem' }}
       />
-      {message && <div style={{ marginTop: 30, fontSize: '1.2rem', fontWeight: 'bold' }}>{message}</div>}
+      {message && <div style={{ marginTop: 20, fontSize: '1.2rem', fontWeight: 'bold' }}>{message}</div>}
       {details && (
         <div style={{ marginTop: 10 }}>
           <div>{details.label}: {details.time}</div>
