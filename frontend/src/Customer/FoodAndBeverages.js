@@ -153,57 +153,59 @@ function FoodAndBeverages() {
       {cart.length === 0 ? (
         <p style={{ color: '#4B2E06', fontSize: '1.1rem' }}>Your cart is empty.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', fontFamily: 'serif', color: '#4B2E06' }}>
-          <thead>
-            <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-              <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
-              <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Category</th>
-              <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Price</th>
-              <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Remove</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cart.map((item, idx) => (
-              <tr key={idx}>
-                <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0', textAlign: 'left' }}>
-                  <img src={item.img} alt={item.name} style={{
-                    width: '32px', height: '32px', borderRadius: '8px',
-                    marginRight: '0.5rem', verticalAlign: 'middle',
-                    border: '1.5px solid #F7D774', background: '#fff'
-                  }} />
-                  {item.name}
-                </td>
-                <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>{item.category}</td>
-                <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
-                  ₱{item.price ? item.price.toFixed(2) : '0.00'}
-                </td>
-                <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
-                  <button
-                    onClick={() => removeFromCart(idx)}
-                    style={{
-                      padding: '0.3rem 0.8rem', borderRadius: '0.5em',
-                      border: '2px solid #FFD700', background: '#F7D774',
-                      color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                      fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
-                      transition: 'background 0.2s, color 0.2s'
-                    }}
-                    onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                    onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                  >
-                    Remove
-                  </button>
-                </td>
+        <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1rem' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'serif', color: '#4B2E06' }}>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+              <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
+                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
+                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Category</th>
+                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Price</th>
+                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Remove</th>
               </tr>
-            ))}
-            <tr style={{ fontWeight: 500, background: '#F7D774', color: '#4B2E06' }}>
-              <td colSpan={2} style={{ padding: '0.5rem', textAlign: 'right' }}>Total:</td>
-              <td style={{ padding: '0.5rem' }}>
-                ₱{cart.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
-              </td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {cart.map((item, idx) => (
+                <tr key={idx}>
+                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0', textAlign: 'left' }}>
+                    <img src={item.img} alt={item.name} style={{
+                      width: '32px', height: '32px', borderRadius: '8px',
+                      marginRight: '0.5rem', verticalAlign: 'middle',
+                      border: '1.5px solid #F7D774', background: '#fff'
+                    }} />
+                    {item.name}
+                  </td>
+                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>{item.category}</td>
+                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
+                    ₱{item.price ? item.price.toFixed(2) : '0.00'}
+                  </td>
+                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
+                    <button
+                      onClick={() => removeFromCart(idx)}
+                      style={{
+                        padding: '0.3rem 0.8rem', borderRadius: '0.5em',
+                        border: '2px solid #FFD700', background: '#F7D774',
+                        color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
+                        fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
+                        transition: 'background 0.2s, color 0.2s'
+                      }}
+                      onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
+                      onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              <tr style={{ fontWeight: 500, background: '#F7D774', color: '#4B2E06' }}>
+                <td colSpan={2} style={{ padding: '0.5rem', textAlign: 'right' }}>Total:</td>
+                <td style={{ padding: '0.5rem' }}>
+                  ₱{cart.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       )}
 
       <button
