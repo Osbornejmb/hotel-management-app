@@ -39,7 +39,7 @@ router.post('/attendance', async (req, res) => {
     const today = getDateString();
     let attendance = await Attendance.findOne({ employeeId, date: today });
 
-    if (!attendance || attendance.clockOut) {
+    if (!attendance) {
       // Clock in
       attendance = new Attendance({
         employeeId,
@@ -53,7 +53,7 @@ router.post('/attendance', async (req, res) => {
         employeeName: employee.employeeName,
         clockIn: attendance.clockIn
       });
-    } else {
+    } else if (!attendance.clockOut) {
       // Clock out
       attendance.clockOut = new Date();
       attendance.totalHours = (attendance.clockOut - attendance.clockIn) / (1000 * 60 * 60); // hours
@@ -64,6 +64,9 @@ router.post('/attendance', async (req, res) => {
         clockOut: attendance.clockOut,
         totalHours: attendance.totalHours
       });
+    } else {
+      // Already clocked out, prevent duplicate clock-ins
+      return res.status(400).json({ error: 'Employee has already clocked out for today.' });
     }
   } catch (err) {
     console.error('Error in attendance route:', err);
