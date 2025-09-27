@@ -1,62 +1,124 @@
-/* Responsive layout for HotelAdminDashboard */
+html, body {
+	overflow: hidden !important;
+	width: 100vw;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+}
+/* Root container for the hotel admin dashboard */
 
 .hotel-admin-dashboard-root {
+	background: #fff;
 	min-height: 100vh;
+	color: #b48a2c;
+	padding-bottom: 2rem;
 	width: 100vw;
-	display: flex;
-	background: #111;
-	color: #FFD700;
-	box-sizing: border-box;
+	overflow: hidden;
 }
 
+/* Sidebar styles */
 .hotel-admin-dashboard-sidebar {
 	width: 220px;
-	min-height: 100vh;
-	background: #181818;
+	background: #b48a2c;
+	min-height: calc(100vh - 110px);
 	box-shadow: 2px 0 8px #FFD700;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	padding-top: 2.5rem;
+	position: fixed;
+	top: 110px;
+	left: 0;
+	height: calc(100vh - 110px);
+	z-index: 99;
+}
+.hotel-admin-dashboard-sidebar-btn {
+	width: 170px;
+	margin: 0.5rem 0;
+	padding: 0.8rem 0;
+	border-radius: 8px;
+	border: 2px solid #b48a2c;
+	background: #fff;
+	color: #b48a2c;
+	font-weight: bold;
+	font-size: 1.1rem;
+	cursor: pointer;
+	letter-spacing: 1px;
+	transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
+	box-shadow: none;
+}
+.hotel-admin-dashboard-sidebar-btn.selected,
+.hotel-admin-dashboard-sidebar-btn:hover {
+	background: #fffbe6;
+	color: #b48a2c;
+	border: 2px solid #fffbe6;
+	box-shadow: 0 2px 8px #FFD700;
 }
 
+/* Main content area */
 .hotel-admin-dashboard-main {
 	flex: 1;
+	min-width: 0;
+	margin-left: 220px;
+	overflow: hidden;
+}
+
+/* Top nav bar */
+.hotel-admin-dashboard-nav {
+	width: 100vw;
+	background: #b48a2c;
+	padding: 1.5rem 0 2.5rem 0;
+	position: fixed;
+	top: 0;
+	left: 0;
+	box-shadow: 0 2px 8px #FFD700;
 	display: flex;
 	flex-direction: column;
-	min-width: 0;
+	align-items: center;
+	z-index: 100;
 }
-
+.hotel-admin-dashboard-logout-btn {
+	position: absolute;
+	top: 1.2rem;
+	right: 2rem;
+}
+.hotel-admin-dashboard-home-btn {
+	position: absolute;
+	top: 1.2rem;
+	left: 2rem;
+}
+.hotel-admin-dashboard-home-btn-actual {
+	background: #FFD700;
+	color: #222;
+	border: none;
+	border-radius: 8px;
+	padding: 0.5rem 1.2rem;
+	font-weight: bold;
+	font-size: 1rem;
+	cursor: pointer;
+	box-shadow: 0 2px 8px #FFD700;
+	letter-spacing: 1px;
+	transition: background 0.2s, color 0.2s;
+}
+.hotel-admin-dashboard-home-btn-actual:hover {
+	background: #222;
+	color: #FFD700;
+}
+.hotel-admin-dashboard-title {
+	font-size: 2.5rem;
+	font-weight: bold;
+	letter-spacing: 4px;
+	color: #fff;
+	text-shadow: 0 2px 8px #b48a2c;
+}
+.hotel-admin-dashboard-subtitle {
+	font-size: 1rem;
+	color: #fff;
+	opacity: 0.8;
+	margin-top: 0.3rem;
+	letter-spacing: 2px;
+}
 .hotel-admin-dashboard-content {
 	padding: 2rem;
-	width: 100%;
-	box-sizing: border-box;
-}
-
-@media (max-width: 900px) {
-	.hotel-admin-dashboard-sidebar {
-		width: 60px;
-		padding-top: 1rem;
-	}
-	.hotel-admin-dashboard-content {
-		padding: 1rem 0.5rem;
-	}
-}
-
-@media (max-width: 600px) {
-	.hotel-admin-dashboard-root {
-		flex-direction: column;
-	}
-	.hotel-admin-dashboard-sidebar {
-		width: 100vw;
-		min-height: 60px;
-		flex-direction: row;
-		justify-content: space-around;
-		align-items: center;
-		padding: 0.5rem 0;
-		box-shadow: 0 2px 8px #FFD700;
-	}
-	.hotel-admin-dashboard-main {
-		width: 100vw;
-	}
+	overflow: hidden;
 }
