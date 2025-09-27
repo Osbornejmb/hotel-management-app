@@ -224,7 +224,7 @@ function RestaurantAdminDashboard() {
   const deliveredOrders = orders.filter(order => order.status === 'delivered');
 
   return (
-    <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', paddingBottom: '2rem' }}>
+  <div style={{ background: '#111', minHeight: '100vh', maxHeight: '100vh', overflowY: 'auto', color: '#FFD700', paddingBottom: '2rem' }}>
       <LogoutButton />
       <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Restaurant Admin Dashboard</h2>
       <div style={{ marginTop: '2rem', marginBottom: '2rem', display: 'flex', gap: '2rem', alignItems: 'center' }}>
