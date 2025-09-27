@@ -121,15 +121,25 @@ function FoodMaster() {
     }
   }, [showCart, popup, roomNumber]);
 
-  // Load checked-out orders for this room when status tab opens
+  // Load checked-out orders for this room when status tab opens, with polling
   React.useEffect(() => {
+    let interval;
+    const fetchOrders = () => {
+      if (showStatus && roomNumber) {
+        axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`)
+          .then(res => {
+            setOrders(res.data.filter(order => order.roomNumber === roomNumber));
+          })
+          .catch(() => setOrders([]));
+      }
+    };
     if (showStatus && roomNumber) {
-      axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`)
-        .then(res => {
-          setOrders(res.data.filter(order => order.roomNumber === roomNumber));
-        })
-        .catch(() => setOrders([]));
+      fetchOrders();
+      interval = setInterval(fetchOrders, 5000);
     }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [showStatus, roomNumber]);
 
   return (
