@@ -7,8 +7,12 @@ console.log('roomRoutes loaded');
 // Book a room: update status to 'booked' and save guest info
 router.put('/:id/book', async (req, res) => {
 	try {
-		const { guestName, guestContact, checkoutDate } = req.body;
-		console.log('Booking request:', { guestName, guestContact, checkoutDate });
+				let { guestName, guestContact, checkoutDate } = req.body;
+				// Patch: Always save checkoutDate as 'YYYY-MM-DDT12:00:00' to avoid timezone regression
+				if (checkoutDate && checkoutDate.length === 10) {
+					checkoutDate = checkoutDate + 'T12:00:00';
+				}
+				console.log('Booking request:', { guestName, guestContact, checkoutDate });
 		const room = await Room.findById(req.params.id);
 		if (!room) {
 			return res.status(404).json({ error: 'Room not found' });
@@ -77,7 +81,7 @@ router.get('/', async (req, res) => {
 // Register a new room
 router.post('/', async (req, res) => {
 	try {
-			const { roomNumber, roomType, status, description, price, amenities } = req.body;
+			const { roomNumber, roomType, status, description, price, facilities } = req.body;
 			// Validate required fields
 			if (!roomNumber || !roomType || !status) {
 				return res.status(400).json({ error: 'All fields (roomNumber, roomType, status) are required.' });
@@ -93,7 +97,7 @@ router.post('/', async (req, res) => {
 				status,
 				description: description || '',
 				price: typeof price === 'number' ? price : (price ? Number(price) : 0),
-				amenities: Array.isArray(amenities) ? amenities : (amenities ? amenities.split(',').map(a => a.trim()) : [])
+				facilities: Array.isArray(facilities) ? facilities : (facilities ? facilities.split(',').map(a => a.trim()) : [])
 			});
 			await newRoom.save();
 			res.status(201).json({ message: 'Room added successfully' });

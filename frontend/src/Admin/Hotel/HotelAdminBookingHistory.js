@@ -58,8 +58,8 @@ function HotelAdminBookingHistory() {
                   <td>{c.checkinDate ? new Date(c.checkinDate).toLocaleDateString() : ''}</td>
                   <td>
                     {c.updatedCheckoutDate
-                      ? new Date(c.updatedCheckoutDate).toLocaleDateString()
-                      : (c.checkoutDate ? new Date(c.checkoutDate).toLocaleDateString() : '')}
+                      ? c.updatedCheckoutDate
+                      : (c.checkoutDate ? c.checkoutDate : '')}
                   </td>
                   <td>{c.status || ''}</td>
                 </tr>

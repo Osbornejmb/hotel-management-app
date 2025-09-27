@@ -9,11 +9,10 @@ import RestaurantAdminDashboard from "./Admin/Restaurant/RestaurantAdminDashboar
 import HotelAdminDashboard from "./Admin/Hotel/HotelAdminDashboard";
 import CustomerLogin from "./Customer/Customerlogin";
 import CustomerInterface from "./Customer/CustomerInterface";
-import Amenities from "./Customer/Amenities";
+import Facilities from "./Customer/Facilities";
 import FoodAndBeverages from "./Customer/FoodAndBeverages";
 import FoodMaster from "./Customer/FoodMaster";
 import ContactFrontDesk from "./Customer/ContactFrontDesk";
-import AmenityMaster from "./Customer/AmenityMaster";
 import HotelAdminRooms from "./Admin/Hotel/HotelAdminRooms";
 import HotelAdminHousekeeping from "./Admin/Hotel/HotelAdminHousekeeping";
 import HotelAdminMaintenance from "./Admin/Hotel/HotelAdminMaintenance";
@@ -28,8 +27,7 @@ function App() {
   <Route path="/register" element={<RegisterPage />} />
   <Route path="/customer/login" element={<CustomerLogin />} />
   <Route path="/customer/interface" element={<CustomerInterface />} />
-  <Route path="/customer/amenities" element={<Amenities />} />
-  <Route path="/customer/amenities/:amenity" element={<AmenityMaster />} />
+  <Route path="/customer/facilities" element={<Facilities />} />
   <Route path="/customer/food" element={<FoodAndBeverages />} />
   <Route path="/customer/food/:category" element={<FoodMaster />} />
   <Route path="/customer/contact" element={<ContactFrontDesk />} />
