@@ -49,13 +49,14 @@ const EmployeeManagementSection = () => {
     setShowAdd(true);
     try {
       const res = await fetch('/api/employee/next-employee-id');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data && data.padded) {
-        setForm(prev => ({ ...prev, id: data.padded }));
+      const data = await parseResponse(res);
+      const result = (typeof data === 'string') ? { padded: data } : data;
+      if (result && result.padded) {
+        setForm(prev => ({ ...prev, id: result.padded }));
       }
     } catch (err) {
       console.error('next-employee-id fetch failed', err);
+      setMessage({ type: 'error', text: err.message || 'Failed to fetch next id' });
     }
   };
 
@@ -87,8 +88,8 @@ const EmployeeManagementSection = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      const data = await parseResponse(res);
+      const result = (typeof data === 'string') ? { message: data } : data;
       await fetchEmployees();
       setShowAdd(false);
       setForm({ 
@@ -103,18 +104,49 @@ const EmployeeManagementSection = () => {
         password: '', 
         role: 'employee' 
       });
-      setMessage({ type: 'success', text: data.message || 'Employee added successfully' });
+      setMessage({ type: 'success', text: result.message || 'Employee added successfully' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     }
   };
 
-  const fetchEmployees = async () => {
+  // Small helper to avoid "Unexpected token '<'" when server returns HTML error pages.
+  const parseResponse = React.useCallback(async (res) => {
+    const text = await res.text();
+    const contentType = res.headers && res.headers.get ? (res.headers.get('content-type') || '') : '';
+
+    // If server promises JSON, try to parse, but be tolerant on success.
+    if (contentType.includes('application/json')) {
+      try {
+        const json = text ? JSON.parse(text) : {};
+        if (!res.ok) {
+          const errMsg = (json && (json.error || json.message)) || res.statusText || 'Request failed';
+          throw new Error(errMsg);
+        }
+        return json;
+      } catch (parseErr) {
+        // If response body isn't valid JSON:
+        if (!res.ok) {
+          // Failure + invalid JSON -> throw with raw text (likely HTML)
+          throw new Error(text || res.statusText || 'Request failed');
+        }
+        // Success but invalid JSON -> return raw text (caller should handle)
+        return text;
+      }
+    }
+
+    // Non-JSON responses
+    if (!res.ok) {
+      throw new Error(text || res.statusText || 'Request failed');
+    }
+    return text;
+  }, []);
+
+  const fetchEmployees = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/employee');
-      if (!res.ok) throw new Error('Failed to fetch employees');
-      const data = await res.json(); // expect array of Employee documents
+      const data = await parseResponse(res); // expect array of Employee documents
       const mapped = (Array.isArray(data) ? data : []).map(u => {
         const empIdNum = typeof u.employeeId === 'number' ? u.employeeId : (typeof u.employeeId === 'string' && /^\d+$/.test(u.employeeId) ? parseInt(u.employeeId,10) : null);
         const formattedId = empIdNum ? String(empIdNum).padStart(4,'0') : (u.employeeCode || u._id || u.username);
@@ -135,14 +167,15 @@ const EmployeeManagementSection = () => {
       setEmployees(mapped.reverse());
     } catch (err) {
       console.error('fetchEmployee error', err);
+      setMessage({ type: 'error', text: err.message || 'Failed to fetch employees' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [parseResponse]);
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [fetchEmployees]);
 
   const openModal = (emp) => {
     setSelectedEmployee(emp);
@@ -163,15 +196,15 @@ const EmployeeManagementSection = () => {
     if (!confirmDelete) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/employees/${emp.id}`, {
+      const res = await fetch(`/api/employee/${emp.id}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete');
+      const data = await parseResponse(res);
+      const result = (typeof data === 'string') ? { message: data } : data;
       await fetchEmployees();
       closeModal();
-      setMessage({ type: 'success', text: data.message || 'Employee deleted successfully' });
+      setMessage({ type: 'success', text: result.message || 'Employee deleted successfully' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'Delete failed' });
     }

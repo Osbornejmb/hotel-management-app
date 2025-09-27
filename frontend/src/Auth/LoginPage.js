@@ -12,11 +12,34 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const payload = { email, password };
+
+    // helper to attempt a login endpoint and return res.data or throw
+    const attemptLogin = async (url) => {
+      const res = await axios.post(url, payload);
+      return res.data;
+    };
+
     try {
-      const res = await axios.post('http://localhost:5000/api/users/login', { email, password });
-      const { token, role, username, name } = res.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+      let data;
+      try {
+        // first try the users login endpoint
+        data = await attemptLogin('http://localhost:5000/api/users/login');
+      } catch (firstErr) {
+        // if users login fails, try employee login (singular path)
+        try {
+          data = await attemptLogin('http://localhost:5000/api/employee/login');
+        } catch (secondErr) {
+          // prefer a clear message from the server responses if available
+          const msg = firstErr.response?.data?.error || secondErr.response?.data?.error || firstErr.message || 'Login failed';
+          throw new Error(msg);
+        }
+      }
+
+      // normalize response and store session info
+      const { token, role, username, name } = data;
+      if (token) localStorage.setItem('token', token);
+      if (role) localStorage.setItem('role', role);
       if (username) localStorage.setItem('username', username);
       if (name) localStorage.setItem('name', name);
 
@@ -28,13 +51,12 @@ function LoginPage() {
       } else if (role === 'employeeAdmin') {
         navigate('/admin/employee');
       } else if (role === 'employee') {
-        // plain employees should go to the employee main dashboard
         navigate('/user/employeeMainDashboard');
       } else {
         setError('Unknown role');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || err.message || 'Login failed');
     }
   };
 

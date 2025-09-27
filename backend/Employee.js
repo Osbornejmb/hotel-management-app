@@ -4,7 +4,15 @@ const bcrypt = require('bcryptjs');
 const EmployeeSchema = new mongoose.Schema({
   // existing fields (preserved)
   name: { type: String, required: true },
-  role: { type: String, enum: ['housekeeping', 'maintenance'], required: false },
+
+  // allow frontend role values like 'employee' and admin roles as needed
+  role: {
+    type: String,
+    enum: ['employee', 'employeeAdmin', 'hotelAdmin', 'restaurantAdmin', 'housekeeping', 'maintenance'],
+    required: false,
+    default: 'employee'
+  },
+
   department: { type: String, required: true },
 
   // copied/added from User schema (adapted for employees)
