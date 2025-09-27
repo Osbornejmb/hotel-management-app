@@ -48,7 +48,7 @@ const EmployeeManagementSection = () => {
     setMessage(null);
     setShowAdd(true);
     try {
-      const res = await fetch('/api/employees/next-employee-id');
+      const res = await fetch('/api/employee/next-employee-id');
       if (!res.ok) return;
       const data = await res.json();
       if (data && data.padded) {
@@ -82,7 +82,7 @@ const EmployeeManagementSection = () => {
     };
 
     try {
-      const res = await fetch('/api/employees', {
+      const res = await fetch('/api/employee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -112,7 +112,7 @@ const EmployeeManagementSection = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/employees');
+      const res = await fetch('/api/employee');
       if (!res.ok) throw new Error('Failed to fetch employees');
       const data = await res.json(); // expect array of Employee documents
       const mapped = (Array.isArray(data) ? data : []).map(u => {
@@ -134,7 +134,7 @@ const EmployeeManagementSection = () => {
       });
       setEmployees(mapped.reverse());
     } catch (err) {
-      console.error('fetchEmployees error', err);
+      console.error('fetchEmployee error', err);
     } finally {
       setLoading(false);
     }
