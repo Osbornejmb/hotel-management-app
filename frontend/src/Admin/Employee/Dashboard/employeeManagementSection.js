@@ -6,11 +6,11 @@ const EmployeeManagementSection = () => {
   const [employees, setEmployees] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ 
-    id: '', 
-    name: '', 
+    id: '',               // display/padded id (employeeCode)
+    name: '',             // maps to Employee.name
     job: '', 
     jobTitle: 'Staff', 
-    contact: '', 
+    contactNumber: '',    // maps to Employee.contactNumber
     status: 'ACTIVE', 
     username: '', 
     email: '', 
@@ -48,7 +48,7 @@ const EmployeeManagementSection = () => {
     setMessage(null);
     setShowAdd(true);
     try {
-      const res = await fetch('/api/users/next-employee-id');
+      const res = await fetch('/api/employees/next-employee-id');
       if (!res.ok) return;
       const data = await res.json();
       if (data && data.padded) {
@@ -62,18 +62,27 @@ const EmployeeManagementSection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
+    // attempt to extract numeric employeeId from form.id when possible
+    const digits = (form.id || '').replace(/\D/g, '');
+    const employeeIdNum = digits ? parseInt(digits, 10) : undefined;
     const payload = {
       username: form.username || form.name || form.id,
       name: form.name || form.username || form.id,
       email: form.email || `${form.username || form.name || form.id}@example.com`,
-      contact_number: form.contact || '',
+      contactNumber: form.contactNumber || '',
       password: form.password || 'defaultPass123',
-      role: form.role || 'employee',
-      jobTitle: form.jobTitle || 'Staff'
+      jobTitle: form.jobTitle || 'Staff',
+      status: (form.status || 'ACTIVE').toLowerCase(),
+      // include numeric id and display code when available
+      ...(employeeIdNum ? { employeeId: employeeIdNum } : {}),
+      ...(form.id ? { employeeCode: form.id } : {}),
+      dateHired: form.dateHired || undefined,
+      shift: form.shift || '',
+      notes: form.notes || ''
     };
 
     try {
-      const res = await fetch('/api/users/register', {
+      const res = await fetch('/api/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -87,7 +96,7 @@ const EmployeeManagementSection = () => {
         name: '', 
         job: '', 
         jobTitle: 'Staff', 
-        contact: '', 
+        contactNumber: '', 
         status: 'ACTIVE', 
         username: '', 
         email: '', 
@@ -103,20 +112,26 @@ const EmployeeManagementSection = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/employees');
       if (!res.ok) throw new Error('Failed to fetch employees');
-      const data = await res.json();
-      const onlyEmployees = data.filter(u => (u.role || '').toLowerCase() === 'employee');
-      const mapped = onlyEmployees.map(u => ({
-        id: u._id || u.id || u.username,
-        employeeId: typeof u.employeeId === 'number' ? u.employeeId : null,
-        formattedId: typeof u.employeeId === 'number' ? String(u.employeeId).padStart(4, '0') : (u._id || u.username),
-        name: u.name || u.username,
-        email: u.email || '',
-        jobTitle: u.jobTitle || u.position || u.job || 'Staff',
-        contact: u.contact_number || u.phone || 'N/A',
-        status: u.status || 'ACTIVE'
-      }));
+      const data = await res.json(); // expect array of Employee documents
+      const mapped = (Array.isArray(data) ? data : []).map(u => {
+        const empIdNum = typeof u.employeeId === 'number' ? u.employeeId : (typeof u.employeeId === 'string' && /^\d+$/.test(u.employeeId) ? parseInt(u.employeeId,10) : null);
+        const formattedId = empIdNum ? String(empIdNum).padStart(4,'0') : (u.employeeCode || u._id || u.username);
+        return {
+          id: u._id || u.id || u.employeeCode || u.username,
+          employeeId: empIdNum,
+          formattedId,
+          name: u.name || u.fullName || u.username,
+          email: u.email || '',
+          jobTitle: u.jobTitle || u.position || 'Staff',
+          contact: u.contactNumber || u.contact || 'N/A',
+          status: (u.status || 'active').toUpperCase(),
+          dateHired: u.dateHired || null,
+          shift: u.shift || '',
+          notes: u.notes || ''
+        };
+      });
       setEmployees(mapped.reverse());
     } catch (err) {
       console.error('fetchEmployees error', err);
@@ -148,7 +163,7 @@ const EmployeeManagementSection = () => {
     if (!confirmDelete) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/users/${emp.id}`, {
+      const res = await fetch(`/api/employees/${emp.id}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
@@ -350,8 +365,8 @@ const EmployeeManagementSection = () => {
                 style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
               />
               <input 
-                name="contact" 
-                value={form.contact} 
+                name="contactNumber" 
+                value={form.contactNumber} 
                 onChange={handleChange} 
                 placeholder="Contact Number" 
                 style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
