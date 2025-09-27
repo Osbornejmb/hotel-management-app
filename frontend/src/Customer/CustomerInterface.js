@@ -1,48 +1,165 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function CustomerInterface() {
 	const navigate = useNavigate();
 	const [hovered, setHovered] = useState([false, false, false]);
 
+	// Notification state
+	// Restore handleNavigate for card navigation
 	const handleNavigate = (path) => {
 		navigate(path);
 	};
 
-		// Header style 
-		const headerStyle = {
-			width: '100%',
-			background: '#4B2E06',
-			display: 'flex',
-			alignItems: 'center',
-			justifyContent: 'space-between',
-			padding: '0.5rem 2.5rem',
-			boxSizing: 'border-box',
-			minHeight: 64,
-			boxShadow: '0 2px 8px #0001',
-			position: 'sticky',
-			top: 0,
-			zIndex: 100,
+	// Removed unused orders state
+	const [showPopup, setShowPopup] = useState(false);
+	const [notifications, setNotifications] = useState([]); // delivered orders for popup
+	const [counter, setCounter] = useState(0); // delivered order count
+	const [viewedOrderIds, setViewedOrderIds] = useState(() => {
+		const stored = localStorage.getItem('viewedOrderIds');
+		return stored ? JSON.parse(stored) : [];
+	});
+
+	// Get current room number from localStorage (match FoodAndBeverages.js)
+	const roomNumber = localStorage.getItem('customerRoomNumber');
+
+
+	// Poll backend for orders every 5 seconds (like FoodAndBeverages)
+	useEffect(() => {
+		let interval;
+		const fetchOrders = async () => {
+			try {
+				const res = await fetch('/api/cart/orders/all');
+				if (!res.ok) return;
+				const allOrders = await res.json();
+				const filtered = allOrders.filter(order => String(order.roomNumber) === String(roomNumber));
+				// Only show delivered orders not in viewedOrderIds
+				const newNotifications = filtered.filter(order => order.status === 'delivered' && !viewedOrderIds.includes(order._id));
+				setNotifications(newNotifications);
+				setCounter(newNotifications.length);
+			} catch (e) {
+				// ignore errors
+			}
 		};
-		const logoutBtnStyle = {
-			background: '#F7D774',
-			color: '#4B2E06',
-			border: 'none',
-			borderRadius: '0.35em',
-			fontSize: '1.08rem',
-			fontFamily: 'inherit',
-			fontWeight: 500,
-			padding: '0.45em 1.5em',
-			boxShadow: '0 2px 8px #e5c16c44',
-			cursor: 'pointer',
-			transition: 'background 0.2s, color 0.2s',
-			outline: 'none',
-			marginLeft: 24,
+		fetchOrders();
+		interval = setInterval(fetchOrders, 5000);
+		return () => {
+			if (interval) clearInterval(interval);
 		};
-		const handleLogout = () => {
-			localStorage.clear();
-			navigate('/customer/login', { replace: true });
-		};
+	}, [roomNumber, viewedOrderIds]);
+
+
+	// Handle bell click
+	const handleBellClick = () => {
+		setShowPopup(true);
+	};
+	// Handle popup close
+	const handleClosePopup = () => {
+		// Mark all currently notified orders as viewed and persist to localStorage
+		setViewedOrderIds(prev => {
+			const updated = [...prev, ...notifications.map(o => o._id)];
+			localStorage.setItem('viewedOrderIds', JSON.stringify(updated));
+			return updated;
+		});
+		setShowPopup(false);
+		setNotifications([]); // clear notifications in popup only
+		setCounter(0); // reset counter
+	};
+// Persist viewedOrderIds to localStorage whenever it changes
+useEffect(() => {
+	localStorage.setItem('viewedOrderIds', JSON.stringify(viewedOrderIds));
+}, [viewedOrderIds]);
+
+	// Header style 
+	const headerStyle = {
+		width: '100%',
+		background: '#4B2E06',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		padding: '0.5rem 2.5rem',
+		boxSizing: 'border-box',
+		minHeight: 64,
+		boxShadow: '0 2px 8px #0001',
+		position: 'sticky',
+		top: 0,
+		zIndex: 100,
+	};
+	const logoutBtnStyle = {
+		background: '#F7D774',
+		color: '#4B2E06',
+		border: 'none',
+		borderRadius: '0.35em',
+		fontSize: '1.08rem',
+		fontFamily: 'inherit',
+		fontWeight: 500,
+		padding: '0.45em 1.5em',
+		boxShadow: '0 2px 8px #e5c16c44',
+		cursor: 'pointer',
+		transition: 'background 0.2s, color 0.2s',
+		outline: 'none',
+		marginLeft: 24,
+	};
+	const bellStyle = {
+		position: 'relative',
+		background: 'none',
+		border: 'none',
+		cursor: 'pointer',
+		marginLeft: 24,
+		marginRight: 8,
+		outline: 'none',
+		padding: 0,
+		display: 'flex',
+		alignItems: 'center',
+	};
+	const bellIconStyle = {
+		fontSize: 28,
+		color: '#F7D774',
+	};
+	const bellCounterStyle = {
+		position: 'absolute',
+		top: -6,
+		right: -6,
+		background: '#e74c3c',
+		color: '#fff',
+		borderRadius: '50%',
+		fontSize: 13,
+		fontWeight: 700,
+		minWidth: 22,
+		height: 22,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		boxShadow: '0 2px 8px #e74c3c44',
+		zIndex: 2,
+	};
+	const popupStyle = {
+		position: 'absolute',
+		top: 60,
+		right: 32,
+		background: '#fff',
+		borderRadius: '1em',
+		boxShadow: '0 4px 24px #0002',
+		padding: '1.2em 1.5em',
+		minWidth: 320,
+		zIndex: 999,
+	};
+	const closeBtnStyle = {
+		background: '#F7D774',
+		color: '#4B2E06',
+		border: 'none',
+		borderRadius: '0.35em',
+		fontSize: '1rem',
+		fontWeight: 500,
+		padding: '0.3em 1em',
+		cursor: 'pointer',
+		marginTop: 12,
+		float: 'right',
+	};
+	const handleLogout = () => {
+		localStorage.clear();
+		navigate('/customer/login', { replace: true });
+	};
 	const logoStyle = {
 		height: 40,
 		width: 40,
@@ -64,15 +181,51 @@ export default function CustomerInterface() {
 	return (
 		<div style={{ background: '#fff', minHeight: '100vh', padding: 0, margin: 0 }}>
 			{/* Header with logo and app name */}
-					<div style={headerStyle}>
-						<div style={{ display: 'flex', alignItems: 'center' }}>
-							<img src={process.env.PUBLIC_URL + '/logo192.png'} alt="Lumine Logo" style={logoStyle} />
-							<span style={appNameStyle}>Lumine</span>
+			<div style={headerStyle}>
+				<div style={{ display: 'flex', alignItems: 'center' }}>
+					<img src={process.env.PUBLIC_URL + '/logo192.png'} alt="Lumine Logo" style={logoStyle} />
+					<span style={appNameStyle}>Lumine</span>
+				</div>
+				<div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+					{/* Notification Bell */}
+					<button style={bellStyle} onClick={handleBellClick} aria-label="Notifications">
+						{/* Simple bell SVG */}
+						<span style={bellIconStyle}>
+							<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F7D774" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+						</span>
+						{/* Show counter for new delivered orders */}
+						{counter > 0 && <span style={bellCounterStyle}>{counter}</span>}
+					</button>
+					<button style={logoutBtnStyle} onClick={handleLogout} onMouseOver={e => { e.target.style.background = '#ffe9a7'; }} onMouseOut={e => { e.target.style.background = '#F7D774'; }}>
+						Log Out
+					</button>
+					{/* Notification Popup */}
+					{showPopup && (
+						<div style={popupStyle}>
+							<div style={{ fontWeight: 600, fontSize: 18, marginBottom: 10 }}>Delivered Items</div>
+							{notifications.length === 0 ? (
+								<div style={{ color: '#888', fontSize: 15 }}>No new delivered items.</div>
+							) : (
+								<ul style={{ paddingLeft: 18, marginBottom: 8 }}>
+									{notifications.map((order, idx) => (
+										order.items && order.items.length > 0 ? order.items.map((item, i) => (
+											<li key={item.name + i} style={{ marginBottom: 6 }}>
+												{item.name} delivered
+											</li>
+										)) : (
+											<li key={idx} style={{ marginBottom: 6 }}>
+												Item delivered
+											</li>
+										)
+									))}
+								</ul>
+							)}
+							<button style={closeBtnStyle} onClick={handleClosePopup}>Close</button>
 						</div>
-						<button style={logoutBtnStyle} onClick={handleLogout} onMouseOver={e => { e.target.style.background = '#ffe9a7'; }} onMouseOut={e => { e.target.style.background = '#F7D774'; }}>
-							Log Out
-						</button>
-					</div>
+					)}
+				</div>
+			</div>
+			{/* ...existing code... */}
 			<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', minHeight: '80vh', marginTop: '3.5rem' }}>
 				<div style={{ display: 'flex', gap: '32px' }}>
 					{/* Facilities Card */}
@@ -112,7 +265,7 @@ export default function CustomerInterface() {
 							<div style={{ fontSize: 28, color: '#222', fontWeight: 400, fontFamily: 'serif', marginTop: 12 }}>Facilities</div>
 						</div>
 					</div>
-					{/* Food & Beverage Card */}
+					{/* ...existing code... */}
 					<div
 						style={{
 							background: '#ffdc85',
@@ -149,7 +302,7 @@ export default function CustomerInterface() {
 							<div style={{ fontSize: 28, color: '#222', fontWeight: 400, fontFamily: 'serif', marginTop: 12 }}>Food & Beverage</div>
 						</div>
 					</div>
-					{/* Contact Front Desk Card */}
+					{/* ...existing code... */}
 					<div
 						style={{
 							background: '#bfb08a',
