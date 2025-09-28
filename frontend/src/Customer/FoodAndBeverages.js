@@ -21,6 +21,8 @@ function FoodAndBeverages() {
   const [search, setSearch] = useState('');
   const [foodItems, setFoodItems] = useState([]); // All food items from backend
   const [foodLoaded, setFoodLoaded] = useState(false);
+  const [popup, setPopup] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
   const roomNumber = localStorage.getItem('customerRoomNumber');
 
   // Load all food items from backend on mount
@@ -39,6 +41,30 @@ function FoodAndBeverages() {
       })
       .catch(() => setFoodLoaded(true));
   }, []);
+
+  // Popup logic from FoodMaster
+  const handleFoodClick = (food) => setPopup(food);
+  const closePopup = () => setPopup(null);
+  const addToCart = async (food) => {
+    if (addingToCart) return;
+    setAddingToCart(true);
+    const foodWithImage = { ...food, image: food.img };
+    if (roomNumber) {
+      try {
+        // Fetch current cart
+        const cartRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
+        const currentItems = Array.isArray(cartRes.data?.items) ? cartRes.data.items : [];
+        // Append new item
+        const newItems = [...currentItems, foodWithImage];
+        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`, { items: newItems });
+        setCart(newItems);
+      } catch (err) {}
+    } else {
+      setCart((prev) => [...prev, foodWithImage]);
+    }
+    setAddingToCart(false);
+    setPopup(null);
+  };
 
   // Load cart from backend on mount
   useEffect(() => {
@@ -428,7 +454,7 @@ function FoodAndBeverages() {
               margin: 0,
               padding: '1.2rem 0.5rem',
             }}
-              onClick={() => navigate(`/customer/food/${food.category || ''}`)}
+              onClick={() => handleFoodClick(food)}
               onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 32px #e5c16c99'; e.currentTarget.style.border = '2.5px solid #F7D774'; e.currentTarget.style.transform = 'translateY(-6px) scale(1.03)'; }}
               onMouseOut={e => { e.currentTarget.style.boxShadow = '0 4px 16px #e5c16c33, 0 2px 8px #FFD700'; e.currentTarget.style.border = '1.5px solid #f7e6b0'; e.currentTarget.style.transform = 'none'; }}
             >
@@ -441,6 +467,76 @@ function FoodAndBeverages() {
           {foodItems.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
             <div style={{ gridColumn: '1/-1', color: '#888', fontFamily: 'serif', fontSize: '1.2rem', textAlign: 'center', background: 'transparent' }}>No food items found.</div>
           )}
+        </div>
+      )}
+
+      {/* Popup for Add to Cart */}
+      {popup && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0,
+          width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.18)',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: '#fff',
+            padding: '1.2rem 1.5rem 1.5rem 1.5rem',
+            borderRadius: '1.2rem',
+            boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
+            minWidth: 340,
+            maxWidth: 380,
+            minHeight: 320,
+            textAlign: 'center',
+            color: '#4B2E06',
+            border: '2.5px solid #F7D774',
+            fontFamily: 'serif',
+            width: '90vw',
+            maxHeight: '95vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+          }}>
+            {popup.img && (
+              <img src={popup.img} alt={popup.name} style={{ width: '100%', maxWidth: 220, height: 150, objectFit: 'cover', borderRadius: '1em', marginBottom: 10, border: '1.5px solid #F7D774', background: '#fff', display: 'block' }} />
+            )}
+            <h3 style={{ color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', fontSize: '1.25rem', margin: 0, marginBottom: '0.5rem' }}>{popup.name}</h3>
+            <div style={{ fontSize: '1.08rem', color: '#4B2E06', fontWeight: 500, marginBottom: '0.5rem' }}>₱{popup.price ? popup.price.toFixed(2) : '0.00'}</div>
+            {popup.details && (
+              <p style={{ margin: 0, marginBottom: '0.7rem', color: '#4B2E06', fontWeight: 400, fontSize: '1rem' }}>{popup.details}</p>
+            )}
+            <div style={{ marginBottom: '0.7rem', fontSize: '1rem' }}>Add this item to your cart?</div>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', width: '100%' }}>
+              <button
+                onClick={() => addToCart(popup)}
+                disabled={addingToCart}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '0.5em', border: '2px solid #FFD700',
+                  background: addingToCart ? '#e5c16c88' : '#F7D774', color: '#4B2E06',
+                  fontWeight: 500, fontFamily: 'serif', cursor: addingToCart ? 'not-allowed' : 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s'
+                }}
+                onMouseOver={e => { if (!addingToCart) { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}}
+                onMouseOut={e => { if (!addingToCart) { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}}
+              >
+                {addingToCart ? 'Adding...' : 'Add to Cart'}
+              </button>
+              <button
+                onClick={closePopup}
+                style={{
+                  padding: '0.5rem 1.5rem',
+                  borderRadius: '0.5em', border: '2px solid #FFD700',
+                  background: '#fff', color: '#4B2E06',
+                  fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s'
+                }}
+                onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
+                onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
