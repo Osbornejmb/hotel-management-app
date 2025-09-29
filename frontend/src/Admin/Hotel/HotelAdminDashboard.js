@@ -1,27 +1,25 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { FaTachometerAlt, FaBed, FaBroom, FaTools, FaHistory } from 'react-icons/fa';
 import LogoutButton from '../../Auth/LogoutButton';
 import './HotelAdminDashboard.css';
 
 function HotelAdminDashboard({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
+
   const sidebarButtons = [
-    { name: 'Dashboard', path: '/admin/hotel' },
-    { name: 'Rooms', path: '/admin/hotel/rooms' },
-    { name: 'Housekeeping', path: '/admin/hotel/housekeeping' },
-    { name: 'Maintenance', path: '/admin/hotel/maintenance' },
-    { name: 'Booking history', path: '/admin/hotel/booking-history' },
+    { name: 'Dashboard', path: '/admin/hotel', icon: <FaTachometerAlt /> },
+    { name: 'Rooms', path: '/admin/hotel/rooms', icon: <FaBed /> },
+    { name: 'Housekeeping', path: '/admin/hotel/housekeeping', icon: <FaBroom /> },
+    { name: 'Maintenance', path: '/admin/hotel/maintenance', icon: <FaTools /> },
+    { name: 'Booking History', path: '/admin/hotel/booking-history', icon: <FaHistory /> },
   ];
 
   return (
     <div className="hotel-admin-dashboard-root gold-theme">
-      {/* Top navbar full width */}
-      <nav
-        className="hotel-admin-dashboard-nav gold-theme"
-        style={{ width: '100vw', position: 'fixed', top: 0, left: 0, zIndex: 100 }}
-      >
-        {/* Home icon */}
+      {/* Top navbar */}
+      <nav className="hotel-admin-dashboard-nav gold-theme">
         <div className="hotel-admin-dashboard-home-btn">
           <button
             onClick={() => navigate('/admin/hotel')}
@@ -34,24 +32,19 @@ function HotelAdminDashboard({ children }) {
               color: '#fff',
             }}
           >
-            <span role="img" aria-label="home">
-              🏠
-            </span>
+            <img src="/home_icon.png" alt="Home" className="hotel-admin-dashboard-home-icon" />
           </button>
         </div>
-        {/* Title and subtitle */}
-        <span className="hotel-admin-dashboard-title gold-theme">Lumine</span>
-        <span className="hotel-admin-dashboard-subtitle gold-theme">
-          Room Management
-        </span>
-        {/* Logout button in upper right */}
+
+        <img src="/lumine_logo.png" alt="Lumine Logo" className="hotel-admin-dashboard-logo" />
+
         <div className="hotel-admin-dashboard-logout-btn">
           <LogoutButton />
         </div>
       </nav>
 
-      {/* Sidebar below navbar */}
-      <div style={{ display: 'flex', width: '100vw', marginTop: '110px' }}>
+      {/* Sidebar */}
+      <div style={{ display: 'flex', width: '100vw' }}>
         <aside className="hotel-admin-dashboard-sidebar gold-theme">
           {sidebarButtons.map((btn) => (
             <button
@@ -61,16 +54,15 @@ function HotelAdminDashboard({ children }) {
               }`}
               onClick={() => navigate(btn.path)}
             >
-              {btn.name}
+              <span className="sidebar-icon">{btn.icon}</span>
+              <span className="sidebar-text">{btn.name}</span>
             </button>
           ))}
         </aside>
 
-        {/* Main content area */}
+        {/* Main content */}
         <div className="hotel-admin-dashboard-main">
-          <div className="hotel-admin-dashboard-content gold-theme">
-            {children}
-          </div>
+          <div className="hotel-admin-dashboard-content gold-theme">{children}</div>
         </div>
       </div>
     </div>

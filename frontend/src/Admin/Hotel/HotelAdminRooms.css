@@ -238,7 +238,8 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;  /* allow vertical scroll */
+    overflow-x: hidden;
 }
 .hotel-admin-rooms-title {
 	color: #a57c2b;
@@ -253,70 +254,51 @@
 }
 .hotel-admin-rooms-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 0.4vw 1.5vw; /* even smaller vertical gap */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.2rem;
     width: 100%;
     max-width: 1800px;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
     align-items: stretch;
-    height: 60vw;
-    min-height: 350px;
-    max-height: 80vh;
-    flex: 1 0 auto;
-}
-.room-card-v2 {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    min-height: 0;
-    height: 90%; /* smaller cards */
-    aspect-ratio: 0.75/1; /* Even slimmer rectangle */
-    border-radius: 14px;
-    box-shadow: 0 3px 12px #bbb;
-    padding: 0.4vw 0.3vw 0.3vw 0.3vw; /* Tighter padding */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    position: relative;
-    font-size: 0.65vw; /* Smaller font */
-    background: #fff;
-    transition: box-shadow 0.2s;
-}
-@media (max-width: 1100px) {
-    .hotel-admin-rooms-grid {
-        height: 80vw;
-        gap: 2.8vw 1.8vw;
-    }
-    .room-card-v2 {
-        font-size: 0.9vw;
-        padding: 1vw 0.6vw 0.6vw 0.6vw;
-    }
-}
-@media (max-width: 800px) {
-    .hotel-admin-rooms-grid {
-        height: 120vw;
-        gap: 3vw 2vw;
-    }
-    .room-card-v2 {
-        font-size: 1.2vw;
-        padding: 1.5vw 0.9vw 0.9vw 0.9vw;
-    }
-}
-@media (max-width: 600px) {
-    .hotel-admin-rooms-grid {
-        height: 180vw;
-        gap: 4vw 2vw;
-    }
-    .room-card-v2 {
-        font-size: 1.8vw;
-        padding: 2vw 1vw 1vw 1vw;
-    }
+    padding-bottom: 2rem;
 }
 
-.room-card-v2:hover {
-	box-shadow: 0 4px 16px #888;
+.room-card-v2 {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* push button down */
+    border-radius: 14px;
+    box-shadow: 0 3px 12px #bbb;
+    padding: 1rem;
+    background: #fff;
+    transition: box-shadow 0.2s;
+    position: relative;
+}
+
+.room-card-v2-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+
+.room-card-v2-manage {
+    align-self: flex-end;
+    background: #eee;
+    color: #444;
+    border: none;
+    border-radius: 7px;
+    padding: 0.4rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: 1px 2px 4px #ccc;
+    cursor: pointer;
+    margin-top: auto;   /* ensures button is always at bottom */
+    transition: background 0.2s, color 0.2s;
+}
+
+.room-card-v2-manage:hover {
+    background: #bbb;
+    color: #fff;
 }
 .room-card-v2-number {
 	font-size: 2.1rem;
