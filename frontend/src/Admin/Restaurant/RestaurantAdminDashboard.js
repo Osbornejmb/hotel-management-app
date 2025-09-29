@@ -261,16 +261,18 @@ function RestaurantAdminDashboard() {
               </thead>
               <tbody>
                 {pendingOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + (item.price || 0), 0);
+                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
                   return (
                     <tr key={order._id} style={{ background: '#222', color: '#FFD700' }}>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>{order.roomNumber}</td>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                           {order.items.map((item, idx) => (
-                            <li key={idx} style={{ marginBottom: '0.5rem' }}>
+                            <li key={idx} style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
                               <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> <span style={{ color: '#FFD700' }}>({item.category})</span> - <span style={{ color: '#FFD700' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</span>
+                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> 
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>(x{item.quantity || 1})</span>
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
                             </li>
                           ))}
                         </ul>
@@ -313,16 +315,18 @@ function RestaurantAdminDashboard() {
               </thead>
               <tbody>
                 {deliveredOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + (item.price || 0), 0);
+                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
                   return (
                     <tr key={order._id} style={{ background: '#222', color: '#FFD700' }}>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>{order.roomNumber}</td>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                           {order.items.map((item, idx) => (
-                            <li key={idx} style={{ marginBottom: '0.5rem' }}>
+                            <li key={idx} style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
                               <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> <span style={{ color: '#FFD700' }}>({item.category})</span> - <span style={{ color: '#FFD700' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</span>
+                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> 
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>(x{item.quantity || 1})</span>
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
                             </li>
                           ))}
                         </ul>

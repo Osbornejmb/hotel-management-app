@@ -5,7 +5,6 @@ export default function CustomerInterface() {
 	const navigate = useNavigate();
 	const [hovered, setHovered] = useState([false, false, false]);
 
-	// Notification state
 	// Restore handleNavigate for card navigation
 	const handleNavigate = (path) => {
 		navigate(path);
@@ -29,7 +28,7 @@ export default function CustomerInterface() {
 		let interval;
 		const fetchOrders = async () => {
 			try {
-				const res = await fetch('/api/cart/orders/all');
+				const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
 				if (!res.ok) return;
 				const allOrders = await res.json();
 				const filtered = allOrders.filter(order => String(order.roomNumber) === String(roomNumber));
@@ -49,26 +48,49 @@ export default function CustomerInterface() {
 	}, [roomNumber, viewedOrderIds]);
 
 
-	// Handle bell click
+	// Handle bell click - toggle popup
 	const handleBellClick = () => {
-		setShowPopup(true);
+		setShowPopup(prev => !prev);
 	};
-	// Handle popup close
-	const handleClosePopup = () => {
-		// Mark all currently notified orders as viewed and persist to localStorage
+
+	// Handle removing individual notification
+	const handleRemoveNotification = (orderId) => {
 		setViewedOrderIds(prev => {
-			const updated = [...prev, ...notifications.map(o => o._id)];
+			const updated = [...prev, orderId];
 			localStorage.setItem('viewedOrderIds', JSON.stringify(updated));
 			return updated;
 		});
-		setShowPopup(false);
-		setNotifications([]); // clear notifications in popup only
-		setCounter(0); // reset counter
+		// Remove the notification from local state immediately
+		setNotifications(prev => prev.filter(order => order._id !== orderId));
+		setCounter(prev => prev - 1);
 	};
-// Persist viewedOrderIds to localStorage whenever it changes
-useEffect(() => {
-	localStorage.setItem('viewedOrderIds', JSON.stringify(viewedOrderIds));
-}, [viewedOrderIds]);
+
+	// Close popup when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event) => {
+			// If popup is open and click is outside the popup and not on the bell
+			if (showPopup) {
+				const popup = document.querySelector('.notification-popup');
+				const bell = document.querySelector('.notification-bell');
+				
+				if (popup && bell && 
+					!popup.contains(event.target) && 
+					!bell.contains(event.target)) {
+					setShowPopup(false);
+				}
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [showPopup]);
+
+	// Persist viewedOrderIds to localStorage whenever it changes
+	useEffect(() => {
+		localStorage.setItem('viewedOrderIds', JSON.stringify(viewedOrderIds));
+	}, [viewedOrderIds]);
 
 	// Header style 
 	const headerStyle = {
@@ -114,7 +136,8 @@ useEffect(() => {
 	};
 	const bellIconStyle = {
 		fontSize: 28,
-		color: '#F7D774',
+		color: '#F7D700',
+		transition: 'color 0.2s',
 	};
 	const bellCounterStyle = {
 		position: 'absolute',
@@ -142,19 +165,24 @@ useEffect(() => {
 		boxShadow: '0 4px 24px #0002',
 		padding: '1.2em 1.5em',
 		minWidth: 320,
+		maxWidth: 400,
 		zIndex: 999,
 	};
-	const closeBtnStyle = {
-		background: '#F7D774',
-		color: '#4B2E06',
+	const removeBtnStyle = {
+		background: '#ff6b6b',
+		color: '#fff',
 		border: 'none',
-		borderRadius: '0.35em',
-		fontSize: '1rem',
-		fontWeight: 500,
-		padding: '0.3em 1em',
+		borderRadius: '50%',
+		width: '20px',
+		height: '20px',
+		fontSize: '12px',
+		fontWeight: 'bold',
 		cursor: 'pointer',
-		marginTop: 12,
-		float: 'right',
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginLeft: '8px',
+		flexShrink: 0,
 	};
 	const handleLogout = () => {
 		localStorage.clear();
@@ -188,10 +216,18 @@ useEffect(() => {
 				</div>
 				<div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
 					{/* Notification Bell */}
-					<button style={bellStyle} onClick={handleBellClick} aria-label="Notifications">
+					<button 
+						className="notification-bell"
+						style={{...bellStyle, ...(showPopup ? { background: '#F7D700', borderRadius: '50%', padding: '4px' } : {})}} 
+						onClick={handleBellClick} 
+						aria-label="Notifications"
+					>
 						{/* Simple bell SVG */}
-						<span style={bellIconStyle}>
-							<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F7D774" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+						<span style={{...bellIconStyle, ...(showPopup ? { color: '#4B2E06' } : {})}}>
+							<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+								<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+								<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+							</svg>
 						</span>
 						{/* Show counter for new delivered orders */}
 						{counter > 0 && <span style={bellCounterStyle}>{counter}</span>}
@@ -201,26 +237,67 @@ useEffect(() => {
 					</button>
 					{/* Notification Popup */}
 					{showPopup && (
-						<div style={popupStyle}>
-							<div style={{ fontWeight: 600, fontSize: 18, marginBottom: 10 }}>Delivered Items</div>
+						<div className="notification-popup" style={popupStyle}>
+							<div style={{ fontWeight: 600, fontSize: 18, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+								<span>Delivered Items</span>
+								{counter > 0 && (
+									<span style={{ fontSize: 14, color: '#666', fontWeight: 400 }}>
+										{counter} new notification{counter !== 1 ? 's' : ''}
+									</span>
+								)}
+							</div>
 							{notifications.length === 0 ? (
 								<div style={{ color: '#888', fontSize: 15 }}>No new delivered items.</div>
 							) : (
-								<ul style={{ paddingLeft: 18, marginBottom: 8 }}>
+								<div style={{ maxHeight: '300px', overflowY: 'auto' }}>
 									{notifications.map((order, idx) => (
-										order.items && order.items.length > 0 ? order.items.map((item, i) => (
-											<li key={item.name + i} style={{ marginBottom: 6 }}>
-												{item.name} delivered
-											</li>
-										)) : (
-											<li key={idx} style={{ marginBottom: 6 }}>
-												Item delivered
-											</li>
-										)
+										<div key={order._id} style={{ 
+											border: '1px solid #f0f0f0', 
+											borderRadius: '8px', 
+											padding: '10px', 
+											marginBottom: '10px',
+											background: '#f9f9f9'
+										}}>
+											<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+												<div style={{ fontWeight: 500, fontSize: '14px' }}>
+													Order #{order._id.slice(-6)}
+												</div>
+												<button 
+													style={removeBtnStyle}
+													onClick={() => handleRemoveNotification(order._id)}
+													title="Remove notification"
+												>
+													×
+												</button>
+											</div>
+											<ul style={{ paddingLeft: 18, margin: 0 }}>
+												{order.items && order.items.length > 0 ? order.items.map((item, i) => (
+													<li key={item.name + i} style={{ marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+														<span>
+															{item.name} (x{item.quantity || 1})
+														</span>
+														<span style={{ fontWeight: 500, marginLeft: '1rem' }}>
+															₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+														</span>
+													</li>
+												)) : (
+													<li style={{ marginBottom: 6 }}>
+														Item delivered
+													</li>
+												)}
+											</ul>
+											<div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '6px', marginTop: '6px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+												<span>Order Total:</span>
+												<span>
+													₱{order.items.reduce((total, item) => 
+														total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)
+													}
+												</span>
+											</div>
+										</div>
 									))}
-								</ul>
+								</div>
 							)}
-							<button style={closeBtnStyle} onClick={handleClosePopup}>Close</button>
 						</div>
 					)}
 				</div>
@@ -344,5 +421,3 @@ useEffect(() => {
 		</div>
 	);
 }
-
-

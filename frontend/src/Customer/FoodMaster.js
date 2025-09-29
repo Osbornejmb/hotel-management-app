@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-export default FoodMaster;
-
 
 const initialFoodData = {
   breakfast: [],
@@ -41,20 +39,23 @@ function FoodMaster() {
   // Add missing handlers
   const handleFoodClick = (food) => setPopup(food);
   const [addingToCart, setAddingToCart] = useState(false);
-  const addToCart = async (food) => {
+  
+  // Add to cart with quantity support
+  const addToCart = async (food, quantity = 1) => {
     if (addingToCart) return;
     setAddingToCart(true);
-  // Always use the image path from the card (food.img) for cart display
-  const foodWithImage = { ...food, image: food.img };
+    
+    // Always use the image path from the card (food.img) for cart display
+    const foodWithImage = { 
+      ...food, 
+      image: food.img,
+      quantity: quantity
+    };
+    
     if (roomNumber) {
       try {
-        // Fetch current cart
-        const cartRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
-        const currentItems = Array.isArray(cartRes.data?.items) ? cartRes.data.items : [];
-        // Append new item
-        const newItems = [...currentItems, foodWithImage];
-        // Replace cart with new array
-        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`, { items: newItems });
+        // Use the new endpoint that merges quantities
+        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/items`, foodWithImage);
         // Always fetch the latest cart after adding
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
@@ -62,11 +63,25 @@ function FoodMaster() {
         alert('Failed to add to cart. Please try again.');
       }
     } else {
-      setCart((prev) => [...prev, foodWithImage]);
+      // For local cart (no room number), check if item exists and update quantity
+      setCart((prev) => {
+        const existingItemIndex = prev.findIndex(
+          item => item.name === food.name && item.price === food.price
+        );
+        
+        if (existingItemIndex >= 0) {
+          const updatedCart = [...prev];
+          updatedCart[existingItemIndex].quantity += quantity;
+          return updatedCart;
+        } else {
+          return [...prev, foodWithImage];
+        }
+      });
     }
     setAddingToCart(false);
     setPopup(null);
   };
+
   const closePopup = () => setPopup(null);
   const foods = foodData[normalizedCategory] || [];
 
@@ -83,6 +98,35 @@ function FoodMaster() {
     return () => { ignore = true; };
   }, [category]);
 
+  // Update item quantity in cart
+  const updateQuantity = async (idx, newQuantity) => {
+    if (newQuantity < 1) return;
+    
+    if (roomNumber) {
+      try {
+        await axios.patch(
+          `${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/${idx}/quantity`,
+          { quantity: newQuantity }
+        );
+        // Reload cart from backend after update
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
+        setCart(res.data?.items || []);
+      } catch {
+        // Fallback: update local state
+        setCart((prev) => {
+          const updatedCart = [...prev];
+          updatedCart[idx].quantity = newQuantity;
+          return updatedCart;
+        });
+      }
+    } else {
+      setCart((prev) => {
+        const updatedCart = [...prev];
+        updatedCart[idx].quantity = newQuantity;
+        return updatedCart;
+      });
+    }
+  };
 
   const removeFromCart = async (idx) => {
     if (roomNumber) {
@@ -167,7 +211,7 @@ function FoodMaster() {
           <button onClick={() => setShowCart(true)} style={{ background: 'none', border: 'none', color: '#FFD700', fontSize: '1.25rem', fontFamily: 'serif', fontWeight: 500, cursor: 'pointer', padding: '0.4em 1.2em', borderRadius: '0.35em', transition: 'background 0.2s, color 0.2s', outline: 'none' }}
             onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
             onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}>
-            Cart ({cart.length})
+            Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})
           </button>
           <button onClick={() => setShowStatus(true)} style={{ background: 'none', border: 'none', color: '#FFD700', fontSize: '1.25rem', fontFamily: 'serif', fontWeight: 500, cursor: 'pointer', padding: '0.4em 1.2em', borderRadius: '0.35em', transition: 'background 0.2s, color 0.2s', outline: 'none' }}
             onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
@@ -274,7 +318,7 @@ function FoodMaster() {
         ))}
       </div>
 
-      {/* Popup for Add to Cart */}
+      {/* Popup for Add to Cart with Quantity Selection */}
       {popup && (
         <div style={{
           position: 'fixed', top: 0, left: 0,
@@ -290,7 +334,7 @@ function FoodMaster() {
             boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
             minWidth: 340,
             maxWidth: 380,
-            minHeight: 320,
+            minHeight: 360,
             textAlign: 'center',
             color: '#4B2E06',
             border: '2.5px solid #F7D774',
@@ -310,10 +354,70 @@ function FoodMaster() {
             {popup.details && (
               <p style={{ margin: 0, marginBottom: '0.7rem', color: '#4B2E06', fontWeight: 400, fontSize: '1rem' }}>{popup.details}</p>
             )}
+            
+            {/* Quantity Selector */}
+            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+              <span style={{ fontSize: '1rem', fontWeight: 500 }}>Quantity:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  onClick={() => {
+                    const currentQty = popup.quantity || 1;
+                    if (currentQty > 1) {
+                      setPopup({...popup, quantity: currentQty - 1});
+                    }
+                  }}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    border: '2px solid #FFD700',
+                    background: '#F7D774',
+                    color: '#4B2E06',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  -
+                </button>
+                <span style={{ 
+                  minWidth: '40px', 
+                  textAlign: 'center', 
+                  fontSize: '1.1rem',
+                  fontWeight: 500 
+                }}>
+                  {popup.quantity || 1}
+                </span>
+                <button
+                  onClick={() => {
+                    const currentQty = popup.quantity || 1;
+                    setPopup({...popup, quantity: currentQty + 1});
+                  }}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    border: '2px solid #FFD700',
+                    background: '#F7D774',
+                    color: '#4B2E06',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
             <div style={{ marginBottom: '0.7rem', fontSize: '1rem' }}>Add this item to your cart?</div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', width: '100%' }}>
               <button
-                onClick={() => addToCart(popup)}
+                onClick={() => addToCart(popup, popup.quantity || 1)}
                 disabled={addingToCart}
                 style={{
                   padding: '0.5rem 1.5rem',
@@ -344,7 +448,7 @@ function FoodMaster() {
         </div>
       )}
 
-      {/* Cart Popup */}
+      {/* Cart Popup with Quantity Support */}
       {showCart && (
         <div style={{
           position: 'fixed', top: 0, left: 0,
@@ -354,130 +458,163 @@ function FoodMaster() {
           justifyContent: 'center', zIndex: 1200
         }}>
           <div style={{
-            background: '#fff', padding: '2rem 2.5rem',
+            background: '#fff', padding: '2.2rem 2.5rem',
             borderRadius: '1.2rem', boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-            minWidth: '350px', textAlign: 'center', color: '#4B2E06', border: '2.5px solid #F7D774', fontFamily: 'serif', maxWidth: '95vw'
+            minWidth: '420px', textAlign: 'center', color: '#4B2E06', border: '2.5px solid #F7D774', fontFamily: 'serif', maxWidth: '95vw'
           }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '2rem', marginBottom: '1.2rem' }}>Your Cart</h2>
-{/* Cart Popup */}
-{showCart && (
-  <div style={{
-    position: 'fixed', top: 0, left: 0,
-    width: '100vw', height: '100vh',
-    background: 'rgba(75,46,6,0.10)',
-    display: 'flex', alignItems: 'center',
-    justifyContent: 'center', zIndex: 1200
-  }}>
-    <div style={{
-      background: '#fff', padding: '2.2rem 2.5rem',
-      borderRadius: '1.2rem', boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-      minWidth: '370px', textAlign: 'center', color: '#4B2E06', border: '2.5px solid #F7D774', fontFamily: 'serif', maxWidth: '95vw'
-    }}>
-      <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '2rem', marginBottom: '1.2rem' }}>
-        Your Cart
-      </h2>
+            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '2rem', marginBottom: '1.2rem' }}>
+              Your Cart
+            </h2>
 
-      {cart.length === 0 ? (
-        <p style={{ color: '#4B2E06', fontSize: '1.1rem' }}>Your cart is empty.</p>
-      ) : (
-        <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'serif', color: '#4B2E06' }}>
-            <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-              <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
-                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Category</th>
-                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Price</th>
-                <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Remove</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cart.map((item, idx) => (
-                <tr key={idx}>
-                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0', textAlign: 'left' }}>
-                    <img src={item.img} alt={item.name} style={{
-                      width: '32px', height: '32px', borderRadius: '8px',
-                      marginRight: '0.5rem', verticalAlign: 'middle',
-                      border: '1.5px solid #F7D774', background: '#fff'
-                    }} />
-                    {item.name}
-                  </td>
-                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>{item.category}</td>
-                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
-                    ₱{item.price ? item.price.toFixed(2) : '0.00'}
-                  </td>
-                  <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
-                    <button
-                      onClick={() => removeFromCart(idx)}
-                      style={{
-                        padding: '0.3rem 0.8rem', borderRadius: '0.5em',
-                        border: '2px solid #FFD700', background: '#F7D774',
-                        color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                        fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
-                        transition: 'background 0.2s, color 0.2s'
-                      }}
-                      onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                      onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              <tr style={{ fontWeight: 500, background: '#F7D774', color: '#4B2E06' }}>
-                <td colSpan={2} style={{ padding: '0.5rem', textAlign: 'right' }}>Total:</td>
-                <td style={{ padding: '0.5rem' }}>
-                  ₱{cart.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
-                </td>
-                <td></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
+            {cart.length === 0 ? (
+              <p style={{ color: '#4B2E06', fontSize: '1.1rem' }}>Your cart is empty.</p>
+            ) : (
+              <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '1rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'serif', color: '#4B2E06' }}>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                    <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
+                      <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
+                      <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Price</th>
+                      <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Qty</th>
+                      <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Total</th>
+                      <th style={{ padding: '0.5rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map((item, idx) => {
+                      const itemTotal = (item.price || 0) * (item.quantity || 1);
+                      return (
+                        <tr key={idx}>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0', textAlign: 'left' }}>
+                            <img src={item.img} alt={item.name} style={{
+                              width: '32px', height: '32px', borderRadius: '8px',
+                              marginRight: '0.5rem', verticalAlign: 'middle',
+                              border: '1.5px solid #F7D774', background: '#fff'
+                            }} />
+                            {item.name}
+                          </td>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
+                            ₱{item.price ? item.price.toFixed(2) : '0.00'}
+                          </td>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                              <button
+                                onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)}
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '50%',
+                                  border: '1px solid #FFD700',
+                                  background: '#F7D774',
+                                  color: '#4B2E06',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                -
+                              </button>
+                              <span style={{ minWidth: '30px', textAlign: 'center' }}>
+                                {item.quantity || 1}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)}
+                                style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '50%',
+                                  border: '1px solid #FFD700',
+                                  background: '#F7D774',
+                                  color: '#4B2E06',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
+                            ₱{itemTotal.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
+                            <button
+                              onClick={() => removeFromCart(idx)}
+                              style={{
+                                padding: '0.3rem 0.8rem', borderRadius: '0.5em',
+                                border: '2px solid #FFD700', background: '#F7D774',
+                                color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
+                                fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
+                                transition: 'background 0.2s, color 0.2s'
+                              }}
+                              onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
+                              onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr style={{ fontWeight: 500, background: '#F7D774', color: '#4B2E06' }}>
+                      <td colSpan={3} style={{ padding: '0.5rem', textAlign: 'right' }}>Total:</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        ₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-      <button
-        onClick={async () => {
-          if (roomNumber && cart.length > 0) {
-            try {
-              await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-              setCart([]);
-              alert('Checkout successful! Your order has been sent to the restaurant.');
-              setShowCart(false);
-            } catch {
-              alert('Checkout failed. Please try again.');
-            }
-          }
-        }}
-        style={{
-          marginTop: '1rem', marginRight: '1rem', padding: '0.5rem 1.5rem',
-          borderRadius: '0.5em', border: '2px solid #FFD700',
-          background: '#F7D774', color: '#4B2E06',
-          fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
-          boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s'
-        }}
-        onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-        onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-      >
-        Checkout
-      </button>
+            <button
+              onClick={async () => {
+                if (roomNumber && cart.length > 0) {
+                  try {
+                    await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+                    setCart([]);
+                    alert('Checkout successful! Your order has been sent to the restaurant.');
+                    setShowCart(false);
+                  } catch {
+                    alert('Checkout failed. Please try again.');
+                  }
+                }
+              }}
+              style={{
+                marginTop: '1rem', marginRight: '1rem', padding: '0.5rem 1.5rem',
+                borderRadius: '0.5em', border: '2px solid #FFD700',
+                background: '#F7D774', color: '#4B2E06',
+                fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s'
+              }}
+              onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
+              onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
+            >
+              Checkout
+            </button>
 
-      <button
-        onClick={() => setShowCart(false)}
-        style={{
-          marginTop: '1rem', padding: '0.5rem 1.5rem',
-          borderRadius: '0.5em', border: '2px solid #FFD700',
-          background: '#fff', color: '#4B2E06',
-          fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
-          boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s'
-        }}
-        onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-        onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
+            <button
+              onClick={() => setShowCart(false)}
+              style={{
+                marginTop: '1rem', padding: '0.5rem 1.5rem',
+                borderRadius: '0.5em', border: '2x solid #FFD700',
+                background: '#fff', color: '#4B2E06',
+                fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s'
+              }}
+              onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
+              onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -494,7 +631,7 @@ function FoodMaster() {
           <div style={{
             background: '#fff', padding: '2rem 2.5rem',
             borderRadius: '1.2rem', boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-            minWidth: '350px', textAlign: 'center', color: '#4B2E06', border: '2.5px solid #F7D774', fontFamily: 'serif', maxWidth: '95vw'
+            minWidth: '400px', textAlign: 'center', color: '#4B2E06', border: '2.5px solid #F7D774', fontFamily: 'serif', maxWidth: '95vw'
           }}>
             <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '2rem', marginBottom: '1.2rem' }}>Order Status</h2>
             {/* Tabs */}
@@ -531,7 +668,7 @@ function FoodMaster() {
                   </thead>
                   <tbody>
                     {orders.filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered'))).map((order, idx) => {
-                      const totalPrice = order.items.reduce((sum, item) => sum + (item.price || 0), 0);
+                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
                       return (
                         <tr key={order._id || idx}>
                           <td style={{ padding: '0.5rem', borderBottom: '1px solid #f7e6b0' }}>
@@ -541,7 +678,8 @@ function FoodMaster() {
                                   {item.img && (
                                     <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle', border: '1.5px solid #F7D774', background: '#fff' }} />
                                   )}
-                                  <span style={{ color: '#4B2E06', fontWeight: 500 }}>{item.name}</span> <span style={{ color: '#4B2E06' }}>({item.category})</span> - <span style={{ color: '#4B2E06' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</span>
+                                  <span style={{ color: '#4B2E06', fontWeight: 500 }}>{item.name}</span> 
+                                  <span style={{ color: '#4B2E06', marginLeft: '0.5rem' }}>(x{item.quantity || 1})</span>
                                 </li>
                               ))}
                             </ul>
@@ -583,3 +721,5 @@ function FoodMaster() {
     </div>
   );
 }
+
+export default FoodMaster;
