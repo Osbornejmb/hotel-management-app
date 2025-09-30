@@ -30,7 +30,6 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
       flexDirection: 'column',
       alignItems: 'center',
       borderRight: '1px solid rgba(0,0,0,0.08)',
-      position: 'relative',
       color: '#fff',
       minHeight: '100vh'
     }}>
@@ -56,7 +55,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
           width: 64,
           height: 64,
           borderRadius: '50%',
-          background: activeSection === 'profile' ? '#2f1b0a' : '#2f1b0a',
+          background: '#2f1b0a',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -75,68 +74,66 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
       </div>
 
       {/* Sidebar buttons */}
-      <style>{`
-        .sidebar-btn {
-          width: 100%;
-          padding: 10px 12px;
-          margin-bottom: 12px;
-          border: none;
-          border-radius: 8px;
-          font-weight: 500;
-          color: #fff;
-          text-align: left;
-          cursor: pointer;
-          background: #4b2b17;
-          display: flex;
-          align-items: center;
-          transition: background 140ms ease;
-        }
-        .sidebar-btn:hover {
-          background: rgba(255,255,255,0.1);
-        }
-        .sidebar-btn.active {
-          background: #d2aa3a !important;
-          color: #2f1b0a !important;
-          font-weight: 600;
-          box-shadow: none;
-        }
-      `}</style>
-
       <nav style={{ width: '100%' }}>
         {sections.map(sec => (
           <button
             key={sec.key}
             className={`sidebar-btn ${activeSection === sec.key ? 'active' : ''}`}
             onClick={() => setActiveSection(sec.key)}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              marginBottom: 12,
+              border: 'none',
+              borderRadius: 8,
+              fontWeight: 500,
+              color: '#fff',
+              textAlign: 'left',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              background: activeSection === sec.key ? '#d2aa3a' : '#4b2b17',
+              transition: 'background 140ms ease'
+            }}
           >
-            <span style={{ marginRight: 12, fontSize: 18 }}>
-              {navIcons[sec.key] || '•'}
-            </span>
+            <span style={{ marginRight: 12, fontSize: 18 }}>{navIcons[sec.key] || '•'}</span>
             {sec.label}
           </button>
         ))}
       </nav>
 
-      {/* Logout button */}
-      <div style={{
-        position: 'absolute',
-        left: 24,
-        bottom: 24,
-        width: 'calc(100% - 48px)'
-      }}>
-        <LogoutButton style={{
+      {/* logout button */}
+    <div style={{ marginTop: '280px', marginRight: '30px', width: '100%' }}>
+      <LogoutButton
+        style={{
           width: '100%',
-          background: 'transparent',
-          color: '#dabf84',
+          background: 'linear-gradient(90deg, #f2d49b, #dabf84)',
+          color: '#4b3a2b',
           border: 'none',
+          borderRadius: '8px',
           textAlign: 'left',
-          padding: '8px 12px',
+          padding: '10px 16px',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          cursor: 'pointer'
-        }} />
-      </div>
+          gap: '10px',
+          cursor: 'pointer',
+          fontWeight: '600',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'linear-gradient(90deg, #dabf84, #f2d49b)';
+          e.currentTarget.style.transform = 'scale(1.02)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'linear-gradient(90deg, #f2d49b, #dabf84)';
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        <span style={{ fontSize: '18px' }}>🔒</span>
+        Logout
+      </LogoutButton>
+    </div>
     </aside>
   );
 };

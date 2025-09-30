@@ -1,6 +1,5 @@
 
 
-/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -95,7 +94,7 @@ body {
   left: 0;
   height: 100vh;
   width: 320px;
-  background: white;
+  background: #4b2b17;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   transform: translateX(-100%);
   transition: transform 0.3s ease-in-out;
@@ -1096,4 +1095,22 @@ body {
 
 .action-btn:hover {
   background: #f9e7c8;
+}
+
+/* Ensure sidebar is properly positioned on desktop */
+@media (min-width: 768px) {
+  .sidebar-desktop {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 16rem; 
+    z-index: 40;
+    transform: translateX(0) !important; 
+  }
+  
+ 
+  main.md\\:ml-64 {
+    margin-left: 16rem;
+  }
 }
