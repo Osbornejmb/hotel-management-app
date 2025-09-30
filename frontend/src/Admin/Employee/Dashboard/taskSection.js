@@ -36,7 +36,6 @@ const TasksSection = () => {
     employeeId: e.formattedId,
     room: `${500 + idx}`, 
     type: idx % 3 === 0 ? 'CLEANING' : idx % 3 === 1 ? 'MAINTENANCE' : 'INSPECTION', 
-    location: idx % 2 === 0 ? 'BLDG A' : 'BLDG B',
     status: idx % 4 === 0 ? 'UNASSIGNED' : idx % 4 === 1 ? 'NOT STARTED' : idx % 4 === 2 ? 'IN PROGRESS' : 'COMPLETED',
     priority: idx % 3 === 0 ? 'HIGH' : idx % 3 === 1 ? 'MEDIUM' : 'LOW'
   }));
@@ -211,7 +210,6 @@ const TasksSection = () => {
               <th style={{ padding: '18px 16px' }}>ASSIGNED TO</th>
               <th style={{ padding: '18px 16px' }}>ROOM</th>
               <th style={{ padding: '18px 16px' }}>TASK TYPE</th>
-              <th style={{ padding: '18px 16px' }}>LOCATION</th>
               <th style={{ padding: '18px 16px' }}>STATUS</th>
               <th style={{ padding: '18px 16px' }}>PRIORITY</th>
             </tr>
@@ -245,7 +243,6 @@ const TasksSection = () => {
                     {task.type}
                   </span>
                 </td>
-                <td style={{ padding: '16px' }}>{task.location}</td>
                 <td style={{ padding: '16px' }}>
                   <span style={{
                     padding: '6px 12px',

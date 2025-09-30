@@ -20,12 +20,8 @@ import Facilities from "./Customer/Facilities";
 import FoodAndBeverages from "./Customer/FoodAndBeverages";
 import FoodMaster from "./Customer/FoodMaster";
 import ContactFrontDesk from "./Customer/ContactFrontDesk";
-<<<<<<< HEAD
-import AmenityMaster from "./Customer/AmenityMaster";
 
 // ✅ Hotel Admin sub-routes
-=======
->>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
 import HotelAdminRooms from "./Admin/Hotel/HotelAdminRooms";
 import HotelAdminHousekeeping from "./Admin/Hotel/HotelAdminHousekeeping";
 import HotelAdminMaintenance from "./Admin/Hotel/HotelAdminMaintenance";
@@ -37,15 +33,12 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Home />} />
-<<<<<<< HEAD
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Customer routes */}
         <Route path="/customer/login" element={<CustomerLogin />} />
         <Route path="/customer/interface" element={<CustomerInterface />} />
-        <Route path="/customer/amenities" element={<Amenities />} />
-        <Route path="/customer/amenities/:amenity" element={<AmenityMaster />} />
         <Route path="/customer/food" element={<FoodAndBeverages />} />
         <Route path="/customer/food/:category" element={<FoodMaster />} />
         <Route path="/customer/contact" element={<ContactFrontDesk />} />
@@ -159,7 +152,6 @@ function App() {
             <HotelAdminBookingHistory />
           </ProtectedRoute>
         } />
->>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
         <Route path="*" element={<Home />} />
       </Routes>
     </Router>

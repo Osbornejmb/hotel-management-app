@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function LogoutButton({ style = {}, children, ...props }) {
+function LogoutButton({ style = {}, children, className, ...props }) {
   const navigate = useNavigate();
   const [hover, setHover] = useState(false);
 
@@ -31,10 +30,10 @@ function LogoutButton({ style = {}, children, ...props }) {
   };
 
   return (
-<<<<<<< HEAD
     <button
       onClick={handleLogout}
       style={{ ...baseStyle, ...style }}
+      className={className}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       {...props}
@@ -45,10 +44,6 @@ function LogoutButton({ style = {}, children, ...props }) {
           Logout
         </>
       )}
-=======
-    <button onClick={handleLogout} className="hotel-admin-dashboard-logout-btn-actual">
-      Logout
->>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
     </button>
   );
 }
