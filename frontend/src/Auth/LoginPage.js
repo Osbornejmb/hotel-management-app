@@ -21,6 +21,7 @@ function LoginPage() {
     };
 
     try {
+<<<<<<< HEAD
       let data;
       try {
         // first try the users login endpoint
@@ -55,12 +56,26 @@ function LoginPage() {
       } else {
         setError('Unknown role');
       }
+=======
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/users/login`,
+        { email, password }
+      );
+      const { token, role } = res.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
+
+      if (role === 'restaurantAdmin') navigate('/admin/restaurant');
+      else if (role === 'hotelAdmin') navigate('/admin/hotel');
+      else setError('Unknown role');
+>>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Login failed');
     }
   };
 
   return (
+<<<<<<< HEAD
     <div>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
@@ -71,6 +86,39 @@ function LoginPage() {
         <button type="submit">Login</button>
       </form>
       {error && <p style={{color:'red'}}>{error}</p>}
+=======
+    <div className="login-wrapper">
+      <div className="login-header">
+        <img src="/lumine_logo.png" alt="Lumine Logo" className="login-logo" />
+      </div>
+
+
+      <div className="login-box">
+        <h3 className="login-role">Admin</h3>
+        <form onSubmit={handleSubmit} className="login-form">
+          <input
+            type="email"
+            placeholder="Username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="login-input"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="login-input"
+          />
+          <button type="submit" className="login-button">
+            Login
+          </button>
+        </form>
+        {error && <p className="login-error">{error}</p>}
+      </div>
+>>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
     </div>
   );
 }

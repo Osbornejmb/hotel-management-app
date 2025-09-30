@@ -188,6 +188,10 @@ function RestaurantAdminDashboard() {
 
   React.useEffect(() => {
     fetchOrders();
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const handleDeleteDelivered = async (orderId) => {
@@ -220,7 +224,7 @@ function RestaurantAdminDashboard() {
   const deliveredOrders = orders.filter(order => order.status === 'delivered');
 
   return (
-    <div style={{ background: '#111', minHeight: '100vh', color: '#FFD700', paddingBottom: '2rem' }}>
+  <div style={{ background: '#111', minHeight: '100vh', maxHeight: '100vh', overflowY: 'auto', color: '#FFD700', paddingBottom: '2rem' }}>
       <LogoutButton />
       <h2 style={{ color: '#FFD700', textShadow: '0 2px 8px #000', letterSpacing: '2px' }}>Restaurant Admin Dashboard</h2>
       <div style={{ marginTop: '2rem', marginBottom: '2rem', display: 'flex', gap: '2rem', alignItems: 'center' }}>
@@ -236,12 +240,6 @@ function RestaurantAdminDashboard() {
           style={{ padding: '0.5rem 2rem', borderRadius: '8px', border: activeTab === 'menu' ? '2px solid #FFD700' : '2px solid #222', background: activeTab === 'menu' ? '#FFD700' : '#222', color: activeTab === 'menu' ? '#222' : '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s' }}
           onClick={() => setActiveTab('menu')}
         >Manage Menu</button>
-        <button
-          style={{ padding: '0.5rem 2rem', borderRadius: '8px', border: '2px solid #FFD700', background: '#222', color: '#FFD700', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 8px #FFD700', transition: 'background 0.2s, color 0.2s', marginLeft: '2rem' }}
-          onClick={fetchOrders}
-          onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#222'; }}
-          onMouseOut={e => { e.target.style.background = '#222'; e.target.style.color = '#FFD700'; }}
-        >Refresh</button>
       </div>
       {activeTab === 'menu' ? (
         <MenuManager />
@@ -263,16 +261,18 @@ function RestaurantAdminDashboard() {
               </thead>
               <tbody>
                 {pendingOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + (item.price || 0), 0);
+                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
                   return (
                     <tr key={order._id} style={{ background: '#222', color: '#FFD700' }}>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>{order.roomNumber}</td>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                           {order.items.map((item, idx) => (
-                            <li key={idx} style={{ marginBottom: '0.5rem' }}>
+                            <li key={idx} style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
                               <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> <span style={{ color: '#FFD700' }}>({item.category})</span> - <span style={{ color: '#FFD700' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</span>
+                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> 
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>(x{item.quantity || 1})</span>
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
                             </li>
                           ))}
                         </ul>
@@ -315,16 +315,18 @@ function RestaurantAdminDashboard() {
               </thead>
               <tbody>
                 {deliveredOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + (item.price || 0), 0);
+                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
                   return (
                     <tr key={order._id} style={{ background: '#222', color: '#FFD700' }}>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>{order.roomNumber}</td>
                       <td style={{ padding: '0.5rem', borderBottom: '1px solid #FFD700' }}>
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                           {order.items.map((item, idx) => (
-                            <li key={idx} style={{ marginBottom: '0.5rem' }}>
+                            <li key={idx} style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
                               <img src={item.img} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '8px', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> <span style={{ color: '#FFD700' }}>({item.category})</span> - <span style={{ color: '#FFD700' }}>₱{item.price ? item.price.toFixed(2) : '0.00'}</span>
+                              <span style={{ color: '#FFD700', fontWeight: 'bold' }}>{item.name}</span> 
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>(x{item.quantity || 1})</span>
+                              <span style={{ color: '#FFD700', marginLeft: '0.5rem' }}>- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
                             </li>
                           ))}
                         </ul>

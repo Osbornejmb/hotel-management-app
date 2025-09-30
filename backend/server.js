@@ -6,11 +6,14 @@ const userRoutes = require("./userRoutes");
 const roomRoutes = require("./roomRoutes");
 const cartRoutes = require("./cartRoutes");
 const contactRoutes = require("./contactRoutes");
-const reservationRoutes = require("./reservationRoutes");
 const customerRoutes = require("./customerRoutes");
 const checkoutRoutes = require("./checkoutRoutes");
 const foodRoutes = require("./foodRoutes");
+<<<<<<< HEAD
 const employeeRoutes = require("./employeeRoutes");
+=======
+const requestRoutes = require("./requestRoutes");
+>>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
 
 const app = express();
 
@@ -21,11 +24,15 @@ app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/contact", contactRoutes);
-app.use("/api/reservations", reservationRoutes);
+// app.use("/api/reservations", reservationRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/food", foodRoutes);
 app.use("/api/checkout", checkoutRoutes);
+<<<<<<< HEAD
 app.use('/api/employee', employeeRoutes);
+=======
+app.use("/api/requests", requestRoutes);
+>>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))

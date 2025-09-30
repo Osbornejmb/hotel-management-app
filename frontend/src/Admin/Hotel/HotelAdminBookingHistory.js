@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import HotelAdminDashboard from './HotelAdminDashboard';
+import './HotelAdminBookingHistory.css';
 
 function HotelAdminBookingHistory() {
   const [customers, setCustomers] = useState([]);
@@ -27,40 +28,40 @@ function HotelAdminBookingHistory() {
 
   return (
     <HotelAdminDashboard>
-      <div style={{ width: '100%', padding: '2rem' }}>
-        <h2 style={{ color: '#a57c2b', fontWeight: 700, marginBottom: '1.2rem' }}>Maintenance</h2>
+      <div className="booking-history-container">
+        <h2 className="booking-history-title">Maintenance</h2>
         <input
           type="text"
           placeholder="Search..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ width: '350px', padding: '0.5rem', borderRadius: 6, border: '1px solid #ccc', marginBottom: '1.2rem' }}
+          className="booking-history-search"
         />
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #ccc' }}>
+        <table className="booking-history-table">
           <thead>
-            <tr style={{ background: '#e3c78a', color: '#222', fontWeight: 700 }}>
-              <th style={{ padding: '0.7rem', textAlign: 'center' }}>Guest Name</th>
-              <th style={{ textAlign: 'center' }}>Room</th>
-              <th style={{ textAlign: 'center' }}>Check in</th>
-              <th style={{ textAlign: 'center' }}>Check out</th>
-              <th style={{ textAlign: 'center' }}>Booking Status</th>
+            <tr>
+              <th>Guest Name</th>
+              <th>Room</th>
+              <th>Check in</th>
+              <th>Check out</th>
+              <th>Booking Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredCustomers.length === 0 ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '1.5rem', color: '#888' }}>No bookings found.</td></tr>
+              <tr><td colSpan={5} className="booking-history-table-empty">No bookings found.</td></tr>
             ) : (
               filteredCustomers.map((c, i) => (
-                <tr key={c._id || i} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '0.7rem', textAlign: 'center' }}>{c.name}</td>
-                  <td style={{ textAlign: 'center' }}>{c.roomNumber}</td>
-                  <td style={{ textAlign: 'center' }}>{c.checkinDate ? new Date(c.checkinDate).toLocaleDateString() : ''}</td>
-                  <td style={{ textAlign: 'center' }}>
+                <tr key={c._id || i}>
+                  <td>{c.name}</td>
+                  <td>{c.roomNumber}</td>
+                  <td>{c.checkinDate ? new Date(c.checkinDate).toLocaleDateString() : ''}</td>
+                  <td>
                     {c.updatedCheckoutDate
                       ? c.updatedCheckoutDate
                       : (c.checkoutDate ? c.checkoutDate : '')}
                   </td>
-                  <td style={{ textAlign: 'center' }}>{c.status || ''}</td>
+                  <td>{c.status || ''}</td>
                 </tr>
               ))
             )}

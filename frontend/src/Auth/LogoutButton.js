@@ -31,6 +31,7 @@ function LogoutButton({ style = {}, children, ...props }) {
   };
 
   return (
+<<<<<<< HEAD
     <button
       onClick={handleLogout}
       style={{ ...baseStyle, ...style }}
@@ -44,6 +45,10 @@ function LogoutButton({ style = {}, children, ...props }) {
           Logout
         </>
       )}
+=======
+    <button onClick={handleLogout} className="hotel-admin-dashboard-logout-btn-actual">
+      Logout
+>>>>>>> 015cb928575969fbd66d88cf5ecde571135a03d3
     </button>
   );
 }

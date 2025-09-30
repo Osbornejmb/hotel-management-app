@@ -81,7 +81,7 @@ router.get('/', async (req, res) => {
 // Register a new room
 router.post('/', async (req, res) => {
 	try {
-			const { roomNumber, roomType, status, description, price, amenities } = req.body;
+			const { roomNumber, roomType, status, description, price, facilities } = req.body;
 			// Validate required fields
 			if (!roomNumber || !roomType || !status) {
 				return res.status(400).json({ error: 'All fields (roomNumber, roomType, status) are required.' });
@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
 				status,
 				description: description || '',
 				price: typeof price === 'number' ? price : (price ? Number(price) : 0),
-				amenities: Array.isArray(amenities) ? amenities : (amenities ? amenities.split(',').map(a => a.trim()) : [])
+				facilities: Array.isArray(facilities) ? facilities : (facilities ? facilities.split(',').map(a => a.trim()) : [])
 			});
 			await newRoom.save();
 			res.status(201).json({ message: 'Room added successfully' });
