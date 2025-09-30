@@ -1,7 +1,9 @@
-/* Styles for HotelAdminBookingHistory */
 .booking-history-container {
-  width: 100%;
   padding: 2rem;
+  width: calc(100% - 10px);     /* fit remaining space */
+  box-sizing: border-box;
+  min-height: calc(100vh - 120px);
+  overflow-x: auto;              /* in case table overflows */
 }
 .booking-history-title {
   color: #a57c2b;
