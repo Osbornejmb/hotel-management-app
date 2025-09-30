@@ -5,7 +5,7 @@ import EmployeeManagementSection from './Dashboard/employeeManagementSection';
 import AttendanceSection from './Dashboard/attendanceSection';
 import PayrollSection from './Dashboard/payrollSection';
 import TasksSection from './Dashboard/taskSection';
-import RoomAssignmentSection from './Dashboard/roomAssignmentSection';
+//import RoomAssignmentSection from './Dashboard/roomAssignmentSection';
 import ProfileSection from './Dashboard/profileSection';
 
 
@@ -19,7 +19,7 @@ function EmployeeAdminDashboard() {
       case 'attendance': return <AttendanceSection />;
       case 'payroll': return <PayrollSection />;
       case 'tasks': return <TasksSection />;
-      case 'room': return <RoomAssignmentSection />;
+      //case 'room': return <RoomAssignmentSection />;
       case 'profile': return <ProfileSection />;
       default: return <DashboardSection />;
 }

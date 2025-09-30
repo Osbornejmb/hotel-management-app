@@ -18,7 +18,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
     { key: 'attendance', label: 'Attendance' },
     { key: 'payroll', label: 'Payroll' },
     { key: 'tasks', label: 'Tasks' },
-    { key: 'room', label: 'Room Assignment' },
+//    { key: 'room', label: 'Room Assignment' },
   ];
 
   return (
