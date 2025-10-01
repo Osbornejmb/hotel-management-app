@@ -1,23 +1,21 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 const userRoutes = require("./userRoutes");
 const roomRoutes = require("./roomRoutes");
+const taskRoutes = require('./taskRoutes'); // Fixed path
 
 const app = express();
 
+// Middleware - CORS and JSON parsing should come FIRST
 app.use(cors());
 app.use(express.json());
 
-// User routes
-
-// User routes
+// Routes
 app.use("/api/users", userRoutes);
-
-// Room routes
 app.use("/api/rooms", roomRoutes);
+app.use("/api/tasks", taskRoutes); // Task routes
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))

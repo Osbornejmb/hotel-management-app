@@ -10,7 +10,8 @@ async function fetchEmployeesBasic() {
     return onlyEmployees.map(u => ({
       id: u._id || u.id || u.username,
       name: u.name || u.username,
-      formattedId: typeof u.employeeId === 'number' ? String(u.employeeId).padStart(4, '0') : (u._id || u.username)
+      formattedId: typeof u.employeeId === 'number' ? String(u.employeeId).padStart(4, '0') : (u._id || u.username),
+      jobTitle: u.jobTitle || 'Staff'
     }));
   } catch (err) {
     console.error('fetchEmployeesBasic error', err);
@@ -18,32 +19,36 @@ async function fetchEmployeesBasic() {
   }
 }
 
-// Task button style function
-function taskBtnStyle(active = false) {
-  return {
-    background: active ? '#4f46e5' : '#fff',
-    color: active ? '#fff' : '#444',
-    border: 'none',
-    borderRadius: 8,
-    padding: '10px 16px',
-    fontWeight: 600,
-    fontSize: 14,
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    transition: 'all 0.2s ease',
-    whiteSpace: 'nowrap'
-  };
+// Helper: fetch tasks from API
+async function fetchTasksFromAPI() {
+  try {
+    const res = await fetch('/api/tasks');
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('fetchTasksFromAPI error', err);
+    return [];
+  }
 }
+
+// Helper: Filter out employees who have active tasks
+const filterAvailableEmployees = (employees, tasks) => {
+  // Get names of employees who have active tasks (not completed)
+  const employeesWithActiveTasks = tasks
+    .filter(task => task.status !== 'COMPLETED')
+    .map(task => task.assigned);
+
+  // Filter out employees who have active tasks
+  return employees.filter(emp => !employeesWithActiveTasks.includes(emp.name));
+};
 
 // Status badge style
 function statusBadgeStyle(status) {
   const statusColors = {
     'UNASSIGNED': { bg: '#fef3c7', text: '#92400e' },
-    'NOT STARTED': { bg: '#e5e7eb', text: '#374151' },
-    'IN PROGRESS': { bg: '#dbeafe', text: '#1e40af' },
+    'NOT_STARTED': { bg: '#e5e7eb', text: '#374151' },
+    'IN_PROGRESS': { bg: '#dbeafe', text: '#1e40af' },
     'COMPLETED': { bg: '#dcfce7', text: '#166534' }
   };
   
@@ -64,6 +69,7 @@ function statusBadgeStyle(status) {
 
 const RoomAssignmentSection = () => {
   const [emps, setEmps] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -71,49 +77,84 @@ const RoomAssignmentSection = () => {
   const [reassignModal, setReassignModal] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tasks from API
+  const fetchTasks = async () => {
+    try {
+      const tasksData = await fetchTasksFromAPI();
+      setTasks(tasksData);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
-    fetchEmployeesBasic().then(list => { if (mounted) setEmps(list); }).catch(() => {});
+    
+    const initializeData = async () => {
+      try {
+        // Fetch employees
+        const employeeList = await fetchEmployeesBasic();
+        if (mounted) {
+          setEmps(employeeList);
+        }
+
+        // Fetch tasks
+        await fetchTasks();
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeData();
+
     return () => { mounted = false; };
   }, []);
 
-  // Generate sample assignments with more realistic data
-  const generateAssignments = () => {
-    const statuses = ['UNASSIGNED', 'NOT STARTED', 'IN PROGRESS', 'COMPLETED'];
-    const taskTypes = ['CLEANING', 'MAINTENANCE', 'INSPECTION', 'SETUP'];
-    const locations = ['BLDG A', 'BLDG B', 'BLDG C', 'CONFERENCE WING'];
-    
-    return emps.slice(0, 12).map((e, idx) => {
-      const statusIdx = Math.floor(Math.random() * statuses.length);
-      const taskIdx = Math.floor(Math.random() * taskTypes.length);
-      const locIdx = Math.floor(Math.random() * locations.length);
-      
-      return {
-        id: `room-${500 + idx}`,
-        roomId: `${500 + idx}`,
-        assigned: e.name,
-        employeeId: e.id,
-        room: `${500 + idx}`,
-        type: taskTypes[taskIdx],
-        location: locations[locIdx],
-        status: statuses[statusIdx],
-        lastUpdated: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
-      };
-    });
-  };
+  // Convert tasks to room assignments format
+  const roomAssignments = tasks.map(task => ({
+    id: task.id,
+    roomId: task.id,
+    assigned: task.assigned,
+    employeeId: task.employeeId,
+    room: task.room,
+    type: task.type,
+    location: getLocationFromRoom(task.room), // Generate location based on room number
+    status: task.status,
+    lastUpdated: task.createdAt,
+    jobTitle: task.jobTitle
+  }));
 
-  const assignments = generateAssignments();
-  
+  // Helper function to determine location based on room number
+  function getLocationFromRoom(room) {
+    const roomNum = parseInt(room);
+    if (roomNum >= 100 && roomNum <= 199) return 'BLDG A';
+    if (roomNum >= 200 && roomNum <= 299) return 'BLDG B';
+    if (roomNum >= 300 && roomNum <= 399) return 'BLDG C';
+    if (roomNum >= 400 && roomNum <= 499) return 'CONFERENCE WING';
+    if (roomNum >= 500 && roomNum <= 599) return 'MAIN HOTEL';
+    return 'OTHER';
+  }
+
   // Filter assignments based on selected status and search query
-  const filteredAssignments = assignments.filter(a => {
+  const filteredAssignments = roomAssignments.filter(a => {
     const statusMatch = filterStatus === 'ALL' || a.status === filterStatus;
     const searchMatch = searchQuery === '' || 
-      a.roomId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.assigned.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.location.toLowerCase().includes(searchQuery.toLowerCase());
+      a.roomId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.assigned?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.room?.toLowerCase().includes(searchQuery.toLowerCase());
     return statusMatch && searchMatch;
   });
+
+  // Filter available employees for reassignment
+  const availableEmployees = filterAvailableEmployees(emps, tasks);
 
   // Format date for display
   const formatDate = (date) => {
@@ -125,12 +166,39 @@ const RoomAssignmentSection = () => {
     });
   };
 
-  // Handle reassign action
-  const handleReassign = (assignment) => {
-    setReassignModal(assignment);
+  // Handle reassign action - now updates the actual task
+  const handleReassign = async (taskId, newEmployeeName) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assignedTo: newEmployeeName
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update the task in state
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? result.task : task
+        ));
+        
+        alert('Task reassigned successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error reassigning: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error reassigning:', error);
+      alert('Error reassigning task. Please try again.');
+    }
   };
 
-  // Handle export assignments
+  // Handle export assignments - now exports task data
   const handleExportAssignments = async () => {
     if (filteredAssignments.length === 0) {
       alert('No assignments to export.');
@@ -140,19 +208,21 @@ const RoomAssignmentSection = () => {
     setExportLoading(true);
     
     try {
-      // Create CSV content
-      const headers = ['Room ID', 'Assigned To', 'Employee ID', 'Room', 'Task Type', 'Location', 'Status', 'Last Updated'];
+      // Create CSV content based on task data
+      const headers = ['Task ID', 'Assigned To', 'Employee ID', 'Room', 'Task Type', 'Location', 'Status', 'Priority', 'Job Title', 'Created Date'];
       const csvContent = [
         headers.join(','),
         ...filteredAssignments.map(assignment => [
-          assignment.roomId,
+          assignment.id,
           `"${assignment.assigned || 'Unassigned'}"`,
           assignment.employeeId || 'N/A',
           assignment.room,
           assignment.type,
           assignment.location,
           assignment.status,
-          assignment.lastUpdated.toLocaleDateString()
+          tasks.find(t => t.id === assignment.id)?.priority || 'N/A',
+          assignment.jobTitle || 'Staff',
+          assignment.lastUpdated ? new Date(assignment.lastUpdated).toLocaleDateString() : 'N/A'
         ].join(','))
       ].join('\n');
 
@@ -182,11 +252,54 @@ const RoomAssignmentSection = () => {
     }
   };
 
-  // Handle status change
-  const handleStatusChange = (assignmentId, newStatus) => {
-    // In a real app, you would update the backend here
-    console.log(`Changing status for ${assignmentId} to ${newStatus}`);
+  // Handle status change - now updates the actual task
+  const handleStatusChange = async (taskId, newStatus) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update the task in state
+        setTasks(prev => prev.map(task => 
+          task.id === taskId ? result.task : task
+        ));
+        
+        alert('Status updated successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error updating status: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Error updating status. Please try again.');
+    }
   };
+
+  // Format status for display
+  const formatStatus = (status) => {
+    return status.replace('_', ' ');
+  };
+
+  if (loading) {
+    return (
+      <div style={{ 
+        padding: '24px', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        height: '200px'
+      }}>
+        <div>Loading room assignments...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '24px', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
@@ -198,6 +311,24 @@ const RoomAssignmentSection = () => {
       }}>
         Room Assignments
       </h2>
+      
+      <div style={{ 
+        background: '#e8f4fd', 
+        padding: '16px', 
+        borderRadius: '8px', 
+        marginBottom: '24px',
+        border: '1px solid #b3d9ff'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '18px' }}>📋</span>
+          <div>
+            <strong>Room Assignment Overview</strong>
+            <div style={{ fontSize: '14px', color: '#666' }}>
+              Showing {filteredAssignments.length} room assignments from task data
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Filters and Search Container */}
       <div style={{ 
@@ -224,7 +355,7 @@ const RoomAssignmentSection = () => {
           </div>
           <input
             type="text"
-            placeholder="Search by room, employee, or location..."
+            placeholder="Search by room, employee, task ID, or location..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -321,7 +452,7 @@ const RoomAssignmentSection = () => {
                 marginTop: 8,
                 minWidth: 180
               }}>
-                {['ALL', 'UNASSIGNED', 'NOT STARTED', 'IN PROGRESS', 'COMPLETED'].map(status => (
+                {['ALL', 'UNASSIGNED', 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'].map(status => (
                   <button
                     key={status}
                     onClick={() => {
@@ -348,11 +479,11 @@ const RoomAssignmentSection = () => {
                       height: 12,
                       borderRadius: '50%',
                       background: status === 'UNASSIGNED' ? '#e74c3c' : 
-                                status === 'NOT STARTED' ? '#f39c12' :
-                                status === 'IN PROGRESS' ? '#3498db' :
+                                status === 'NOT_STARTED' ? '#f39c12' :
+                                status === 'IN_PROGRESS' ? '#3498db' :
                                 status === 'COMPLETED' ? '#2ecc71' : '#7f8c8d'
                     }}></span>
-                    {status}
+                    {status.replace('_', ' ')}
                   </button>
                 ))}
               </div>
@@ -368,7 +499,7 @@ const RoomAssignmentSection = () => {
         fontSize: '1.1rem',
         paddingLeft: '8px'
       }}>
-        Assignment List {filteredAssignments.length > 0 && `(${filteredAssignments.length} assignments)`}
+        Room Assignment List {filteredAssignments.length > 0 && `(${filteredAssignments.length} assignments)`}
       </div>
       
       <div style={{
@@ -393,104 +524,126 @@ const RoomAssignmentSection = () => {
               fontWeight: 600,
               background: '#f8f9fa'
             }}>
-              <th style={{ padding: '18px 16px' }}>ROOM ID</th>
+              <th style={{ padding: '18px 16px' }}>TASK ID</th>
               <th style={{ padding: '18px 16px' }}>ASSIGNED TO</th>
               <th style={{ padding: '18px 16px' }}>ROOM</th>
               <th style={{ padding: '18px 16px' }}>TASK TYPE</th>
               <th style={{ padding: '18px 16px' }}>LOCATION</th>
               <th style={{ padding: '18px 16px' }}>STATUS</th>
+              <th style={{ padding: '18px 16px' }}>PRIORITY</th>
               <th style={{ padding: '18px 16px' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            {filteredAssignments.map((item, idx) => (
-              <tr key={idx} style={{
-                borderBottom: '1px solid #ecf0f1',
-                transition: 'background 0.2s ease'
-              }}>
-                <td style={{ padding: '16px', fontWeight: 600 }}>{item.roomId}</td>
-                <td style={{ padding: '16px' }}>
-                  <div>{item.assigned || 'Unassigned'}</div>
-                  {item.assigned && (
-                    <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>ID: {item.employeeId}</div>
-                  )}
-                </td>
-                <td style={{ padding: '16px', fontWeight: 500 }}>{item.room}</td>
-                <td style={{ padding: '16px' }}>
-                  <span style={{
-                    padding: '4px 8px',
-                    borderRadius: 4,
-                    background: item.type === 'CLEANING' ? 'rgba(46, 204, 113, 0.1)' : 
-                               item.type === 'MAINTENANCE' ? 'rgba(52, 152, 219, 0.1)' : 
-                               item.type === 'INSPECTION' ? 'rgba(155, 89, 182, 0.1)' : 'rgba(241, 196, 15, 0.1)',
-                    color: item.type === 'CLEANING' ? '#2ecc71' : 
-                           item.type === 'MAINTENANCE' ? '#3498db' : 
-                           item.type === 'INSPECTION' ? '#9b59b6' : '#f1c40f',
-                    fontWeight: 500,
-                    fontSize: '0.85rem'
-                  }}>
-                    {item.type}
-                  </span>
-                </td>
-                <td style={{ padding: '16px' }}>{item.location}</td>
-                <td style={{ padding: '16px' }}>
-                  <span style={{
-                    padding: '6px 12px',
-                    borderRadius: 20,
-                    background: item.status === 'COMPLETED' ? 'rgba(46, 204, 113, 0.1)' : 
-                               item.status === 'IN PROGRESS' ? 'rgba(52, 152, 219, 0.1)' : 
-                               item.status === 'NOT STARTED' ? 'rgba(243, 156, 18, 0.1)' : 'rgba(231, 76, 60, 0.1)',
-                    color: item.status === 'COMPLETED' ? '#2ecc71' : 
-                           item.status === 'IN PROGRESS' ? '#3498db' : 
-                           item.status === 'NOT STARTED' ? '#f39c12' : '#e74c3c',
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}>
-                    {item.status === 'UNASSIGNED' && '◯'}
-                    {item.status === 'NOT STARTED' && '◯'}
-                    {item.status === 'IN PROGRESS' && '⭮'}
-                    {item.status === 'COMPLETED' && '✓'}
-                    {item.status}
-                  </span>
-                </td>
-                <td style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => handleReassign(item)}
+            {filteredAssignments.map((assignment, idx) => {
+              const originalTask = tasks.find(t => t.id === assignment.id);
+              return (
+                <tr key={idx} style={{
+                  borderBottom: '1px solid #ecf0f1',
+                  transition: 'background 0.2s ease'
+                }}>
+                  <td style={{ padding: '16px', fontWeight: 600 }}>{assignment.id}</td>
+                  <td style={{ padding: '16px' }}>
+                    <div>{assignment.assigned || 'Unassigned'}</div>
+                    {assignment.assigned && (
+                      <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>
+                        ID: {assignment.employeeId} • {assignment.jobTitle}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '16px', fontWeight: 500 }}>{assignment.room}</td>
+                  <td style={{ padding: '16px' }}>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: 4,
+                      background: assignment.type === 'CLEANING' ? 'rgba(46, 204, 113, 0.1)' : 
+                                 assignment.type === 'MAINTENANCE' ? 'rgba(52, 152, 219, 0.1)' : 
+                                 assignment.type === 'INSPECTION' ? 'rgba(155, 89, 182, 0.1)' : 'rgba(241, 196, 15, 0.1)',
+                      color: assignment.type === 'CLEANING' ? '#2ecc71' : 
+                             assignment.type === 'MAINTENANCE' ? '#3498db' : 
+                             assignment.type === 'INSPECTION' ? '#9b59b6' : '#f1c40f',
+                      fontWeight: 500,
+                      fontSize: '0.85rem'
+                    }}>
+                      {assignment.type}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px' }}>{assignment.location}</td>
+                  <td style={{ padding: '16px' }}>
+                    <select
+                      value={assignment.status}
+                      onChange={(e) => handleStatusChange(assignment.id, e.target.value)}
                       style={{
-                        background: '#3498db',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 6,
-                        padding: '8px 12px',
-                        fontSize: 12,
+                        padding: '6px 12px',
+                        borderRadius: 20,
+                        border: '1px solid #ddd',
+                        background: assignment.status === 'COMPLETED' ? 'rgba(46, 204, 113, 0.1)' : 
+                                   assignment.status === 'IN_PROGRESS' ? 'rgba(52, 152, 219, 0.1)' : 
+                                   assignment.status === 'NOT_STARTED' ? 'rgba(243, 156, 18, 0.1)' : 'rgba(231, 76, 60, 0.1)',
+                        color: assignment.status === 'COMPLETED' ? '#2ecc71' : 
+                               assignment.status === 'IN_PROGRESS' ? '#3498db' : 
+                               assignment.status === 'NOT_STARTED' ? '#f39c12' : '#e74c3c',
                         fontWeight: 600,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
                       }}
                     >
-                      Reassign
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      <option value="UNASSIGNED">UNASSIGNED</option>
+                      <option value="NOT_STARTED">NOT STARTED</option>
+                      <option value="IN_PROGRESS">IN PROGRESS</option>
+                      <option value="COMPLETED">COMPLETED</option>
+                    </select>
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <span style={{
+                      padding: '6px 12px',
+                      borderRadius: 20,
+                      background: originalTask?.priority === 'HIGH' ? 'rgba(231, 76, 60, 0.1)' : 
+                                 originalTask?.priority === 'MEDIUM' ? 'rgba(243, 156, 18, 0.1)' : 'rgba(46, 204, 113, 0.1)',
+                      color: originalTask?.priority === 'HIGH' ? '#e74c3c' : 
+                             originalTask?.priority === 'MEDIUM' ? '#f39c12' : '#2ecc71',
+                      fontWeight: 600,
+                      fontSize: '0.85rem'
+                    }}>
+                      {originalTask?.priority || 'N/A'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => setReassignModal(assignment)}
+                        style={{
+                          background: '#3498db',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '8px 12px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        Reassign
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
             
             {/* Show message if no results found */}
             {filteredAssignments.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ 
+                <td colSpan={8} style={{ 
                   textAlign: 'center', 
                   padding: '40px 0',
                   color: '#7f8c8d',
                   fontStyle: 'italic'
                 }}>
                   {searchQuery || filterStatus !== 'ALL' 
-                    ? 'No assignments found matching your criteria'
-                    : 'No assignments available'}
+                    ? 'No room assignments found matching your criteria'
+                    : 'No room assignments available. Create tasks in the Task Management section.'}
                 </td>
               </tr>
             )}
@@ -498,7 +651,7 @@ const RoomAssignmentSection = () => {
             {/* Add empty rows for consistent spacing if needed */}
             {filteredAssignments.length > 0 && [...Array(Math.max(0, 8 - filteredAssignments.length))].map((_, i) => (
               <tr key={i + filteredAssignments.length} style={{ height: 48 }}>
-                <td colSpan={7}></td>
+                <td colSpan={8}></td>
               </tr>
             ))}
           </tbody>
@@ -573,7 +726,7 @@ const RoomAssignmentSection = () => {
             boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
           }}>
             <h3 style={{ marginTop: 0, marginBottom: 16 }}>
-              Reassign Room {reassignModal.roomId}
+              Reassign Room {reassignModal.room} (Task: {reassignModal.id})
             </h3>
             <p style={{ marginBottom: 24, color: '#6b7280' }}>
               Current assignment: {reassignModal.assigned || 'Unassigned'}
@@ -583,20 +736,31 @@ const RoomAssignmentSection = () => {
               <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>
                 Assign to employee
               </label>
-              <select style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: 6,
-                fontSize: 14
-              }}>
+              <select 
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 6,
+                  fontSize: 14
+                }}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    handleReassign(reassignModal.id, e.target.value);
+                    setReassignModal(null);
+                  }
+                }}
+              >
                 <option value="">Select an employee</option>
-                {emps.map(emp => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.name} ({emp.formattedId})
+                {availableEmployees.map(emp => (
+                  <option key={emp.id} value={emp.name}>
+                    {emp.name} ({emp.formattedId}) - {emp.jobTitle}
                   </option>
                 ))}
               </select>
+              <div style={{ fontSize: '0.8rem', color: '#7f8c8d', marginTop: '4px' }}>
+                Available: {availableEmployees.length} of {emps.length} employees
+              </div>
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
@@ -613,23 +777,6 @@ const RoomAssignmentSection = () => {
                 }}
               >
                 Cancel
-              </button>
-              <button
-                onClick={() => {
-                  // Handle reassign logic here
-                  setReassignModal(null);
-                }}
-                style={{
-                  background: '#4f46e5',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '10px 16px',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
-                Confirm Reassignment
               </button>
             </div>
           </div>

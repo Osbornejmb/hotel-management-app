@@ -529,7 +529,10 @@ const EmployeeManagementSection = () => {
         <div style={{
           padding: '16px 24px',
           borderBottom: '1px solid #e5e7eb',
-          background: '#f8fafc'
+          background: '#f8fafc',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
           <h3 style={{ 
             margin: 0, 
@@ -537,8 +540,11 @@ const EmployeeManagementSection = () => {
             fontWeight: '600', 
             color: '#374151' 
           }}>
-            Employee List
+            Employee List ({filteredEmployees.length} employees)
           </h3>
+          <div style={{ fontSize: '14px', color: '#6b7280' }}>
+            Scroll to view all employees →
+          </div>
         </div>
 
         {loading ? (
@@ -546,23 +552,92 @@ const EmployeeManagementSection = () => {
             Loading employees...
           </div>
         ) : (
-          <div style={{ overflow: 'auto' }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ 
+            overflow: 'auto',
+            maxHeight: 'calc(100vh - 300px)',
+            position: 'relative'
+          }}>
+            <table style={{ 
+              width: "100%", 
+              borderCollapse: "collapse",
+              minWidth: '800px'
+            }}>
               <thead>
-                <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #e2e8f0" }}>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>ID</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Employee</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Job Title</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Contact</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Status</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Action</th>
+                <tr style={{ 
+                  background: "#f1f5f9", 
+                  borderBottom: "2px solid #e2e8f0",
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10
+                }}>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>EMPLOYEE ID</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>EMPLOYEE NAME</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>JOB TITLE</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>CONTACT</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>EMAIL</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>STATUS</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: '#6b7280' }}>
-                      No employees found
+                    <td colSpan={7} style={{ 
+                      padding: '48px', 
+                      textAlign: 'center', 
+                      color: '#6b7280',
+                      fontSize: '14px'
+                    }}>
+                      {searchEmployee ? 'No employees found matching your search' : 'No employees found'}
                     </td>
                   </tr>
                 ) : (
@@ -571,29 +646,64 @@ const EmployeeManagementSection = () => {
                       key={emp.id} 
                       style={{ 
                         borderBottom: index < filteredEmployees.length - 1 ? "1px solid #f1f5f9" : "none",
-                        transition: "background 0.2s" 
+                        transition: "background 0.2s",
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#ffffff' : '#fafafa'}
                     >
-                      <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
-                        ID: {emp.formattedId || emp.id}
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        fontWeight: '600',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {emp.formattedId || emp.id}
                       </td>
                       <td style={{ padding: '16px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          fontWeight: '500', 
+                          color: '#111827',
+                          whiteSpace: 'nowrap'
+                        }}>
                           {emp.name}
                         </div>
-                        {emp.email && (
-                          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                            {emp.email}
+                        {emp.username && (
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: '#6b7280', 
+                            marginTop: '2px',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            @{emp.username}
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        whiteSpace: 'nowrap'
+                      }}>
                         {emp.jobTitle}
                       </td>
-                      <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        whiteSpace: 'nowrap'
+                      }}>
                         {emp.contact}
+                      </td>
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {emp.email || '—'}
                       </td>
                       <td style={{ padding: '16px' }}>
                         <span style={getStatusStyle(emp.status)}>
@@ -610,7 +720,19 @@ const EmployeeManagementSection = () => {
                             cursor: "pointer",
                             fontSize: '14px',
                             fontWeight: '500',
-                            textDecoration: 'underline'
+                            textDecoration: 'underline',
+                            whiteSpace: 'nowrap',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = '#eff6ff';
+                            e.target.style.textDecoration = 'none';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = 'none';
+                            e.target.style.textDecoration = 'underline';
                           }}
                         >
                           View/Edit
@@ -646,7 +768,9 @@ const EmployeeManagementSection = () => {
             borderRadius: 12, 
             padding: 32, 
             position: "relative", 
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            maxHeight: '90vh',
+            overflow: 'auto'
           }}>
             <button 
               onClick={closeModal} 
@@ -706,6 +830,12 @@ const EmployeeManagementSection = () => {
                     <strong style={{ minWidth: 80, fontSize: '14px', color: '#374151' }}>ID:</strong> 
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>
                       {selectedEmployee.formattedId || selectedEmployee.id}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <strong style={{ minWidth: 80, fontSize: '14px', color: '#374151' }}>Username:</strong> 
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                      {selectedEmployee.username || '—'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center' }}>

@@ -19,8 +19,32 @@ async function fetchEmployeesBasic() {
   }
 }
 
+// Helper: fetch tasks from API
+async function fetchTasksFromAPI() {
+  try {
+    const res = await fetch('/api/tasks');
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('fetchTasksFromAPI error', err);
+    return [];
+  }
+}
+
+// Helper: Filter out employees who have active tasks
+const filterAvailableEmployees = (employees, tasks) => {
+  // Get names of employees who have active tasks (not completed)
+  const employeesWithActiveTasks = tasks
+    .filter(task => task.status !== 'COMPLETED')
+    .map(task => task.assigned);
+
+  // Filter out employees who have active tasks
+  return employees.filter(emp => !employeesWithActiveTasks.includes(emp.name));
+};
+
 // Create Task Modal Component
-const CreateTaskModal = ({ isOpen, onClose, employees, onTaskCreate, taskType }) => {
+const CreateTaskModal = ({ isOpen, onClose, employees, tasks, onTaskCreate, taskType }) => {
   const [formData, setFormData] = useState({
     assigned: '',
     room: '',
@@ -30,31 +54,39 @@ const CreateTaskModal = ({ isOpen, onClose, employees, onTaskCreate, taskType })
   });
   const [creating, setCreating] = useState(false);
 
-  // Filter employees based on task type
+  // Filter employees based on task type AND availability
   const getFilteredEmployees = () => {
+    // First filter by task type
+    let typeFilteredEmployees;
     switch (formData.type) {
       case 'INSPECTION':
-        return employees.filter(emp => 
+        typeFilteredEmployees = employees.filter(emp => 
           emp.jobTitle?.toLowerCase().includes('staff') || 
           emp.jobTitle?.toLowerCase().includes('inspector') ||
-          !emp.jobTitle // Include employees without job title
+          !emp.jobTitle
         );
+        break;
       case 'CLEANING':
-        return employees.filter(emp => 
+        typeFilteredEmployees = employees.filter(emp => 
           emp.jobTitle?.toLowerCase().includes('cleaner') || 
           emp.jobTitle?.toLowerCase().includes('housekeeping') ||
-          !emp.jobTitle // Include employees without job title
+          !emp.jobTitle
         );
+        break;
       case 'MAINTENANCE':
-        return employees.filter(emp => 
+        typeFilteredEmployees = employees.filter(emp => 
           emp.jobTitle?.toLowerCase().includes('maintenance') || 
           emp.jobTitle?.toLowerCase().includes('technician') ||
           emp.jobTitle?.toLowerCase().includes('engineer') ||
-          !emp.jobTitle // Include employees without job title
+          !emp.jobTitle
         );
+        break;
       default:
-        return employees;
+        typeFilteredEmployees = employees;
     }
+
+    // Then filter out employees with active tasks
+    return filterAvailableEmployees(typeFilteredEmployees, tasks);
   };
 
   const filteredEmployees = getFilteredEmployees();
@@ -77,26 +109,28 @@ const CreateTaskModal = ({ isOpen, onClose, employees, onTaskCreate, taskType })
 
     setCreating(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const selectedEmployee = employees.find(emp => emp.name === formData.assigned);
-    const newTask = {
-      id: `T${1000 + Math.floor(Math.random() * 1000)}`,
-      assigned: formData.assigned,
-      employeeId: selectedEmployee?.formattedId || 'N/A',
-      room: formData.room,
-      type: formData.type,
-      status: formData.assigned ? 'NOT STARTED' : 'UNASSIGNED',
-      priority: formData.priority,
-      description: formData.description,
-      jobTitle: selectedEmployee?.jobTitle || 'Staff'
-    };
-    
-    onTaskCreate(newTask);
-    setCreating(false);
-    onClose();
-    setFormData({ assigned: '', room: '', type: taskType || 'CLEANING', priority: 'MEDIUM', description: '' });
+    try {
+      const selectedEmployee = employees.find(emp => emp.name === formData.assigned);
+      
+      // Call the actual API through parent component
+      await onTaskCreate({
+        assigned: formData.assigned,
+        employeeId: selectedEmployee?.formattedId || 'N/A',
+        room: formData.room,
+        type: formData.type,
+        status: formData.assigned ? 'NOT_STARTED' : 'UNASSIGNED',
+        priority: formData.priority,
+        description: formData.description,
+        jobTitle: selectedEmployee?.jobTitle || 'Staff'
+      });
+      
+      setCreating(false);
+      onClose();
+      setFormData({ assigned: '', room: '', type: taskType || 'CLEANING', priority: 'MEDIUM', description: '' });
+    } catch (error) {
+      setCreating(false);
+      alert('Error creating task. Please try again.');
+    }
   };
 
   const handleClose = () => {
@@ -124,6 +158,28 @@ const CreateTaskModal = ({ isOpen, onClose, employees, onTaskCreate, taskType })
         return 'All employees available';
     }
   };
+
+  // Get count of available employees
+  const availableEmployeesCount = filteredEmployees.length;
+  const totalEmployees = employees.filter(emp => {
+    switch (formData.type) {
+      case 'INSPECTION':
+        return emp.jobTitle?.toLowerCase().includes('staff') || 
+               emp.jobTitle?.toLowerCase().includes('inspector') ||
+               !emp.jobTitle;
+      case 'CLEANING':
+        return emp.jobTitle?.toLowerCase().includes('cleaner') || 
+               emp.jobTitle?.toLowerCase().includes('housekeeping') ||
+               !emp.jobTitle;
+      case 'MAINTENANCE':
+        return emp.jobTitle?.toLowerCase().includes('maintenance') || 
+               emp.jobTitle?.toLowerCase().includes('technician') ||
+               emp.jobTitle?.toLowerCase().includes('engineer') ||
+               !emp.jobTitle;
+      default:
+        return true;
+    }
+  }).length;
 
   return (
     <div style={{
@@ -270,6 +326,14 @@ const CreateTaskModal = ({ isOpen, onClose, employees, onTaskCreate, taskType })
             }}>
               {getJobTitleRequirements()}
             </div>
+            <div style={{ 
+              fontSize: '0.8rem', 
+              color: availableEmployeesCount === 0 ? '#e74c3c' : '#2ecc71',
+              marginTop: '4px',
+              fontWeight: 500
+            }}>
+              Available: {availableEmployeesCount} of {totalEmployees} employees
+            </div>
           </div>
 
           {/* Assigned To */}
@@ -308,7 +372,8 @@ const CreateTaskModal = ({ isOpen, onClose, employees, onTaskCreate, taskType })
                 fontSize: '0.8rem', 
                 marginTop: '4px' 
               }}>
-                No employees available for {formData.type.toLowerCase()} tasks. Please select a different task type.
+                No available employees for {formData.type.toLowerCase()} tasks. 
+                {totalEmployees > 0 ? ' All qualified employees currently have active tasks.' : ' Please select a different task type.'}
               </div>
             )}
           </div>
@@ -494,33 +559,52 @@ const TasksSection = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [defaultTaskType, setDefaultTaskType] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tasks from API
+  const fetchTasks = async () => {
+    try {
+      const tasksData = await fetchTasksFromAPI();
+      setTasks(tasksData);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
-    fetchEmployeesBasic().then(list => { 
-      if (mounted) {
-        setEmps(list);
-        // Generate initial tasks
-        const initialTasks = list.slice(0, 7).map((e, idx) => ({ 
-          id: `T${1000 + idx}`, 
-          assigned: e.name, 
-          employeeId: e.formattedId,
-          room: `${500 + idx}`, 
-          type: idx % 3 === 0 ? 'CLEANING' : idx % 3 === 1 ? 'MAINTENANCE' : 'INSPECTION', 
-          status: idx % 4 === 0 ? 'UNASSIGNED' : idx % 4 === 1 ? 'NOT STARTED' : idx % 4 === 2 ? 'IN PROGRESS' : 'COMPLETED',
-          priority: idx % 3 === 0 ? 'HIGH' : idx % 3 === 1 ? 'MEDIUM' : 'LOW',
-          jobTitle: e.jobTitle
-        }));
-        setTasks(initialTasks);
+    
+    const initializeData = async () => {
+      try {
+        // Fetch employees
+        const employeeList = await fetchEmployeesBasic();
+        if (mounted) {
+          setEmps(employeeList);
+        }
+
+        // Fetch tasks
+        await fetchTasks();
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
-    }).catch(() => {});
+    };
+
+    initializeData();
+
     return () => { mounted = false; };
   }, []);
 
   // Filter tasks based on active filter and search term
   const filteredTasks = tasks.filter(task => {
-    const matchesFilter = activeFilter === 'all' || task.status === activeFilter.toUpperCase().replace(' ', '_');
+    const taskStatus = task.status.replace('_', ' '); // Convert NOT_STARTED to "NOT STARTED"
+    const matchesFilter = activeFilter === 'all' || 
+                         taskStatus.toLowerCase() === activeFilter.toLowerCase();
+    
     const matchesSearch = !searchTerm || 
                          task.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.assigned.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -529,11 +613,37 @@ const TasksSection = () => {
     return matchesFilter && matchesSearch;
   });
 
-  // Handle Create New Task
-  const handleCreateTask = (newTask) => {
-    setTasks(prev => [newTask, ...prev]);
-    console.log('New task created:', newTask);
-    alert('Task created successfully!');
+  // Handle Create New Task - UPDATED for real API
+  const handleCreateTask = async (newTask) => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assignedTo: newTask.assigned, // Employee name
+          room: newTask.room,
+          type: newTask.type,
+          priority: newTask.priority,
+          description: newTask.description
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Add the new task to state
+        setTasks(prev => [result.task, ...prev]);
+        alert('Task created successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error creating task: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+      alert('Error creating task. Please try again.');
+    }
   };
 
   // Handle Export Tasks
@@ -553,7 +663,7 @@ const TasksSection = () => {
         task.employeeId,
         task.room,
         task.type,
-        task.status,
+        task.status.replace('_', ' '), // Convert back for export
         task.priority,
         task.jobTitle || 'Staff'
       ].join(','))
@@ -585,6 +695,25 @@ const TasksSection = () => {
     unassigned: tasks.filter(t => t.status === 'UNASSIGNED').length,
     notStarted: tasks.filter(t => t.status === 'NOT_STARTED').length
   };
+
+  // Format status for display
+  const formatStatus = (status) => {
+    return status.replace('_', ' ');
+  };
+
+  if (loading) {
+    return (
+      <div style={{ 
+        padding: '24px', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        height: '200px'
+      }}>
+        <div>Loading tasks...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '24px', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
@@ -856,15 +985,15 @@ const TasksSection = () => {
                     padding: '6px 12px',
                     borderRadius: 20,
                     background: task.status === 'COMPLETED' ? 'rgba(46, 204, 113, 0.1)' : 
-                               task.status === 'IN PROGRESS' ? 'rgba(52, 152, 219, 0.1)' : 
-                               task.status === 'NOT STARTED' ? 'rgba(243, 156, 18, 0.1)' : 'rgba(231, 76, 60, 0.1)',
+                               task.status === 'IN_PROGRESS' ? 'rgba(52, 152, 219, 0.1)' : 
+                               task.status === 'NOT_STARTED' ? 'rgba(243, 156, 18, 0.1)' : 'rgba(231, 76, 60, 0.1)',
                     color: task.status === 'COMPLETED' ? '#2ecc71' : 
-                           task.status === 'IN PROGRESS' ? '#3498db' : 
-                           task.status === 'NOT STARTED' ? '#f39c12' : '#e74c3c',
+                           task.status === 'IN_PROGRESS' ? '#3498db' : 
+                           task.status === 'NOT_STARTED' ? '#f39c12' : '#e74c3c',
                     fontWeight: 600,
                     fontSize: '0.85rem'
                   }}>
-                    {task.status}
+                    {formatStatus(task.status)}
                   </span>
                 </td>
                 <td style={{ padding: '16px' }}>
@@ -987,8 +1116,8 @@ const TasksSection = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         employees={emps}
+        tasks={tasks}
         onTaskCreate={handleCreateTask}
-        taskType={defaultTaskType}
       />
     </div>
   );
