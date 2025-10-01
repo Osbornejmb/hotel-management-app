@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
-
+// Helper function for parsing responses
+const parseResponse = async (res) => {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
 
 const EmployeeManagementSection = () => {
   const [employees, setEmployees] = useState([]);
@@ -23,6 +32,8 @@ const EmployeeManagementSection = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchEmployee, setSearchEmployee] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [updatePassword, setUpdatePassword] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -161,7 +172,8 @@ const EmployeeManagementSection = () => {
           status: (u.status || 'active').toUpperCase(),
           dateHired: u.dateHired || null,
           shift: u.shift || '',
-          notes: u.notes || ''
+          notes: u.notes || '',
+          username: u.username || ''
         };
       });
       setEmployees(mapped.reverse());
@@ -179,12 +191,57 @@ const EmployeeManagementSection = () => {
 
   const openModal = (emp) => {
     setSelectedEmployee(emp);
+    setUpdatePassword('');
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setSelectedEmployee(null);
+    setUpdatePassword('');
+    setUpdateLoading(false);
+  };
+
+  // Update password function
+  const handleUpdatePassword = async () => {
+    if (!selectedEmployee || !updatePassword) {
+      setMessage({ type: 'error', text: 'Please enter a new password' });
+      return;
+    }
+
+    if (updatePassword.length < 6) {
+      setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
+      return;
+    }
+
+    setUpdateLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/employee/${selectedEmployee.id}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ password: updatePassword })
+      });
+
+      const data = await parseResponse(res);
+      const result = (typeof data === 'string') ? { message: data } : data;
+
+      setMessage({ type: 'success', text: result.message || 'Password updated successfully' });
+      setUpdatePassword('');
+      
+      // Close modal after successful update
+      setTimeout(() => {
+        closeModal();
+      }, 1500);
+      
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message || 'Failed to update password' });
+    } finally {
+      setUpdateLoading(false);
+    }
   };
 
   const deleteEmployee = async (emp) => {
@@ -515,7 +572,10 @@ const EmployeeManagementSection = () => {
         <div style={{
           padding: '16px 24px',
           borderBottom: '1px solid #e5e7eb',
-          background: '#f8fafc'
+          background: '#f8fafc',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
           <h3 style={{ 
             margin: 0, 
@@ -523,8 +583,11 @@ const EmployeeManagementSection = () => {
             fontWeight: '600', 
             color: '#374151' 
           }}>
-            Employee List
+            Employee List ({filteredEmployees.length} employees)
           </h3>
+          <div style={{ fontSize: '14px', color: '#6b7280' }}>
+            Scroll to view all employees →
+          </div>
         </div>
 
         {loading ? (
@@ -532,23 +595,92 @@ const EmployeeManagementSection = () => {
             Loading employees...
           </div>
         ) : (
-          <div style={{ overflow: 'auto' }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ 
+            overflow: 'auto',
+            maxHeight: 'calc(100vh - 300px)',
+            position: 'relative'
+          }}>
+            <table style={{ 
+              width: "100%", 
+              borderCollapse: "collapse",
+              minWidth: '800px'
+            }}>
               <thead>
-                <tr style={{ background: "#f1f5f9", borderBottom: "2px solid #e2e8f0" }}>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>ID</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Employee</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Job Title</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Contact</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Status</th>
-                  <th style={{ padding: '12px 16px', textAlign: "left", fontWeight: '600', color: '#374151', fontSize: '14px' }}>Action</th>
+                <tr style={{ 
+                  background: "#f1f5f9", 
+                  borderBottom: "2px solid #e2e8f0",
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10
+                }}>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>EMPLOYEE ID</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>EMPLOYEE NAME</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>JOB TITLE</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>CONTACT</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>EMAIL</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>STATUS</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
+                  }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: '#6b7280' }}>
-                      No employees found
+                    <td colSpan={7} style={{ 
+                      padding: '48px', 
+                      textAlign: 'center', 
+                      color: '#6b7280',
+                      fontSize: '14px'
+                    }}>
+                      {searchEmployee ? 'No employees found matching your search' : 'No employees found'}
                     </td>
                   </tr>
                 ) : (
@@ -557,29 +689,64 @@ const EmployeeManagementSection = () => {
                       key={emp.id} 
                       style={{ 
                         borderBottom: index < filteredEmployees.length - 1 ? "1px solid #f1f5f9" : "none",
-                        transition: "background 0.2s" 
+                        transition: "background 0.2s",
+                        backgroundColor: index % 2 === 0 ? '#ffffff' : '#fafafa'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? '#ffffff' : '#fafafa'}
                     >
-                      <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
-                        ID: {emp.formattedId || emp.id}
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        fontWeight: '600',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {emp.formattedId || emp.id}
                       </td>
                       <td style={{ padding: '16px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          fontWeight: '500', 
+                          color: '#111827',
+                          whiteSpace: 'nowrap'
+                        }}>
                           {emp.name}
                         </div>
-                        {emp.email && (
-                          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                            {emp.email}
+                        {emp.username && (
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: '#6b7280', 
+                            marginTop: '2px',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            @{emp.username}
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        whiteSpace: 'nowrap'
+                      }}>
                         {emp.jobTitle}
                       </td>
-                      <td style={{ padding: '16px', fontSize: '14px', color: '#374151' }}>
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        whiteSpace: 'nowrap'
+                      }}>
                         {emp.contact}
+                      </td>
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {emp.email || '—'}
                       </td>
                       <td style={{ padding: '16px' }}>
                         <span style={getStatusStyle(emp.status)}>
@@ -596,7 +763,19 @@ const EmployeeManagementSection = () => {
                             cursor: "pointer",
                             fontSize: '14px',
                             fontWeight: '500',
-                            textDecoration: 'underline'
+                            textDecoration: 'underline',
+                            whiteSpace: 'nowrap',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = '#eff6ff';
+                            e.target.style.textDecoration = 'none';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = 'none';
+                            e.target.style.textDecoration = 'underline';
                           }}
                         >
                           View/Edit
@@ -632,7 +811,9 @@ const EmployeeManagementSection = () => {
             borderRadius: 12, 
             padding: 32, 
             position: "relative", 
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            maxHeight: '90vh',
+            overflow: 'auto'
           }}>
             <button 
               onClick={closeModal} 
@@ -695,6 +876,12 @@ const EmployeeManagementSection = () => {
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <strong style={{ minWidth: 80, fontSize: '14px', color: '#374151' }}>Username:</strong> 
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                      {selectedEmployee.username || '—'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
                     <strong style={{ minWidth: 80, fontSize: '14px', color: '#374151' }}>Email:</strong> 
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>
                       {selectedEmployee.email || '—'}
@@ -711,6 +898,76 @@ const EmployeeManagementSection = () => {
                     <span style={getStatusStyle(selectedEmployee.status)}>
                       {selectedEmployee.status}
                     </span>
+                  </div>
+                </div>
+
+                {/* Password Update Section */}
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e5e7eb' }}>
+                  <h4 style={{ 
+                    marginBottom: 12, 
+                    fontSize: '16px', 
+                    fontWeight: '600', 
+                    color: '#374151' 
+                  }}>
+                    Update Password
+                  </h4>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="password"
+                        placeholder="Enter new password..."
+                        value={updatePassword}
+                        onChange={(e) => setUpdatePassword(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      />
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#6b7280', 
+                        marginTop: '4px' 
+                      }}>
+                        Password must be at least 6 characters long
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleUpdatePassword}
+                      disabled={!updatePassword || updatePassword.length < 6 || updateLoading}
+                      style={{
+                        background: updateLoading || !updatePassword || updatePassword.length < 6 ? '#9ca3af' : '#3b82f6',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '6px',
+                        cursor: updateLoading || !updatePassword || updatePassword.length < 6 ? 'not-allowed' : 'pointer',
+                        fontWeight: '500',
+                        minWidth: '120px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      {updateLoading ? (
+                        <>
+                          <div style={{
+                            width: '16px',
+                            height: '16px',
+                            border: '2px solid transparent',
+                            borderTop: '2px solid white',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }} />
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Password'
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -756,6 +1013,15 @@ const EmployeeManagementSection = () => {
           </div>
         </div>
       )}
+
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };

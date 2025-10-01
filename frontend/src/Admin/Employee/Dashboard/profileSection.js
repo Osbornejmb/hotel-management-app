@@ -11,8 +11,6 @@ const ProfileSection = () => {
     hireDate: ''
   });
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({});
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
@@ -36,59 +34,11 @@ const ProfileSection = () => {
           hireDate: data.hireDate || profile.hireDate
         };
         setProfile(updatedProfile);
-        setEditForm(updatedProfile);
       } catch (err) {
         console.error('Profile fetch error:', err);
       }
     })();
   }, []);
-
-  const handleEditClick = () => {
-    setEditForm({ ...profile });
-    setIsEditing(true);
-    setMessage(null);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditForm({});
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveProfile = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setMessage({ type: 'error', text: 'Authentication required' });
-        return;
-      }
-
-      const res = await fetch('/api/users/me', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(editForm)
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update profile');
-
-      setProfile(editForm);
-      setIsEditing(false);
-      setMessage({ type: 'success', text: 'Profile updated successfully' });
-
-      if (editForm.name) localStorage.setItem('name', editForm.name);
-      if (editForm.email) localStorage.setItem('email', editForm.email);
-    } catch (err) {
-      setMessage({ type: 'error', text: err.message });
-    }
-  };
 
   const formattedHireDate = profile.hireDate ?
     new Date(profile.hireDate).toLocaleDateString(undefined, {
@@ -134,26 +84,6 @@ const ProfileSection = () => {
         }}>
           Profile Management
         </h2>
-        {!isEditing && (
-          <button
-            onClick={handleEditClick}
-            style={{
-              background: "#e7d4a3",
-              color: "#6b3f1f",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 20px",
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: "pointer",
-              transition: "0.2s"
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#e9d8b7")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#e7d4a3")}
-          >
-            ✏️ Edit Profile
-          </button>
-        )}
       </div>
 
       {message && (
@@ -246,379 +176,175 @@ const ProfileSection = () => {
 
         {/* Content Section */}
         <div style={{ padding: 32 }}>
-          {isEditing ? (
-            // Edit Form
-            <div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 32
+          }}>
+            {/* Personal Information */}
+            <div style={{
+              padding: 24,
+              background: '#f8f5f0',
+              borderRadius: 12,
+              border: '1px solid #e9d8b7'
+            }}>
               <h3 style={{
-                margin: '0 0 24px 0',
+                margin: '0 0 20px 0',
                 fontSize: '18px',
                 fontWeight: '600',
-                color: '#6b3f1f'
+                color: '#6b3f1f',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
               }}>
-                Edit Profile Information
+                👤 Personal Information
               </h3>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: 24,
-                marginBottom: 32
-              }}>
-                {/* Personal Information */}
-                <div style={{
-                  padding: 24,
-                  background: '#f8f5f0',
-                  borderRadius: 12,
-                  border: '1px solid #e9d8b7'
-                }}>
-                  <h4 style={{
-                    margin: '0 0 20px 0',
-                    fontSize: '16px',
+              <div style={{ display: 'grid', gap: 16 }}>
+                <div>
+                  <div style={{
+                    fontSize: '12px',
                     fontWeight: '600',
-                    color: '#6b3f1f'
+                    color: '#9b8f83',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
                   }}>
-                    Personal Information
-                  </h4>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: 8,
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#6b3f1f'
-                    }}>
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={editForm.name || ''}
-                      onChange={handleInputChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: 6,
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
+                    Full Name
                   </div>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: 8,
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#6b3f1f'
-                    }}>
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={editForm.email || ''}
-                      onChange={handleInputChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: 6,
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: 8,
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#6b3f1f'
-                    }}>
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={editForm.phone || ''}
-                      onChange={handleInputChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: 6,
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
+                  <div style={{
+                    fontSize: '16px',
+                    color: '#6b3f1f',
+                    fontWeight: '500'
+                  }}>
+                    {profile.name || '—'}
                   </div>
                 </div>
 
-                {/* Employment Information */}
-                <div style={{
-                  padding: 24,
-                  background: '#f8f5f0',
-                  borderRadius: 12,
-                  border: '1px solid #e9d8b7'
-                }}>
-                  <h4 style={{
-                    margin: '0 0 20px 0',
-                    fontSize: '16px',
+                <div>
+                  <div style={{
+                    fontSize: '12px',
                     fontWeight: '600',
-                    color: '#6b3f1f'
+                    color: '#9b8f83',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
                   }}>
-                    Employment Information
-                  </h4>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: 8,
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#6b3f1f'
-                    }}>
-                      Position
-                    </label>
-                    <input
-                      type="text"
-                      name="position"
-                      value={editForm.position || ''}
-                      onChange={handleInputChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: 6,
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
+                    Email Address
                   </div>
-
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: 8,
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#6b3f1f'
-                    }}>
-                      Hire Date
-                    </label>
-                    <input
-                      type="date"
-                      name="hireDate"
-                      value={editForm.hireDate ? editForm.hireDate.split('T')[0] : ''}
-                      onChange={handleInputChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: 6,
-                        fontSize: '14px',
-                        boxSizing: 'border-box'
-                      }}
-                    />
+                  <div style={{
+                    fontSize: '16px',
+                    color: '#6b3f1f',
+                    fontWeight: '500'
+                  }}>
+                    {profile.email || '—'}
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div style={{
-                display: 'flex',
-                gap: 12,
-                justifyContent: 'flex-end',
-                paddingTop: 24,
-                borderTop: '1px solid #e9d8b7'
-              }}>
-                <button
-                  onClick={handleCancelEdit}
-                  style={{
-                    background: "#9b8f83",
-                    color: "#fff",
-                    border: "none",
-                    padding: "10px 20px",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    fontWeight: '600'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveProfile}
-                  style={{
-                    background: "#e7d4a3",
-                    color: "#6b3f1f",
-                    border: "none",
-                    padding: "10px 20px",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    fontWeight: '700'
-                  }}
-                >
-                  Save Changes
-                </button>
+                <div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#9b8f83',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Phone Number
+                  </div>
+                  <div style={{
+                    fontSize: '16px',
+                    color: '#6b3f1f',
+                    fontWeight: '500'
+                  }}>
+                    {profile.phone || '—'}
+                  </div>
+                </div>
               </div>
             </div>
-          ) : (
-            // View Mode
+
+            {/* Employment Information */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: 32
+              padding: 24,
+              background: '#f8f5f0',
+              borderRadius: 12,
+              border: '1px solid #e9d8b7'
             }}>
-              {/* Personal Information */}
-              <div style={{
-                padding: 24,
-                background: '#f8f5f0',
-                borderRadius: 12,
-                border: '1px solid #e9d8b7'
+              <h3 style={{
+                margin: '0 0 20px 0',
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#6b3f1f',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
               }}>
-                <h3 style={{
-                  margin: '0 0 20px 0',
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#6b3f1f',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8
-                }}>
-                  👤 Personal Information
-                </h3>
+                💼 Employment Information
+              </h3>
 
-                <div style={{ display: 'grid', gap: 16 }}>
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: '#9b8f83',
-                      marginBottom: 4,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      Full Name
-                    </div>
-                    <div style={{
-                      fontSize: '16px',
-                      color: '#6b3f1f',
-                      fontWeight: '500'
-                    }}>
-                      {profile.name || '—'}
-                    </div>
+              <div style={{ display: 'grid', gap: 16 }}>
+                <div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#9b8f83',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Position
                   </div>
-
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: '#9b8f83',
-                      marginBottom: 4,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      Email Address
-                    </div>
-                    <div style={{
-                      fontSize: '16px',
-                      color: '#6b3f1f',
-                      fontWeight: '500'
-                    }}>
-                      {profile.email || '—'}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: '#9b8f83',
-                      marginBottom: 4,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      Phone Number
-                    </div>
-                    <div style={{
-                      fontSize: '16px',
-                      color: '#6b3f1f',
-                      fontWeight: '500'
-                    }}>
-                      {profile.phone || '—'}
-                    </div>
+                  <div style={{
+                    fontSize: '16px',
+                    color: '#6b3f1f',
+                    fontWeight: '500'
+                  }}>
+                    {profile.position || '—'}
                   </div>
                 </div>
-              </div>
 
-              {/* Employment Information */}
-              <div style={{
-                padding: 24,
-                background: '#f8f5f0',
-                borderRadius: 12,
-                border: '1px solid #e9d8b7'
-              }}>
-                <h3 style={{
-                  margin: '0 0 20px 0',
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#6b3f1f',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8
-                }}>
-                  💼 Employment Information
-                </h3>
-
-                <div style={{ display: 'grid', gap: 16 }}>
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: '#9b8f83',
-                      marginBottom: 4,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      Position
-                    </div>
-                    <div style={{
-                      fontSize: '16px',
-                      color: '#6b3f1f',
-                      fontWeight: '500'
-                    }}>
-                      {profile.position || '—'}
-                    </div>
+                <div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#9b8f83',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Hire Date
                   </div>
+                  <div style={{
+                    fontSize: '16px',
+                    color: '#6b3f1f',
+                    fontWeight: '500'
+                  }}>
+                    {formattedHireDate || '—'}
+                  </div>
+                </div>
 
-                  <div>
-                    <div style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: '#9b8f83',
-                      marginBottom: 4,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      Hire Date
-                    </div>
-                    <div style={{
-                      fontSize: '16px',
-                      color: '#6b3f1f',
-                      fontWeight: '500'
-                    }}>
-                      {formattedHireDate || '—'}
-                    </div>
+                <div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#9b8f83',
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Role
+                  </div>
+                  <div style={{
+                    fontSize: '16px',
+                    color: '#6b3f1f',
+                    fontWeight: '500'
+                  }}>
+                    {profile.role || '—'}
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
