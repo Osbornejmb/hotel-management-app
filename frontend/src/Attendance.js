@@ -6,6 +6,13 @@ const Attendance = () => {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   const handleSubmit = async () => {
     if (!employeeId) return;
     setLoading(true);
@@ -21,7 +28,7 @@ const Attendance = () => {
 
       if (response.ok) {
         if (data.status === 'clocked-in') {
-          setMessage(`Good Evening, ${data.employeeName}`);
+          setMessage(`${getGreeting()}, ${data.employeeName}`);
           setDetails({
             label: 'Clocked In',
             time: new Date(data.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
