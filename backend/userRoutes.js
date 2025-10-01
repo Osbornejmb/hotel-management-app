@@ -1,3 +1,4 @@
+
 // backend/userRoutes.js
 // Express routes for User operations
 
@@ -61,6 +62,27 @@ router.get('/', async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Verify password for any hotelAdmin user
+router.post('/verify-hoteladmin-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'Password required.' });
+    }
+    // Find any hotelAdmin user
+    const admins = await User.find({ role: 'hotelAdmin' });
+    for (const admin of admins) {
+      const isMatch = await admin.comparePassword(password);
+      if (isMatch) {
+        return res.json({ valid: true });
+      }
+    }
+    return res.status(401).json({ valid: false, error: 'Invalid password.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

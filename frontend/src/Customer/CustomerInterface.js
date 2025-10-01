@@ -184,9 +184,25 @@ export default function CustomerInterface() {
 		marginLeft: '8px',
 		flexShrink: 0,
 	};
-	const handleLogout = () => {
-		localStorage.clear();
-		navigate('/customer/login', { replace: true });
+	const handleLogout = async () => {
+		const password = window.prompt('Enter hotel admin password to log out:');
+		if (!password) return;
+		try {
+			const res = await fetch(`${process.env.REACT_APP_API_URL}/api/users/verify-hoteladmin-password`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password })
+			});
+			const data = await res.json();
+			if (res.ok && data.valid) {
+				localStorage.clear();
+				navigate('/customer/login', { replace: true });
+			} else {
+				alert('Invalid password. Logout cancelled.');
+			}
+		} catch (err) {
+			alert('Error verifying password. Please try again.');
+		}
 	};
 	const logoStyle = {
 		height: 40,
