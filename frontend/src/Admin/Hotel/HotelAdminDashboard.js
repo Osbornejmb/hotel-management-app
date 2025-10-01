@@ -1,10 +1,12 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaTachometerAlt, FaBed, FaBroom, FaTools, FaHistory } from 'react-icons/fa';
+import { FaTachometerAlt, FaBed, FaBroom, FaTools, FaHistory, FaBell } from 'react-icons/fa';
 import LogoutButton from '../../Auth/LogoutButton';
 import './HotelAdminDashboard.css';
 
-function HotelAdminDashboard({ children }) {
+// This is now the master layout (HotelAdminLayout)
+
+function HotelAdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,6 +41,9 @@ function HotelAdminDashboard({ children }) {
         <img src="/lumine_logo.png" alt="Lumine Logo" className="hotel-admin-dashboard-logo" />
 
         <div className="hotel-admin-dashboard-logout-btn">
+          <span className="hotel-admin-dashboard-notification-icon" title="Notifications" style={{ marginRight: '1.2rem', fontSize: '1.5rem', verticalAlign: 'middle', cursor: 'pointer', color: '#fff' }}>
+            <FaBell />
+          </span>
           <LogoutButton />
         </div>
       </nav>
@@ -69,4 +74,4 @@ function HotelAdminDashboard({ children }) {
   );
 }
 
-export default HotelAdminDashboard;
+export default HotelAdminLayout;

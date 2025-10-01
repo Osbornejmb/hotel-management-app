@@ -3,11 +3,6 @@ import HotelAdminDashboard from './HotelAdminDashboard';
 import './HotelAdminRooms.css';
 
 function getRoomCardColor(status, type) {
-  if (status === 'booked') return 'room-card-blue';
-  if (status === 'occupied') return 'room-card-red';
-  if (status === 'cleaning') return 'room-card-green';
-  if (status === 'maintenance') return 'room-card-gray';
-  // fallback by type or default
   return 'room-card-gray';
 }
 
@@ -18,20 +13,18 @@ export default function HotelAdminRooms() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedFloor, setSelectedFloor] = useState(1);
-  const [selectedType, setSelectedType] = useState('economy');
+  const [selectedType, setSelectedType] = useState('all');
   const [modalRoom, setModalRoom] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, jobType: '', room: null });
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState('');
-  const [actionSuccess, setActionSuccess] = useState('');
+  
 
   useEffect(() => {
     async function fetchRooms() {
       try {
         const res = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
         if (!res.ok) throw new Error('Failed to fetch rooms');
-        const data = await res.json();
-        setRooms(data);
+  const data = await res.json();
+  setRooms(Array.isArray(data) ? data : data.rooms || []);
       } catch (err) {
         setError('Could not load rooms.');
       } finally {
@@ -41,15 +34,16 @@ export default function HotelAdminRooms() {
     fetchRooms();
   }, []);
 
-  // Filter rooms by selected floor and type
+  // Dynamically get all unique room types from data
+  const allTypes = Array.from(new Set(rooms.map(r => r.roomType))).filter(Boolean);
+  // Filter rooms by selected floor, ignore type if 'all' is selected
   const filteredRooms = rooms.filter(r => {
     if (!r.roomNumber) return false;
-    // Extract leading number from roomNumber (e.g., 'P-101' -> 1)
-    const match = String(r.roomNumber).match(/(\d+)/);
-    if (!match) return false;
-    const floorMatch = match[0][0] === String(selectedFloor);
-    const typeMatch = r.roomType && r.roomType.toLowerCase() === selectedType;
-    return floorMatch && typeMatch;
+    const roomNumStr = String(r.roomNumber);
+    const floorNum = parseInt(roomNumStr[0], 10);
+    const floorMatch = floorNum === selectedFloor;
+    if (selectedType === 'all') return floorMatch;
+    return floorMatch && r.roomType === selectedType;
   });
 
   return (
@@ -66,8 +60,10 @@ export default function HotelAdminRooms() {
                 <div style={{display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.2rem'}}>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0}}>
                     <div className="room-card-v2-number">{room.roomNumber}</div>
-                    <div className={`room-card-v2-status room-card-v2-status-${room.isBooked ? 'booked' : 'available'}`}>
-                      {room.isBooked ? 'Booked' : 'Available'}
+                    <div className={`room-card-v2-status room-card-v2-status-${room.status ? room.status.toLowerCase() : (room.isBooked ? 'booked' : 'available')}`}>
+                      {room.status
+                        ? room.status.charAt(0).toUpperCase() + room.status.slice(1)
+                        : (room.isBooked ? 'Booked' : 'Available')}
                     </div>
                     {room.description && (
                       <div
@@ -131,7 +127,15 @@ export default function HotelAdminRooms() {
             ))}
           </div>
           <div style={{ display: 'flex', gap: '0.7rem', justifyContent: 'center', pointerEvents: 'auto' }}>
-            {['economy', 'deluxe', 'suite', 'presidential'].map(type => (
+            <button
+              key="all"
+              className={`hotel-admin-rooms-floor-btn${selectedType === 'all' ? ' selected' : ''}`}
+              onClick={() => setSelectedType('all')}
+              style={{ textTransform: 'capitalize', boxShadow: '0 2px 8px #bbb', background: '#fff' }}
+            >
+              All Types
+            </button>
+            {allTypes.map(type => (
               <button
                 key={type}
                 className={`hotel-admin-rooms-floor-btn${selectedType === type ? ' selected' : ''}`}
@@ -153,24 +157,30 @@ export default function HotelAdminRooms() {
               <div className="room-modal-section">
                 <div><strong>Room Type:</strong> {modalRoom.roomType}</div>
                 <div><strong>Description:</strong> {modalRoom.description || ''}</div>
-                <div><strong>Status:</strong> {modalRoom.isBooked ? 'Booked' : 'Available'}</div>
+                <div><strong>Status:</strong> {modalRoom.status
+                  ? modalRoom.status.charAt(0).toUpperCase() + modalRoom.status.slice(1)
+                  : (modalRoom.isBooked ? 'Booked' : 'Available')}</div>
                 <div><strong>Price:</strong> {modalRoom.price ? `₱${modalRoom.price}` : 'N/A'}</div>
                 <div><strong>Amenities:</strong> {modalRoom.amenities?.join(', ') || 'None'}</div>
               </div>
 
               <div className="room-modal-actions-right">
-                <button
-                  className="modal-btn request-cleaning"
-                  onClick={() => setConfirmModal({ open: true, jobType: 'cleaning', room: modalRoom })}
-                >
-                  Request Cleaning
-                </button>
-                <button
-                  className="modal-btn request-maintenance"
-                  onClick={() => setConfirmModal({ open: true, jobType: 'maintenance', room: modalRoom })}
-                >
-                  Request Maintenance
-                </button>
+                {modalRoom.status && modalRoom.status.toLowerCase().includes('cleaning') && (
+                  <button
+                    className="modal-btn request-cleaning"
+                    onClick={() => setConfirmModal({ open: true, jobType: 'cleaning', room: modalRoom })}
+                  >
+                    Request Cleaning
+                  </button>
+                )}
+                {modalRoom.status && modalRoom.status.toLowerCase().includes('maintenance') && (
+                  <button
+                    className="modal-btn request-maintenance"
+                    onClick={() => setConfirmModal({ open: true, jobType: 'maintenance', room: modalRoom })}
+                  >
+                    Request Maintenance
+                  </button>
+                )}
               </div>
 
               <div className="room-modal-log expanded">
@@ -186,18 +196,76 @@ export default function HotelAdminRooms() {
 
         {/* Confirmation Modal */}
         {confirmModal.open && (
-          <div className="room-modal-backdrop" style={{zIndex: 2000}}>
-            <div className="room-modal" style={{maxWidth: 350, textAlign: 'center'}}>
-              <h4>Confirm {confirmModal.jobType === 'cleaning' ? 'Cleaning' : 'Maintenance'} Request</h4>
-              <p>Are you sure you want to request {confirmModal.jobType} for Room {confirmModal.room?.roomNumber}?</p>
-              <div className="modal-actions">
-                <button onClick={() => setConfirmModal({ open: false, jobType: '', room: null })}>Cancel</button>
-                <button>Confirm</button>
-              </div>
-            </div>
-          </div>
+          <RequestModal
+            jobType={confirmModal.jobType}
+            room={confirmModal.room}
+            onClose={() => setConfirmModal({ open: false, jobType: '', room: null })}
+          />
         )}
       </div>
     </HotelAdminDashboard>
+  );
+}
+
+// RequestModal must be outside HotelAdminRooms
+function RequestModal({ jobType, room, onClose }) {
+  const [priority, setPriority] = useState('medium');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  async function handleConfirm() {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomNumber: room.roomNumber,
+          jobType,
+          date: new Date(),
+          priority
+        })
+      });
+      if (!res.ok) throw new Error('Failed to submit request');
+      setSuccess('Request submitted successfully!');
+      setTimeout(onClose, 1200);
+    } catch (err) {
+      setError('Could not submit request.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="room-modal-backdrop" style={{zIndex: 2000}}>
+      <div className="room-modal" style={{maxWidth: 350, textAlign: 'center'}}>
+        <h4>Confirm {jobType === 'cleaning' ? 'Cleaning' : 'Maintenance'} Request</h4>
+        <p>Room: <b>{room?.roomNumber}</b></p>
+        <div style={{ margin: '1em 0' }}>
+          <label htmlFor="priority-select"><b>Priority:</b></label>
+          <select
+            id="priority-select"
+            value={priority}
+            onChange={e => setPriority(e.target.value)}
+            style={{ marginLeft: 8, padding: '0.3em', borderRadius: 4 }}
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        {error && <div style={{ color: 'red', marginBottom: 8 }}>{error}</div>}
+        {success && <div style={{ color: 'green', marginBottom: 8 }}>{success}</div>}
+        <div className="modal-actions">
+          <button onClick={onClose} disabled={loading}>Cancel</button>
+          <button onClick={handleConfirm} disabled={loading} style={{ background: '#a57c2b', color: '#fff' }}>
+            {loading ? 'Submitting...' : 'Confirm'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

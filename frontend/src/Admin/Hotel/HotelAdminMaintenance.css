@@ -1,0 +1,44 @@
+.maintenance-container {
+  padding: 2rem;
+  width: calc(100% - 10px);
+  box-sizing: border-box;
+  min-height: calc(100vh - 120px);
+  overflow-x: auto;
+}
+.maintenance-title {
+  color: #a57c2b;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+}
+.maintenance-search {
+  width: 350px;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 1.2rem;
+}
+.maintenance-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #ccc;
+  overflow: hidden;
+}
+.maintenance-table th, .maintenance-table td {
+  padding: 0.7rem;
+  text-align: center;
+}
+.maintenance-table thead tr {
+  background: #e3c78a;
+  color: #222;
+  font-weight: 700;
+}
+.maintenance-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+.maintenance-table-empty {
+  text-align: center;
+  padding: 1.5rem;
+  color: #888;
+}

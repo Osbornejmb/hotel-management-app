@@ -1,3 +1,14 @@
+.hotel-admin-dashboard-notification-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.5rem;
+  transition: color 0.2s;
+}
+.hotel-admin-dashboard-notification-icon:hover {
+  color: #FFD700;
+}
 html, body {
 	overflow-y: auto !important;
   overflow-x: hidden !important;

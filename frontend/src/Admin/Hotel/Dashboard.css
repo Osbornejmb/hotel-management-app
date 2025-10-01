@@ -1,0 +1,35 @@
+.dashboard-summary-panels {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+.dashboard-summary-panel {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #eee;
+  padding: 1.5rem;
+  text-align: center;
+  min-width: 200px;
+}
+.dashboard-summary-panel-icon {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+}
+.dashboard-summary-panel-value {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+.dashboard-summary-panel-label {
+  color: #888;
+  font-size: 1rem;
+}
+.dashboard-analytics-container {
+  max-width: 700px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #eee;
+  padding: 2rem;
+}

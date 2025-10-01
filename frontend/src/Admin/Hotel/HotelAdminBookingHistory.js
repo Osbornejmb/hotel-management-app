@@ -2,34 +2,35 @@ import React, { useEffect, useState } from 'react';
 import HotelAdminDashboard from './HotelAdminDashboard';
 import './HotelAdminBookingHistory.css';
 
+
 function HotelAdminBookingHistory() {
-  const [customers, setCustomers] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [search, setSearch] = useState("");
   useEffect(() => {
-    async function fetchCustomers() {
+    async function fetchBookings() {
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/customers`);
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings`);
         if (res.ok) {
           const data = await res.json();
-          setCustomers(data);
+          setBookings(Array.isArray(data) ? data : data.bookings || []);
         }
       } catch (err) {
-        setCustomers([]);
+        setBookings([]);
       }
     }
-    fetchCustomers();
+    fetchBookings();
   }, []);
 
-  // Filter customers by search
-  const filteredCustomers = customers.filter(c =>
-    c.name?.toLowerCase().includes(search.toLowerCase()) ||
-    c.roomNumber?.toString().includes(search)
+  // Filter bookings by search
+  const filteredBookings = bookings.filter(b =>
+    b.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+    b.roomNumber?.toString().includes(search)
   );
 
   return (
     <HotelAdminDashboard>
       <div className="booking-history-container">
-        <h2 className="booking-history-title">Maintenance</h2>
+        <h2 className="booking-history-title">Booking History</h2>
         <input
           type="text"
           placeholder="Search..."
@@ -48,20 +49,16 @@ function HotelAdminBookingHistory() {
             </tr>
           </thead>
           <tbody>
-            {filteredCustomers.length === 0 ? (
+            {filteredBookings.length === 0 ? (
               <tr><td colSpan={5} className="booking-history-table-empty">No bookings found.</td></tr>
             ) : (
-              filteredCustomers.map((c, i) => (
-                <tr key={c._id || i}>
-                  <td>{c.name}</td>
-                  <td>{c.roomNumber}</td>
-                  <td>{c.checkinDate ? new Date(c.checkinDate).toLocaleDateString() : ''}</td>
-                  <td>
-                    {c.updatedCheckoutDate
-                      ? c.updatedCheckoutDate
-                      : (c.checkoutDate ? c.checkoutDate : '')}
-                  </td>
-                  <td>{c.status || ''}</td>
+              filteredBookings.map((b, i) => (
+                <tr key={b._id || i}>
+                  <td>{b.customerName}</td>
+                  <td>{b.roomNumber}</td>
+                  <td>{b.checkIn ? new Date(b.checkIn).toLocaleDateString() : ''}</td>
+                  <td>{b.checkOut ? new Date(b.checkOut).toLocaleDateString() : ''}</td>
+                  <td>{b.status || ''}</td>
                 </tr>
               ))
             )}
