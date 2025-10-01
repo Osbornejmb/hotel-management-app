@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 const EmployeePayroll = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('January 2024');
+  const [downloading, setDownloading] = useState(false);
 
   const payrollData = [
     {
@@ -29,6 +30,81 @@ const EmployeePayroll = () => {
   ];
 
   const currentPayroll = payrollData.find(item => item.period === selectedPeriod) || payrollData[0];
+
+  const handleDownloadPayslip = async () => {
+    setDownloading(true);
+    
+    // Simulate download delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    try {
+      // Create payslip content
+      const payslipContent = `
+HOTEL MANAGEMENT SYSTEM
+EMPLOYEE PAYSLIP
+=================================
+
+PAYROLL PERIOD: ${currentPayroll.period}
+EMPLOYEE: John Doe
+EMPLOYEE ID: EMP001
+DEPARTMENT: Housekeeping
+POSITION: Room Attendant
+
+---------------------------------
+EARNINGS
+---------------------------------
+Basic Hours: ${currentPayroll.totalHours} hours
+Hourly Rate: $30.00/hr
+Gross Pay: ${currentPayroll.grossPay}
+Overtime: ${currentPayroll.overtime}
+
+---------------------------------
+DEDUCTIONS
+---------------------------------
+Federal Tax: $650.25
+State Tax: $120.50
+Insurance: $180.75
+Other: $29.00
+Total Deductions: ${currentPayroll.deductions}
+
+---------------------------------
+SUMMARY
+---------------------------------
+TOTAL EARNINGS: ${currentPayroll.grossPay}
+TOTAL DEDUCTIONS: ${currentPayroll.deductions}
+NET PAY: ${currentPayroll.netPay}
+
+Payment Date: ${currentPayroll.paymentDate}
+Status: ${currentPayroll.status}
+
+Generated on: ${new Date().toLocaleDateString()}
+=================================
+      `.trim();
+
+      // Create a Blob with the content
+      const blob = new Blob([payslipContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `payslip-${currentPayroll.period.replace(' ', '-').toLowerCase()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      
+      console.log('Payslip downloaded successfully for:', currentPayroll.period);
+      
+    } catch (error) {
+      console.error('Error downloading payslip:', error);
+      alert('Failed to download payslip. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="p-4">
@@ -90,8 +166,25 @@ const EmployeePayroll = () => {
       </div>
 
       <div className="mt-6 flex">
-        <button className="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-600 transition-colors">
-          📥 Download Payslip
+        <button 
+          onClick={handleDownloadPayslip}
+          disabled={downloading}
+          className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+            downloading 
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+              : 'bg-green-500 text-white hover:bg-green-600'
+          }`}
+        >
+          {downloading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Downloading...
+            </>
+          ) : (
+            <>
+              📥 Download Payslip
+            </>
+          )}
         </button>
       </div>
     </div>

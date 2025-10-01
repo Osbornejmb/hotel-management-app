@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-
-
 const EmployeeManagementSection = () => {
   const [employees, setEmployees] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -23,6 +21,8 @@ const EmployeeManagementSection = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchEmployee, setSearchEmployee] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [updatePassword, setUpdatePassword] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -103,6 +103,7 @@ const EmployeeManagementSection = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
+<<<<<<< Updated upstream
       const res = await fetch('/api/users');
       if (!res.ok) throw new Error('Failed to fetch employees');
       const data = await res.json();
@@ -117,6 +118,28 @@ const EmployeeManagementSection = () => {
         contact: u.contact_number || u.phone || 'N/A',
         status: u.status || 'ACTIVE'
       }));
+=======
+      const res = await fetch('/api/employee');
+      const data = await parseResponse(res); // expect array of Employee documents
+      const mapped = (Array.isArray(data) ? data : []).map(u => {
+        const empIdNum = typeof u.employeeId === 'number' ? u.employeeId : (typeof u.employeeId === 'string' && /^\d+$/.test(u.employeeId) ? parseInt(u.employeeId,10) : null);
+        const formattedId = empIdNum ? String(empIdNum).padStart(4,'0') : (u.employeeCode || u._id || u.username);
+        return {
+          id: u._id || u.id || u.employeeCode || u.username,
+          employeeId: empIdNum,
+          formattedId,
+          name: u.name || u.fullName || u.username,
+          email: u.email || '',
+          jobTitle: u.jobTitle || u.position || 'Staff',
+          contact: u.contactNumber || u.contact || 'N/A',
+          status: (u.status || 'active').toUpperCase(),
+          dateHired: u.dateHired || null,
+          shift: u.shift || '',
+          notes: u.notes || '',
+          username: u.username || ''
+        };
+      });
+>>>>>>> Stashed changes
       setEmployees(mapped.reverse());
     } catch (err) {
       console.error('fetchEmployees error', err);
@@ -131,12 +154,57 @@ const EmployeeManagementSection = () => {
 
   const openModal = (emp) => {
     setSelectedEmployee(emp);
+    setUpdatePassword('');
     setModalOpen(true);
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setSelectedEmployee(null);
+    setUpdatePassword('');
+    setUpdateLoading(false);
+  };
+
+  // Update password function
+  const handleUpdatePassword = async () => {
+    if (!selectedEmployee || !updatePassword) {
+      setMessage({ type: 'error', text: 'Please enter a new password' });
+      return;
+    }
+
+    if (updatePassword.length < 6) {
+      setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
+      return;
+    }
+
+    setUpdateLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/employee/${selectedEmployee.id}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ password: updatePassword })
+      });
+
+      const data = await parseResponse(res);
+      const result = (typeof data === 'string') ? { message: data } : data;
+
+      setMessage({ type: 'success', text: result.message || 'Password updated successfully' });
+      setUpdatePassword('');
+      
+      // Close modal after successful update
+      setTimeout(() => {
+        closeModal();
+      }, 1500);
+      
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message || 'Failed to update password' });
+    } finally {
+      setUpdateLoading(false);
+    }
   };
 
   const deleteEmployee = async (emp) => {
@@ -665,6 +733,76 @@ const EmployeeManagementSection = () => {
                     </span>
                   </div>
                 </div>
+
+                {/* Password Update Section */}
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e5e7eb' }}>
+                  <h4 style={{ 
+                    marginBottom: 12, 
+                    fontSize: '16px', 
+                    fontWeight: '600', 
+                    color: '#374151' 
+                  }}>
+                    Update Password
+                  </h4>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1 }}>
+                      <input
+                        type="password"
+                        placeholder="Enter new password..."
+                        value={updatePassword}
+                        onChange={(e) => setUpdatePassword(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      />
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#6b7280', 
+                        marginTop: '4px' 
+                      }}>
+                        Password must be at least 6 characters long
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleUpdatePassword}
+                      disabled={!updatePassword || updatePassword.length < 6 || updateLoading}
+                      style={{
+                        background: updateLoading || !updatePassword || updatePassword.length < 6 ? '#9ca3af' : '#3b82f6',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '6px',
+                        cursor: updateLoading || !updatePassword || updatePassword.length < 6 ? 'not-allowed' : 'pointer',
+                        fontWeight: '500',
+                        minWidth: '120px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      {updateLoading ? (
+                        <>
+                          <div style={{
+                            width: '16px',
+                            height: '16px',
+                            border: '2px solid transparent',
+                            borderTop: '2px solid white',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }} />
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Password'
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -708,6 +846,15 @@ const EmployeeManagementSection = () => {
           </div>
         </div>
       )}
+
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };
