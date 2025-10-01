@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
 // Helper function for parsing responses
-const parseResponse = async (res) => {
-  const text = await res.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-};
+//const parseResponse = async (res) => {
+//  const text = await res.text();
+//  if (!text) return null;
+//  try {
+//    return JSON.parse(text);
+//  } catch {
+//    return text;
+//  }
+//};
 
 const EmployeeManagementSection = () => {
   const [employees, setEmployees] = useState([]);
