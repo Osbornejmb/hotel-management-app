@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const Attendance = () => {
   const [employeeId, setEmployeeId] = useState('');
   const [message, setMessage] = useState('');
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null); 
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -49,8 +50,19 @@ const Attendance = () => {
     } finally {
       setLoading(false);
       setEmployeeId('');
+      setTimeout(() => {
+        setMessage('');
+        setDetails(null); // Clear the message and details after a delay
+      }, 4000); // Adjust the delay as needed
     }
   };
+
+  
+  useEffect(() => {
+    if (!loading) {
+      inputRef.current.focus();
+    }
+  }, [loading]);
 
   return (
     <div
@@ -116,6 +128,7 @@ const Attendance = () => {
 
       {/* Input box */}
       <input
+        ref={inputRef} 
         type="password"
         placeholder="Enter Employee ID"
         value={employeeId}
