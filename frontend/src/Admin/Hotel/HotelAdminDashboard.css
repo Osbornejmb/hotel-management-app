@@ -29,8 +29,7 @@ html, body {
 /* Sidebar styles */
 .hotel-admin-dashboard-sidebar {
   width: 220px;
-  background: #b48a2c;
-  box-shadow: 2px 0 4px #d0b82f;
+  background: #4b2e06;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -52,12 +51,12 @@ html, body {
   margin: 0.4rem 0;
   border-radius: 12px;
   border: none;
-  background: #b48a2c;
+  background: #4b2e06;
   color: #fff;
   font-weight: 500;
   font-size: 1rem;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.50);
   transition: all 0.2s ease-in-out;
 }
 
@@ -97,13 +96,12 @@ html, body {
 /* Top nav bar */
 .hotel-admin-dashboard-nav {
 	width: 100vw;
-	background: #C79A2B;
-	background: linear-gradient(135deg,rgba(199, 154, 43, 1) 0%, rgba(96, 75, 21, 1) 100%);
+	background: #4b2e06;
 	padding: 1rem 0 1rem 0;
 	position: fixed;
 	top: 0;
 	left: 0;
-	box-shadow: 0 2px 4px #d0b82f;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.50);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -137,13 +135,12 @@ html, body {
   color: #FFF;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 2px 4px #d0b82f;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.50);
   transition: background 0.2s, color 0.2s;
 }
 
 .hotel-admin-dashboard-logout-btn-actual:hover {
-  background: #FFD700;
-  color: #222;
+  filter: brightness(1.2);
 }
 
 .hotel-admin-dashboard-home-btn {
@@ -160,7 +157,7 @@ html, body {
 	font-weight: bold;
 	font-size: 1rem;
 	cursor: pointer;
-	box-shadow: 0 2px 4px #d0b82f;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.50);
 	letter-spacing: 1px;
 	transition: background 0.2s, color 0.2s;
 }
