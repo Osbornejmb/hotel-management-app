@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
+// Helper function for parsing responses
+const parseResponse = async (res) => {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
+
 const EmployeeManagementSection = () => {
   const [employees, setEmployees] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -73,7 +84,7 @@ const EmployeeManagementSection = () => {
     };
 
     try {
-      const res = await fetch('/api/users/register', {
+      const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -103,23 +114,7 @@ const EmployeeManagementSection = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-<<<<<<< Updated upstream
       const res = await fetch('/api/users');
-      if (!res.ok) throw new Error('Failed to fetch employees');
-      const data = await res.json();
-      const onlyEmployees = data.filter(u => (u.role || '').toLowerCase() === 'employee');
-      const mapped = onlyEmployees.map(u => ({
-        id: u._id || u.id || u.username,
-        employeeId: typeof u.employeeId === 'number' ? u.employeeId : null,
-        formattedId: typeof u.employeeId === 'number' ? String(u.employeeId).padStart(4, '0') : (u._id || u.username),
-        name: u.name || u.username,
-        email: u.email || '',
-        jobTitle: u.jobTitle || u.position || u.job || 'Staff',
-        contact: u.contact_number || u.phone || 'N/A',
-        status: u.status || 'ACTIVE'
-      }));
-=======
-      const res = await fetch('/api/employee');
       const data = await parseResponse(res); // expect array of Employee documents
       const mapped = (Array.isArray(data) ? data : []).map(u => {
         const empIdNum = typeof u.employeeId === 'number' ? u.employeeId : (typeof u.employeeId === 'string' && /^\d+$/.test(u.employeeId) ? parseInt(u.employeeId,10) : null);
@@ -139,7 +134,6 @@ const EmployeeManagementSection = () => {
           username: u.username || ''
         };
       });
->>>>>>> Stashed changes
       setEmployees(mapped.reverse());
     } catch (err) {
       console.error('fetchEmployees error', err);

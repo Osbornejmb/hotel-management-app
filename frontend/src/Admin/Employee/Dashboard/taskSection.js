@@ -518,21 +518,6 @@ const TasksSection = () => {
     return () => { mounted = false; };
   }, []);
 
-<<<<<<< Updated upstream
-  // Generate tasks with different statuses
-  const tasks = emps.slice(0, 7).map((e, idx) => ({ 
-    id: `T${1000 + idx}`, 
-    assigned: e.name, 
-    employeeId: e.formattedId,
-    room: `${500 + idx}`, 
-    type: idx % 3 === 0 ? 'CLEANING' : idx % 3 === 1 ? 'MAINTENANCE' : 'INSPECTION', 
-    location: idx % 2 === 0 ? 'BLDG A' : 'BLDG B',
-    status: idx % 4 === 0 ? 'UNASSIGNED' : idx % 4 === 1 ? 'NOT STARTED' : idx % 4 === 2 ? 'IN PROGRESS' : 'COMPLETED',
-    priority: idx % 3 === 0 ? 'HIGH' : idx % 3 === 1 ? 'MEDIUM' : 'LOW'
-  }));
-
-=======
->>>>>>> Stashed changes
   // Filter tasks based on active filter and search term
   const filteredTasks = tasks.filter(task => {
     const matchesFilter = activeFilter === 'all' || task.status === activeFilter.toUpperCase().replace(' ', '_');
@@ -834,7 +819,6 @@ const TasksSection = () => {
               <th style={{ padding: '18px 16px' }}>ASSIGNED TO</th>
               <th style={{ padding: '18px 16px' }}>ROOM</th>
               <th style={{ padding: '18px 16px' }}>TASK TYPE</th>
-              <th style={{ padding: '18px 16px' }}>LOCATION</th>
               <th style={{ padding: '18px 16px' }}>STATUS</th>
               <th style={{ padding: '18px 16px' }}>PRIORITY</th>
             </tr>
@@ -867,7 +851,6 @@ const TasksSection = () => {
                     {task.type}
                   </span>
                 </td>
-                <td style={{ padding: '16px' }}>{task.location}</td>
                 <td style={{ padding: '16px' }}>
                   <span style={{
                     padding: '6px 12px',

@@ -70,6 +70,7 @@ const RoomAssignmentSection = () => {
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [reassignModal, setReassignModal] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -127,6 +128,58 @@ const RoomAssignmentSection = () => {
   // Handle reassign action
   const handleReassign = (assignment) => {
     setReassignModal(assignment);
+  };
+
+  // Handle export assignments
+  const handleExportAssignments = async () => {
+    if (filteredAssignments.length === 0) {
+      alert('No assignments to export.');
+      return;
+    }
+
+    setExportLoading(true);
+    
+    try {
+      // Create CSV content
+      const headers = ['Room ID', 'Assigned To', 'Employee ID', 'Room', 'Task Type', 'Location', 'Status', 'Last Updated'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredAssignments.map(assignment => [
+          assignment.roomId,
+          `"${assignment.assigned || 'Unassigned'}"`,
+          assignment.employeeId || 'N/A',
+          assignment.room,
+          assignment.type,
+          assignment.location,
+          assignment.status,
+          assignment.lastUpdated.toLocaleDateString()
+        ].join(','))
+      ].join('\n');
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `room-assignments-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Exported', filteredAssignments.length, 'assignments');
+      
+      // Show success message
+      setTimeout(() => {
+        alert(`Successfully exported ${filteredAssignments.length} assignments!`);
+      }, 500);
+      
+    } catch (error) {
+      console.error('Error exporting assignments:', error);
+      alert('Failed to export assignments. Please try again.');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   // Handle status change
@@ -315,7 +368,7 @@ const RoomAssignmentSection = () => {
         fontSize: '1.1rem',
         paddingLeft: '8px'
       }}>
-        Assignment List
+        Assignment List {filteredAssignments.length > 0 && `(${filteredAssignments.length} assignments)`}
       </div>
       
       <div style={{
@@ -353,10 +406,7 @@ const RoomAssignmentSection = () => {
             {filteredAssignments.map((item, idx) => (
               <tr key={idx} style={{
                 borderBottom: '1px solid #ecf0f1',
-                transition: 'background 0.2s ease',
-                ':hover': {
-                  background: '#f8f9fa'
-                }
+                transition: 'background 0.2s ease'
               }}>
                 <td style={{ padding: '16px', fontWeight: 600 }}>{item.roomId}</td>
                 <td style={{ padding: '16px' }}>
@@ -457,45 +507,46 @@ const RoomAssignmentSection = () => {
       
       {/* Action Buttons */}
       <div style={{ display: 'flex', gap: 12 }}>
-        <button style={{
-          background: '#3498db',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 8,
-          padding: '12px 24px',
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: 'pointer',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-          transition: 'all 0.2s ease',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Create New Assignment
-        </button>
-        <button style={{
-          background: '#2ecc71',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 8,
-          padding: '12px 24px',
-          fontWeight: 600,
-          fontSize: 14,
-          cursor: 'pointer',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-          transition: 'all 0.2s ease',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16M16 12L12 16M12 16L8 12M12 16L12 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Export Assignments
+        <button 
+          onClick={handleExportAssignments}
+          disabled={exportLoading || filteredAssignments.length === 0}
+          style={{
+            background: exportLoading || filteredAssignments.length === 0 ? '#95a5a6' : '#2ecc71',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            padding: '12px 24px',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: exportLoading || filteredAssignments.length === 0 ? 'not-allowed' : 'pointer',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            opacity: filteredAssignments.length === 0 ? 0.6 : 1
+          }}
+        >
+          {exportLoading ? (
+            <>
+              <div style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid transparent',
+                borderTop: '2px solid white',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 16L4 17C4 18.6569 5.34315 20 7 20L17 20C18.6569 20 20 18.6569 20 17L20 16M16 12L12 16M12 16L8 12M12 16L12 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Export Assignments
+            </>
+          )}
         </button>
       </div>
       
@@ -584,6 +635,15 @@ const RoomAssignmentSection = () => {
           </div>
         </div>
       )}
+
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };
