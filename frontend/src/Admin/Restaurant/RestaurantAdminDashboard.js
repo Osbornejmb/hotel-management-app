@@ -183,8 +183,27 @@ function MenuManager() {
 }
 
 function RestaurantAdminDashboard() {
+  // Cancel order (set status to 'cancelled')
+  const handleCancelOrder = async (order) => {
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/${order._id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+      fetchOrders();
+    } catch {}
+  };
   const [orders, setOrders] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState('pending');
+
+  const statusSteps = [
+    'pending',
+    'acknowledged',
+    'preparing',
+    'on the way',
+    'delivered'
+  ];
 
   const fetchOrders = async () => {
     try {
@@ -207,18 +226,25 @@ function RestaurantAdminDashboard() {
     } catch {}
   };
 
-  const handleMarkDelivered = async (orderId) => {
+  // Progress order status to next step
+  const handleProgressStatus = async (order) => {
+    const currentIdx = statusSteps.indexOf(order.status);
+    if (currentIdx === -1 || currentIdx === statusSteps.length - 1) return;
+    const nextStatus = statusSteps[currentIdx + 1];
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}/status`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/${order._id}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'delivered' })
+        body: JSON.stringify({ status: nextStatus })
       });
       fetchOrders();
     } catch {}
   };
 
   const pendingOrders = orders.filter(order => order.status === 'pending');
+  const acknowledgedOrders = orders.filter(order => order.status === 'acknowledged');
+  const preparingOrders = orders.filter(order => order.status === 'preparing');
+  const onTheWayOrders = orders.filter(order => order.status === 'on the way');
   const deliveredOrders = orders.filter(order => order.status === 'delivered');
 
   return (
@@ -227,6 +253,9 @@ function RestaurantAdminDashboard() {
       <h2 className="dashboard-title">Restaurant Admin Dashboard</h2>
       <div className="tabs">
         <button className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>Pending</button>
+        <button className={`tab-btn ${activeTab === 'acknowledged' ? 'active' : ''}`} onClick={() => setActiveTab('acknowledged')}>Acknowledged</button>
+        <button className={`tab-btn ${activeTab === 'preparing' ? 'active' : ''}`} onClick={() => setActiveTab('preparing')}>Preparing</button>
+        <button className={`tab-btn ${activeTab === 'on the way' ? 'active' : ''}`} onClick={() => setActiveTab('on the way')}>On The Way</button>
         <button className={`tab-btn ${activeTab === 'delivered' ? 'active' : ''}`} onClick={() => setActiveTab('delivered')}>Delivered</button>
         <button className={`tab-btn ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>Manage Menu</button>
       </div>
@@ -247,6 +276,7 @@ function RestaurantAdminDashboard() {
                   <th>Total Price</th>
                   <th>Status</th>
                   <th>Checked Out At</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,11 +298,169 @@ function RestaurantAdminDashboard() {
                         </ul>
                       </td>
                       <td className="bold">₱{totalPrice.toFixed(2)}</td>
-                      <td className="bold">
-                        {order.status || 'pending'}
-                        <button className="btn btn-mark" onClick={() => handleMarkDelivered(order._id)}>Mark Delivered</button>
-                      </td>
+                      <td className="bold">{order.status || 'pending'}</td>
                       <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
+                      <td>
+                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
+                          Acknowledge
+                        </button>
+                        <button className="btn btn-cancel" onClick={() => handleCancelOrder(order)}>
+                          Cancel
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </>
+      ) : activeTab === 'acknowledged' ? (
+        <>
+          <h3 className="orders-title">Acknowledged Orders</h3>
+          {acknowledgedOrders.length === 0 ? (
+            <p>No acknowledged orders.</p>
+          ) : (
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Room Number</th>
+                  <th>Items</th>
+                  <th>Total Price</th>
+                  <th>Status</th>
+                  <th>Checked Out At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {acknowledgedOrders.map(order => {
+                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+                  return (
+                    <tr key={order._id}>
+                      <td>{order.roomNumber}</td>
+                      <td>
+                        <ul className="order-items">
+                          {order.items.map((item, idx) => (
+                            <li key={idx} className="order-item">
+                              <img className="order-img" src={item.img} alt={item.name} />
+                              <span className="order-name">{item.name}</span>
+                              <span className="order-qty">(x{item.quantity || 1})</span>
+                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
+                      <td className="bold">{order.status || 'acknowledged'}</td>
+                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
+                      <td>
+                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
+                          Start Preparing
+                        </button>
+                        <button className="btn btn-cancel" onClick={() => handleCancelOrder(order)}>
+                          Cancel
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </>
+      ) : activeTab === 'preparing' ? (
+        <>
+          <h3 className="orders-title">Preparing Orders</h3>
+          {preparingOrders.length === 0 ? (
+            <p>No preparing orders.</p>
+          ) : (
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Room Number</th>
+                  <th>Items</th>
+                  <th>Total Price</th>
+                  <th>Status</th>
+                  <th>Checked Out At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preparingOrders.map(order => {
+                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+                  return (
+                    <tr key={order._id}>
+                      <td>{order.roomNumber}</td>
+                      <td>
+                        <ul className="order-items">
+                          {order.items.map((item, idx) => (
+                            <li key={idx} className="order-item">
+                              <img className="order-img" src={item.img} alt={item.name} />
+                              <span className="order-name">{item.name}</span>
+                              <span className="order-qty">(x{item.quantity || 1})</span>
+                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
+                      <td className="bold">{order.status || 'preparing'}</td>
+                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
+                      <td>
+                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
+                          Mark On The Way
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </>
+      ) : activeTab === 'on the way' ? (
+        <>
+          <h3 className="orders-title">Orders On The Way</h3>
+          {onTheWayOrders.length === 0 ? (
+            <p>No orders on the way.</p>
+          ) : (
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Room Number</th>
+                  <th>Items</th>
+                  <th>Total Price</th>
+                  <th>Status</th>
+                  <th>Checked Out At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {onTheWayOrders.map(order => {
+                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+                  return (
+                    <tr key={order._id}>
+                      <td>{order.roomNumber}</td>
+                      <td>
+                        <ul className="order-items">
+                          {order.items.map((item, idx) => (
+                            <li key={idx} className="order-item">
+                              <img className="order-img" src={item.img} alt={item.name} />
+                              <span className="order-name">{item.name}</span>
+                              <span className="order-qty">(x{item.quantity || 1})</span>
+                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
+                      <td className="bold">{order.status || 'on the way'}</td>
+                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
+                      <td>
+                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
+                          Mark Delivered
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -294,6 +482,7 @@ function RestaurantAdminDashboard() {
                   <th>Total Price</th>
                   <th>Status</th>
                   <th>Checked Out At</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,11 +504,11 @@ function RestaurantAdminDashboard() {
                         </ul>
                       </td>
                       <td className="bold">₱{totalPrice.toFixed(2)}</td>
-                      <td className="bold">
-                        {order.status || 'delivered'}
+                      <td className="bold">{order.status || 'delivered'}</td>
+                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
+                      <td>
                         <button className="btn btn-delete" onClick={() => handleDeleteDelivered(order._id)}>Delete</button>
                       </td>
-                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
                     </tr>
                   );
                 })}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import './Facilities.css';
 
@@ -73,18 +72,21 @@ function Facilities() {
 		<div className="facilities-root">
 			{/* Header Bar */}
 			<div className="facilities-header">
-				<img src={process.env.PUBLIC_URL + '/logo192.png'} alt="Lumine Logo" className="facilities-logo" />
+				<img src="/lumine_icon.png" alt="Lumine Logo" className="facilities-logo" />
 				<span className="facilities-brand">Lumine</span>
 			</div>
+
 			{/* Back Button and Title */}
 			<div className="facilities-topbar">
 				<button className="facilities-back" onClick={handleBack}>
-					<span className="facilities-back-arrow">&#8592;</span> Back
+					<span className="facilities-back-arrow">←</span> Back
 				</button>
 			</div>
+
 			<div className="facilities-titlebar-centered">
-				<span className="facilities-title-highlight">Lumine Amenities</span>
+				<span className="facilities-title-highlight">Lumine Facilities</span>
 			</div>
+
 			{/* Facilities Grid */}
 			<div className="facilities-grid">
 				{FACILITY_DATA.map((facility) => (
@@ -96,6 +98,7 @@ function Facilities() {
 					</div>
 				))}
 			</div>
+
 			{/* Modal Popup */}
 			{modal.open && modal.facility && (
 				<div className="facility-modal-overlay" onClick={closeModal}>
