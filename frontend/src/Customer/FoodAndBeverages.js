@@ -55,23 +55,34 @@ function FoodAndBeverages() {
 
   // Load all food items from backend on mount
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_API_URL}/api/food`)
-      .then(res => {
-        // Flatten all categories into a single array
-        let all = [];
-        if (res.data && typeof res.data === 'object') {
-          Object.values(res.data).forEach(arr => {
-            if (Array.isArray(arr)) all = all.concat(arr);
-          });
-        }
-        setFoodItems(all);
-        setFoodLoaded(true);
-      })
-      .catch(() => setFoodLoaded(true));
+    const fetchFood = () => {
+      axios.get(`${process.env.REACT_APP_API_URL}/api/food`)
+        .then(res => {
+          // Flatten all categories into a single array, show all items
+          let all = [];
+          if (res.data && typeof res.data === 'object') {
+            Object.values(res.data).forEach(arr => {
+              if (Array.isArray(arr)) all = all.concat(arr);
+            });
+          }
+          setFoodItems(all);
+          setFoodLoaded(true);
+        })
+        .catch(() => setFoodLoaded(true));
+    };
+    fetchFood();
+    const interval = setInterval(fetchFood, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Popup logic from FoodMaster with quantity support
-  const handleFoodClick = (food) => setPopup({...food, quantity: 1});
+  const handleFoodClick = (food) => {
+    if (food.available === false) {
+      alert('This food item is currently unavailable.');
+      return;
+    }
+    setPopup({...food, quantity: 1});
+  };
   const closePopup = () => setPopup(null);
   
   // Add to cart with quantity support
@@ -1082,11 +1093,12 @@ function FoodAndBeverages() {
                 fontWeight: 400,
                 letterSpacing: 1,
                 textAlign: 'center',
-                cursor: 'pointer',
+                cursor: food.available === false ? 'not-allowed' : 'pointer',
                 border: '1.5px solid #f7e6b0',
                 transition: 'box-shadow 0.18s, border 0.18s, transform 0.18s',
                 margin: 0,
                 padding: '0.8rem 0.3rem',
+                opacity: food.available === false ? 0.5 : 1
               }}
                 onClick={() => handleFoodClick(food)}
                 onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 32px #e5c16c99'; e.currentTarget.style.border = '2.5px solid #F7D774'; e.currentTarget.style.transform = 'translateY(-6px) scale(1.03)'; }}
@@ -1096,6 +1108,9 @@ function FoodAndBeverages() {
                 <div style={{ fontWeight: 500, fontSize: '0.9rem', color: '#4B2E06', marginBottom: '2px' }}>{food.name}</div>
                 <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: '2px' }}>{food.category}</div>
                 <div style={{ fontSize: '0.8rem', color: '#4B2E06', fontWeight: 500 }}>₱{food.price ? food.price.toFixed(2) : '0.00'}</div>
+                {food.available === false && (
+                  <div style={{ color: '#e74c3c', fontSize: '0.8rem', fontWeight: 500, marginTop: '4px' }}>Unavailable</div>
+                )}
               </div>
             ))}
             {foodItems.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (

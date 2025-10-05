@@ -10,7 +10,7 @@ function MenuManager() {
   const [editForm, setEditForm] = React.useState({ name: '', price: '', category: 'breakfast', img: '', details: '' });
   const [showEditPopup, setShowEditPopup] = React.useState(false);
   const [message, setMessage] = React.useState('');
-  const [addForm, setAddForm] = React.useState({ name: '', price: '', category: 'breakfast', img: '', details: '' });
+  const [addForm, setAddForm] = React.useState({ name: '', price: '', category: 'breakfast', img: '', details: '', available: true });
   const [showAddPopup, setShowAddPopup] = React.useState(false);
 
   // Fetch food items
@@ -20,6 +20,25 @@ function MenuManager() {
       const data = await res.json();
       setFoodItems(Object.entries(data).flatMap(([cat, arr]) => arr.map(item => ({ ...item, category: cat }))));
     } catch {}
+  };
+
+  // Toggle food availability
+  const handleToggleAvailability = async (item) => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food/${item.category}/${item._id}/availability`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ available: !item.available })
+      });
+      if (res.ok) {
+        setMessage(`Food item marked as ${!item.available ? 'available' : 'unavailable'}.`);
+        fetchFood();
+      } else {
+        setMessage('Failed to update availability.');
+      }
+    } catch {
+      setMessage('Failed to update availability.');
+    }
   };
   React.useEffect(() => { fetchFood(); }, []);
 
@@ -39,7 +58,7 @@ function MenuManager() {
       });
       if (res.ok) {
         setMessage('Food item added successfully!');
-        setAddForm({ name: '', price: '', category: 'breakfast', img: '', details: '' });
+        setAddForm({ name: '', price: '', category: 'breakfast', img: '', details: '', available: true });
         setShowAddPopup(false);
         fetchFood();
       } else {
@@ -103,7 +122,7 @@ function MenuManager() {
       <table className="food-table">
         <thead>
           <tr>
-            <th>Name</th><th>Price</th><th>Category</th><th>Image</th><th>Details</th><th>Edit</th><th>Delete</th>
+            <th>Name</th><th>Price</th><th>Category</th><th>Image</th><th>Details</th><th>Available</th><th>Edit</th><th>Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -114,6 +133,11 @@ function MenuManager() {
               <td>{item.category}</td>
               <td><img className="food-img" src={item.img} alt={item.name} /></td>
               <td>{item.details}</td>
+              <td>
+                <button className={`btn btn-toggle ${item.available ? 'available' : 'unavailable'}`} onClick={() => handleToggleAvailability(item)}>
+                  {item.available ? 'Available' : 'Unavailable'}
+                </button>
+              </td>
               <td><button className="btn btn-edit" onClick={() => startEdit(item)}>Edit</button></td>
               <td><button className="btn btn-delete" onClick={() => handleDelete(item._id, item.category)}>Delete</button></td>
             </tr>
@@ -170,6 +194,10 @@ function MenuManager() {
               </label>
               <label>Image URL:<input type="text" value={addForm.img} onChange={e => setAddForm(f => ({ ...f, img: e.target.value }))} required /></label>
               <label>Details:<textarea value={addForm.details} onChange={e => setAddForm(f => ({ ...f, details: e.target.value }))} /></label>
+              <label>
+                Available:
+                <input type="checkbox" checked={addForm.available} onChange={e => setAddForm(f => ({ ...f, available: e.target.checked }))} />
+              </label>
               <div className="popup-actions">
                 <button type="submit" className="btn btn-save">Add Food Item</button>
                 <button type="button" className="btn btn-cancel" onClick={() => setShowAddPopup(false)}>Cancel</button>

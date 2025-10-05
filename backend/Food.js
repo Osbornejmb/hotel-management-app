@@ -5,7 +5,8 @@ const FoodSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   category: { type: String, required: true },
   img: { type: String, required: true },
-  details: { type: String }
+  details: { type: String },
+  available: { type: Boolean, default: true }
 });
 
 module.exports = mongoose.model('Food', FoodSchema);

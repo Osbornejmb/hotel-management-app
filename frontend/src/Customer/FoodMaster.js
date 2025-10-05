@@ -36,8 +36,14 @@ function FoodMaster() {
   const [showStatus, setShowStatus] = useState(false);
   const [orders, setOrders] = useState([]);
   const [tab, setTab] = useState('pending');
-  // Add missing handlers
-  const handleFoodClick = (food) => setPopup({...food, quantity: 1});
+  // Handle food click: show popup only if available
+  const handleFoodClick = (food) => {
+    if (food.available === false) {
+      alert('This food item is currently unavailable.');
+      return;
+    }
+    setPopup({...food, quantity: 1});
+  };
   const [addingToCart, setAddingToCart] = useState(false);
   
   // Add to cart with quantity support
@@ -85,17 +91,24 @@ function FoodMaster() {
   const closePopup = () => setPopup(null);
   const foods = foodData[normalizedCategory] || [];
 
-  // Fetch food data for the selected category from backend
+  // Poll food data for the selected category from backend every second
   React.useEffect(() => {
     let ignore = false;
-    axios.get(`${process.env.REACT_APP_API_URL}/api/food`)
-      .then(res => {
-        if (!ignore && res.data && typeof res.data === 'object') {
-          setFoodData(res.data);
-        }
-      })
-      .catch(() => {});
-    return () => { ignore = true; };
+    const fetchFood = () => {
+      axios.get(`${process.env.REACT_APP_API_URL}/api/food`)
+        .then(res => {
+          if (!ignore && res.data && typeof res.data === 'object') {
+            setFoodData(res.data);
+          }
+        })
+        .catch(() => {});
+    };
+    fetchFood();
+    const interval = setInterval(fetchFood, 1000);
+    return () => {
+      ignore = true;
+      clearInterval(interval);
+    };
   }, [category]);
 
   // Update item quantity in cart
@@ -348,13 +361,14 @@ function FoodMaster() {
               fontWeight: 400,
               letterSpacing: 1,
               textAlign: 'center',
-              cursor: 'pointer',
+              cursor: food.available === false ? 'not-allowed' : 'pointer',
               border: '1.5px solid #f7e6b0',
               transition: 'box-shadow 0.18s, border 0.18s, transform 0.18s',
               margin: 0,
               padding: 0,
               position: 'relative',
               overflow: 'hidden',
+              opacity: food.available === false ? 0.5 : 1
             }}
               onClick={() => handleFoodClick(food)}
               onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 32px #e5c16c99'; e.currentTarget.style.border = '2.5px solid #F7D774'; e.currentTarget.style.transform = 'translateY(-6px) scale(1.03)'; }}
@@ -366,6 +380,9 @@ function FoodMaster() {
               <div style={{ width: '100%', padding: '0.3rem 0.5rem 0 0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                 <div style={{ fontWeight: 500, fontSize: '0.9rem', color: '#4B2E06', margin: 0, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{food.name}</div>
                 <div style={{ fontSize: '0.8rem', color: '#4B2E06', fontWeight: 500, marginTop: 2 }}>₱{food.price ? food.price.toFixed(2) : '0.00'}</div>
+                {food.available === false && (
+                  <div style={{ color: '#e74c3c', fontSize: '0.8rem', fontWeight: 500, marginTop: '4px' }}>Unavailable</div>
+                )}
               </div>
               {/* Cart icon bottom right */}
               <span style={{ position: 'absolute', bottom: 8, right: 10, color: '#FFD700', fontSize: '20px' }}>

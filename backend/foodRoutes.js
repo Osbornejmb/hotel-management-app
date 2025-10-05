@@ -20,12 +20,12 @@ router.get('/', async (req, res) => {
 
 // POST add a new food item
 router.post('/', async (req, res) => {
-  const { name, price, category, img, details } = req.body;
+  const { name, price, category, img, details, available } = req.body;
   if (!name || !price || !category || !img) {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
   try {
-    const food = new Food({ name, price: parseFloat(price), category, img, details });
+    const food = new Food({ name, price: parseFloat(price), category, img, details, available: available !== undefined ? available : true });
     await food.save();
     res.json({ success: true });
   } catch (err) {
@@ -35,14 +35,16 @@ router.post('/', async (req, res) => {
 
 // PUT update a food item by ID and category
 router.put('/:category/:id', async (req, res) => {
-  const { name, price, category, img, details } = req.body;
+  const { name, price, category, img, details, available } = req.body;
   if (!name || !price || !category || !img) {
     return res.status(400).json({ error: 'Missing required fields.' });
   }
   try {
+    const updateFields = { name, price: parseFloat(price), category, img, details };
+    if (available !== undefined) updateFields.available = available;
     const food = await Food.findByIdAndUpdate(
       req.params.id,
-      { name, price: parseFloat(price), category, img, details },
+      updateFields,
       { new: true }
     );
     if (!food) return res.status(404).json({ error: 'Food item not found.' });
@@ -50,6 +52,24 @@ router.put('/:category/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Failed to update food item.' });
   }
+// PATCH availability of a food item
+router.patch('/:category/:id/availability', async (req, res) => {
+  const { available } = req.body;
+  if (typeof available !== 'boolean') {
+    return res.status(400).json({ error: 'Missing or invalid "available" field.' });
+  }
+  try {
+    const food = await Food.findByIdAndUpdate(
+      req.params.id,
+      { available },
+      { new: true }
+    );
+    if (!food) return res.status(404).json({ error: 'Food item not found.' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update availability.' });
+  }
+});
 });
 
 
