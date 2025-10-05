@@ -2,8 +2,7 @@ import React from 'react';
 import LogoutButton from '../../Auth/LogoutButton';
 import './RestaurantAdminDashboard.css';
 
-
-// MenuManager component for food item CRUD
+// MenuManager component (keep the same as before)
 function MenuManager() {
   const [foodItems, setFoodItems] = React.useState([]);
   const [editId, setEditId] = React.useState(null);
@@ -211,19 +210,12 @@ function MenuManager() {
 }
 
 function RestaurantAdminDashboard() {
-  // Cancel order (set status to 'cancelled')
-  const handleCancelOrder = async (order) => {
-    try {
-      await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/${order._id}/status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'cancelled' })
-      });
-      fetchOrders();
-    } catch {}
-  };
   const [orders, setOrders] = React.useState([]);
+  const [cancelledOrders, setCancelledOrders] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState('pending');
+  const [showCancelPopup, setShowCancelPopup] = React.useState(false);
+  const [selectedOrder, setSelectedOrder] = React.useState(null);
+  const [cancelReason, setCancelReason] = React.useState('');
 
   const statusSteps = [
     'pending',
@@ -241,11 +233,25 @@ function RestaurantAdminDashboard() {
     } catch {}
   };
 
+  const fetchCancelledOrders = async () => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancelled`);
+      const data = await res.json();
+      setCancelledOrders(data);
+    } catch {}
+  };
+
   React.useEffect(() => {
     fetchOrders();
-    const interval = setInterval(() => { fetchOrders(); }, 5000);
+    fetchCancelledOrders();
+    const interval = setInterval(() => { 
+      fetchOrders(); 
+      if (activeTab === 'cancelled') {
+        fetchCancelledOrders();
+      }
+    }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeTab]);
 
   const handleDeleteDelivered = async (orderId) => {
     try {
@@ -269,6 +275,62 @@ function RestaurantAdminDashboard() {
     } catch {}
   };
 
+  // Open cancellation popup
+  const openCancelPopup = (order) => {
+    setSelectedOrder(order);
+    setCancelReason('');
+    setShowCancelPopup(true);
+  };
+
+  // Handle order cancellation with reason
+  const handleCancelOrder = async () => {
+    if (!cancelReason.trim()) {
+      alert('Please provide a reason for cancellation.');
+      return;
+    }
+
+    try {
+      // Move the order to cancelled collection
+      const cancelResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: selectedOrder._id,
+          reason: cancelReason,
+          originalOrder: selectedOrder
+        })
+      });
+
+      if (cancelResponse.ok) {
+        setShowCancelPopup(false);
+        setSelectedOrder(null);
+        setCancelReason('');
+        fetchOrders();
+        if (activeTab === 'cancelled') {
+          fetchCancelledOrders();
+        }
+      } else {
+        alert('Failed to cancel order.');
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert('Error cancelling order.');
+    }
+  };
+
+  const handleDeleteCancelled = async (cancelledOrderId) => {
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancelled/${cancelledOrderId}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchCancelledOrders();
+      } else {
+        alert('Failed to delete cancelled order.');
+      }
+    } catch {
+      alert('Failed to delete cancelled order.');
+    }
+  };
+
   const pendingOrders = orders.filter(order => order.status === 'pending');
   const acknowledgedOrders = orders.filter(order => order.status === 'acknowledged');
   const preparingOrders = orders.filter(order => order.status === 'preparing');
@@ -285,8 +347,35 @@ function RestaurantAdminDashboard() {
         <button className={`tab-btn ${activeTab === 'preparing' ? 'active' : ''}`} onClick={() => setActiveTab('preparing')}>Preparing</button>
         <button className={`tab-btn ${activeTab === 'on the way' ? 'active' : ''}`} onClick={() => setActiveTab('on the way')}>On The Way</button>
         <button className={`tab-btn ${activeTab === 'delivered' ? 'active' : ''}`} onClick={() => setActiveTab('delivered')}>Delivered</button>
+        <button className={`tab-btn ${activeTab === 'cancelled' ? 'active' : ''}`} onClick={() => { setActiveTab('cancelled'); fetchCancelledOrders(); }}>Cancelled</button>
         <button className={`tab-btn ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>Manage Menu</button>
       </div>
+
+      {/* Cancellation Popup */}
+      {showCancelPopup && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <h3>Cancel Order</h3>
+            <p>Please provide a reason for cancellation:</p>
+            <textarea 
+              className="cancel-reason-input"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Enter cancellation reason..."
+              rows="4"
+              required
+            />
+            <div className="popup-actions">
+              <button className="btn btn-confirm" onClick={handleCancelOrder}>
+                Confirm Cancellation
+              </button>
+              <button className="btn btn-cancel" onClick={() => setShowCancelPopup(false)}>
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'menu' ? (
         <MenuManager />
@@ -332,7 +421,7 @@ function RestaurantAdminDashboard() {
                         <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
                           Acknowledge
                         </button>
-                        <button className="btn btn-cancel" onClick={() => handleCancelOrder(order)}>
+                        <button className="btn btn-cancel" onClick={() => openCancelPopup(order)}>
                           Cancel
                         </button>
                       </td>
@@ -385,7 +474,7 @@ function RestaurantAdminDashboard() {
                         <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
                           Start Preparing
                         </button>
-                        <button className="btn btn-cancel" onClick={() => handleCancelOrder(order)}>
+                        <button className="btn btn-cancel" onClick={() => openCancelPopup(order)}>
                           Cancel
                         </button>
                       </td>
@@ -496,7 +585,7 @@ function RestaurantAdminDashboard() {
             </table>
           )}
         </>
-      ) : (
+      ) : activeTab === 'delivered' ? (
         <>
           <h3 className="orders-title">Delivered Orders</h3>
           {deliveredOrders.length === 0 ? (
@@ -544,7 +633,56 @@ function RestaurantAdminDashboard() {
             </table>
           )}
         </>
-      )}
+      ) : activeTab === 'cancelled' ? (
+        <>
+          <h3 className="orders-title">Cancelled Orders</h3>
+          {cancelledOrders.length === 0 ? (
+            <p>No cancelled orders.</p>
+          ) : (
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Room Number</th>
+                  <th>Items</th>
+                  <th>Total Price</th>
+                  <th>Status When Cancelled</th>
+                  <th>Checked Out At</th>
+                  <th>Cancelled At</th>
+                  <th>Cancellation Reason</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cancelledOrders.map(order => (
+                  <tr key={order._id}>
+                    <td>{order.roomNumber}</td>
+                    <td>
+                      <ul className="order-items">
+                        {order.items.map((item, idx) => (
+                          <li key={idx} className="order-item">
+                            <img className="order-img" src={item.img} alt={item.name} />
+                            <span className="order-name">{item.name}</span>
+                            <span className="order-qty">(x{item.quantity || 1})</span>
+                            <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td className="bold">₱{order.totalPrice ? order.totalPrice.toFixed(2) : '0.00'}</td>
+                    <td>{order.statusAtCancellation}</td>
+                    <td>{order.checkedOutAt ? new Date(order.checkedOutAt).toLocaleString() : ''}</td>
+                    <td>{order.cancelledAt ? new Date(order.cancelledAt).toLocaleString() : ''}</td>
+                    <td>{order.cancellationReason}</td>
+                    <td>
+                      <button className="btn btn-delete" onClick={() => handleDeleteCancelled(order._id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      ) : null}
     </div>
   );
 }

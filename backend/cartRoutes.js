@@ -1,13 +1,82 @@
 const express = require('express');
 const router = express.Router();
 const Cart = require('./Cart');
-const Order = require('./Order');
+const { Order, CancelledOrder } = require('./Order');
 
-// Delete/cancel an order by ID
+// Cancel order and move to cancelled collection
+router.post('/orders/cancel', async (req, res) => {
+  try {
+    const { orderId, reason, originalOrder } = req.body;
+    
+    if (!orderId || !reason) {
+      return res.status(400).json({ error: 'Order ID and cancellation reason are required' });
+    }
+
+    // Find the original order to verify it exists
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Calculate total price
+    const totalPrice = order.items.reduce((sum, item) => 
+      sum + ((item.price || 0) * (item.quantity || 1)), 0
+    );
+
+    // Create cancelled order document
+    const cancelledOrder = new CancelledOrder({
+      roomNumber: order.roomNumber,
+      items: order.items,
+      checkedOutAt: order.checkedOutAt,
+      originalOrderId: orderId,
+      cancellationReason: reason,
+      statusAtCancellation: order.status,
+      totalPrice: totalPrice
+    });
+
+    // Save to cancelled collection
+    await cancelledOrder.save();
+
+    // Delete the original order
+    await Order.findByIdAndDelete(orderId);
+
+    res.json({ 
+      success: true, 
+      message: 'Order cancelled successfully', 
+      cancelledOrder: cancelledOrder 
+    });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    res.status(500).json({ error: 'Failed to cancel order' });
+  }
+});
+
+// Delete/cancel an order by ID (keep for backward compatibility, but now it just deletes without tracking)
 router.delete('/orders/:orderId', async (req, res) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all cancelled orders (for admin if needed)
+router.get('/orders/cancelled', async (req, res) => {
+  try {
+    const cancelledOrders = await CancelledOrder.find({}).sort({ cancelledAt: -1 });
+    res.json(cancelledOrders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a cancelled order by ID
+router.delete('/orders/cancelled/:cancelledOrderId', async (req, res) => {
+  try {
+    const result = await CancelledOrder.findByIdAndDelete(req.params.cancelledOrderId);
+    if (!result) return res.status(404).json({ error: 'Cancelled order not found' });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

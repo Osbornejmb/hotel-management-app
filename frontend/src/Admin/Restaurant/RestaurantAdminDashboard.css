@@ -21,6 +21,7 @@
   justify-content: center;
   gap: 15px;
   margin-bottom: 25px;
+  flex-wrap: wrap;
 }
 
 .tab-btn {
@@ -76,6 +77,7 @@
   padding: 12px;
   border-bottom: 1px solid #5a3d2a;
   color: #f5e6cc;
+  vertical-align: middle;
 }
 
 .bold {
@@ -118,12 +120,15 @@
 
 /* Buttons */
 .btn {
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   transition: all 0.3s ease;
+  font-weight: 500;
+  margin: 2px;
+  white-space: nowrap;
 }
 
 .btn-add {
@@ -154,6 +159,15 @@
   background-color: #d43d2e;
 }
 
+.btn-progress {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-progress:hover {
+  background-color: #2980b9;
+}
+
 .btn-mark {
   background-color: #3498db;
   color: white;
@@ -174,12 +188,47 @@
 }
 
 .btn-cancel {
-  background-color: #7f8c8d;
+  background-color: #e74c3c;
   color: white;
 }
 
 .btn-cancel:hover {
-  background-color: #6c7a7a;
+  background-color: #d43d2e;
+}
+
+.btn-confirm {
+  background-color: #e74c3c;
+  color: white;
+  font-weight: bold;
+}
+
+.btn-confirm:hover {
+  background-color: #d43d2e;
+}
+
+.btn-toggle {
+  background-color: #9b59b6;
+  color: white;
+}
+
+.btn-toggle:hover {
+  background-color: #8e44ad;
+}
+
+.btn-toggle.available {
+  background-color: #27ae60;
+}
+
+.btn-toggle.available:hover {
+  background-color: #219150;
+}
+
+.btn-toggle.unavailable {
+  background-color: #e74c3c;
+}
+
+.btn-toggle.unavailable:hover {
+  background-color: #d43d2e;
 }
 
 /* Message Alerts */
@@ -255,4 +304,169 @@
   display: flex;
   justify-content: space-between;
   margin-top: 15px;
+  gap: 10px;
+}
+
+.popup-actions .btn {
+  flex: 1;
+}
+
+/* Cancel reason input styling */
+.cancel-reason-input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #5a3d2a;
+  border-radius: 6px;
+  font-family: inherit;
+  resize: vertical;
+  background-color: #2e1f14;
+  color: #f5e6cc;
+}
+
+.cancel-reason-input:focus {
+  outline: none;
+  border-color: #ffcc66;
+}
+
+/* Cancelled status styling */
+.cancelled-status {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+/* Cancellation reason styling */
+.cancellation-reason {
+  max-width: 200px;
+  word-wrap: break-word;
+  font-style: italic;
+  color: #d9c8a2;
+}
+
+/* Food Table Specific Styles */
+.food-table {
+  table-layout: fixed;
+}
+
+.food-table th:nth-child(1) { width: 15%; } /* Name */
+.food-table th:nth-child(2) { width: 10%; } /* Price */
+.food-table th:nth-child(3) { width: 12%; } /* Category */
+.food-table th:nth-child(4) { width: 15%; } /* Image */
+.food-table th:nth-child(5) { width: 20%; } /* Details */
+.food-table th:nth-child(6) { width: 12%; } /* Available */
+.food-table th:nth-child(7) { width: 8%; }  /* Edit */
+.food-table th:nth-child(8) { width: 8%; }  /* Delete */
+
+/* Action buttons in food table */
+.food-table td:nth-child(7),
+.food-table td:nth-child(8) {
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.food-table td:nth-child(7) .btn,
+.food-table td:nth-child(8) .btn {
+  width: 80px;
+  margin: 2px auto;
+  display: block;
+}
+
+/* Available toggle button in food table */
+.food-table td:nth-child(6) {
+  text-align: center;
+}
+
+.food-table td:nth-child(6) .btn-toggle {
+  width: 100px;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Make sure the table is responsive on smaller screens */
+@media (max-width: 768px) {
+  .tabs {
+    gap: 8px;
+  }
+  
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .orders-table,
+  .food-table {
+    font-size: 14px;
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .orders-table th,
+  .orders-table td,
+  .food-table th,
+  .food-table td {
+    padding: 8px 6px;
+  }
+  
+  .cancellation-reason {
+    max-width: 150px;
+    font-size: 12px;
+  }
+  
+  .btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    margin: 1px;
+  }
+  
+  .popup-content {
+    width: 90%;
+    margin: 20px;
+  }
+  
+  /* Adjust food table for mobile */
+  .food-table th:nth-child(1) { width: 20%; }
+  .food-table th:nth-child(2) { width: 15%; }
+  .food-table th:nth-child(3) { width: 15%; }
+  .food-table th:nth-child(4) { width: 20%; }
+  .food-table th:nth-child(5) { width: 30%; }
+  .food-table th:nth-child(6) { width: 15%; }
+  .food-table th:nth-child(7) { width: 10%; }
+  .food-table th:nth-child(8) { width: 10%; }
+  
+  .food-table td:nth-child(7) .btn,
+  .food-table td:nth-child(8) .btn {
+    width: 60px;
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+}
+
+/* Menu Manager Specific Styles */
+.menu-manager {
+  background-color: #3b281d;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.food-table {
+  margin-top: 15px;
+}
+
+.food-table img {
+  border: 2px solid #ffcc66;
+  max-width: 60px;
+  max-height: 60px;
+}
+
+/* Button spacing in orders table cells */
+.orders-table td:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 120px;
+}
+
+.orders-table td:last-child .btn {
+  margin: 2px 0;
 }
