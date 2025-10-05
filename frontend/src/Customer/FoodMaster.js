@@ -1,6 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
+// Custom hook to manage notification sounds
+const useNotificationSound = () => {
+  const playedNotificationsRef = React.useRef({});
+  useState(() => {
+    const stored = localStorage.getItem('playedNotifications');
+    const initial = stored ? JSON.parse(stored) : {};
+    playedNotificationsRef.current = initial;
+  });
+
+  const playNotificationSound = useCallback((orderId, status) => {
+    const notificationKey = `${orderId}-${status}`;
+    // If already played, do not play again
+    if (playedNotificationsRef.current[notificationKey]) {
+      return false;
+    }
+    // Play the sound
+    const audio = new Audio('/notification-sound.mp3');
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    // Mark as played in ref and state
+    playedNotificationsRef.current[notificationKey] = true;
+    localStorage.setItem('playedNotifications', JSON.stringify(playedNotificationsRef.current));
+    return true;
+  }, []);
+
+  const clearPlayedNotifications = useCallback(() => {
+    playedNotificationsRef.current = {};
+    localStorage.removeItem('playedNotifications');
+  }, []);
+
+  return { playNotificationSound, clearPlayedNotifications };
+};
 
 const initialFoodData = {
   breakfast: [],
@@ -31,11 +63,40 @@ function FoodMaster() {
   const [search, setSearch] = useState('');
   const [foodData, setFoodData] = useState(initialFoodData);
   const [popup, setPopup] = useState(null);
-  const [cart, setCart] = useState([]);
+  const [addingToCart, setAddingToCart] = useState(false);
+  
+  // Enhanced Cart, Status, and Notification states from CustomerInterface
   const [showCart, setShowCart] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
+  const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [tab, setTab] = useState('pending');
+  
+  // Notification states
+  const [showPopupNotification, setShowPopupNotification] = useState(() => {
+    const stored = localStorage.getItem('customerShowPopup');
+    return stored ? JSON.parse(stored) : false;
+  });
+  const [counter, setCounter] = useState(0);
+  const [toastNotifications, setToastNotifications] = useState(() => {
+    const stored = localStorage.getItem('customerToastNotifications');
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [allOrders, setAllOrders] = useState([]);
+  const [cancelledOrders, setCancelledOrders] = useState([]);
+  const [seenOrderStatuses, setSeenOrderStatuses] = useState(() => {
+    const stored = localStorage.getItem('seenOrderStatuses');
+    return stored ? JSON.parse(stored) : {};
+  });
+  const [removedOrdersMap, setRemovedOrdersMap] = useState(() => {
+    const stored = localStorage.getItem('removedOrdersMap');
+    return stored ? JSON.parse(stored) : {};
+  });
+  const [orderStatusMap, setOrderStatusMap] = useState({});
+
+  // Use the custom notification sound hook
+  const { playNotificationSound } = useNotificationSound();
+
   // Handle food click: show popup only if available
   const handleFoodClick = (food) => {
     if (food.available === false) {
@@ -44,7 +105,6 @@ function FoodMaster() {
     }
     setPopup({...food, quantity: 1});
   };
-  const [addingToCart, setAddingToCart] = useState(false);
   
   // Add to cart with quantity support
   const addToCart = async (food, quantity = 1) => {
@@ -92,7 +152,7 @@ function FoodMaster() {
   const foods = foodData[normalizedCategory] || [];
 
   // Poll food data for the selected category from backend every second
-  React.useEffect(() => {
+  useEffect(() => {
     let ignore = false;
     const fetchFood = () => {
       axios.get(`${process.env.REACT_APP_API_URL}/api/food`)
@@ -111,7 +171,7 @@ function FoodMaster() {
     };
   }, [category]);
 
-  // Update item quantity in cart
+  // Enhanced Cart Operations from CustomerInterface
   const updateQuantity = async (idx, newQuantity) => {
     if (newQuantity < 1) return;
     
@@ -121,11 +181,9 @@ function FoodMaster() {
           `${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/${idx}/quantity`,
           { quantity: newQuantity }
         );
-        // Reload cart from backend after update
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
       } catch {
-        // Fallback: update local state
         setCart((prev) => {
           const updatedCart = [...prev];
           updatedCart[idx].quantity = newQuantity;
@@ -145,7 +203,6 @@ function FoodMaster() {
     if (roomNumber) {
       try {
         await axios.delete(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/${idx}`);
-        // Reload cart from backend after deletion
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
       } catch {
@@ -156,30 +213,136 @@ function FoodMaster() {
     }
   };
 
-  const cancelOrder = async (orderId) => {
+  // Enhanced Cancel Order from CustomerInterface
+  const cancelOrder = async (order) => {
+    if (!['pending', 'acknowledged'].includes(order.status)) return;
+    const confirmed = window.confirm('Are you sure you want to cancel this order?');
+    if (!confirmed) return;
     try {
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}`);
-      // Refresh orders list
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
-      setOrders(res.data.filter(order => order.roomNumber === roomNumber));
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order._id,
+          reason: "Customer cancelled",
+          originalOrder: order
+        })
+      });
+      if (res.ok) {
+        // Refresh orders
+        const updated = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
+        const data = await updated.json();
+        setOrders(data.filter(o => o.roomNumber === roomNumber));
+      } else {
+        alert('Failed to cancel order.');
+      }
     } catch {
       alert('Failed to cancel order.');
     }
   };
 
-  // Load cart from backend when showCart opens or popup closes
-  React.useEffect(() => {
-    if ((showCart || !popup) && roomNumber) {
+  // Get status emoji and message from CustomerInterface
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'pending':
+        return { emoji: '⏳', message: 'Order Received' };
+      case 'acknowledged':
+        return { emoji: '✅', message: 'Order Acknowledged' };
+      case 'preparing':
+        return { emoji: '👨‍🍳', message: 'Preparing Your Order' };
+      case 'on the way':
+        return { emoji: '🚗', message: 'On The Way' };
+      case 'delivered':
+        return { emoji: '🎉', message: 'Delivered!' };
+      case 'cancelled':
+        return { emoji: '❌', message: 'Order Cancelled' };
+      default:
+        return { emoji: '📦', message: 'Order Updated' };
+    }
+  };
+
+  // Check if status should trigger popup notification
+  const shouldShowPopupForStatus = (status) => {
+    return ['acknowledged', 'preparing', 'on the way', 'delivered', 'cancelled'].includes(status);
+  };
+
+  // FIXED: Check if an order should be shown based on removal rules
+  const shouldShowOrder = useCallback((order) => {
+    if (!order) return false;
+    
+    // For cancelled orders from the cancelledOrders array, use originalOrderId
+    const orderId = order._id || order.originalOrderId;
+    if (!orderId) return false;
+    
+    const removedStatus = removedOrdersMap[orderId];
+    
+    // If order was never removed, show it
+    if (!removedStatus) return true;
+    
+    // If order was removed when delivered, never show it again
+    if (removedStatus === 'delivered') return false;
+    
+    // If order was removed when cancelled, never show it again
+    if (removedStatus === 'cancelled') return false;
+    
+    // If order was removed but status has changed since removal, show it again
+    const currentStatus = order.status || 'cancelled';
+    if (removedStatus !== currentStatus) return true;
+    
+    // If order was removed and status hasn't changed, don't show it
+    return false;
+  }, [removedOrdersMap]);
+
+  // Function to handle order status transitions
+  const handleOrderStatusTransition = useCallback((order, previousStatus, currentStatus) => {
+    const orderId = order._id || order.originalOrderId;
+    const statusKey = `${orderId}-${currentStatus}`;
+    const isAlreadySeen = seenOrderStatuses[statusKey];
+    
+    // If this status has already been seen, don't show notification
+    if (isAlreadySeen) return false;
+    
+    // Only show notification for statuses that should trigger popups
+    if (!shouldShowPopupForStatus(currentStatus)) return false;
+    
+    // Check if order should be shown based on removal rules
+    if (!shouldShowOrder(order)) return false;
+    
+    return true;
+  }, [seenOrderStatuses, shouldShowOrder]);
+
+  // Load cart from backend when showCart opens
+  useEffect(() => {
+    if (showCart && roomNumber) {
       axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`)
         .then(res => {
           setCart(res.data?.items || []);
         })
         .catch(() => setCart([]));
     }
-  }, [showCart, popup, roomNumber]);
+  }, [showCart, roomNumber]);
 
-  // Load checked-out orders for this room when status tab opens, with polling
-  React.useEffect(() => {
+  // POLLING: Keep cart state up-to-date
+  useEffect(() => {
+    let interval;
+    const fetchCartForCounter = async () => {
+      if (!roomNumber) return;
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
+        setCart(res.data?.items || []);
+      } catch (e) {}
+    };
+
+    fetchCartForCounter();
+    interval = setInterval(fetchCartForCounter, 1000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [roomNumber]);
+
+  // Load checked-out orders for this room when status tab opens
+  useEffect(() => {
     let interval;
     const fetchOrders = () => {
       if (showStatus && roomNumber) {
@@ -192,12 +355,578 @@ function FoodMaster() {
     };
     if (showStatus && roomNumber) {
       fetchOrders();
-      interval = setInterval(fetchOrders, 5000);
+      interval = setInterval(fetchOrders, 1000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [showStatus, roomNumber]);
+
+  // Fetch cancelled orders
+  const fetchCancelledOrders = useCallback(async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancelled`);
+      const customerCancelledOrders = res.data.filter(order => 
+        String(order.roomNumber) === String(roomNumber)
+      );
+      setCancelledOrders(customerCancelledOrders);
+    } catch (error) {
+      console.error('Error fetching cancelled orders:', error);
+      setCancelledOrders([]);
+    }
+  }, [roomNumber]);
+
+  // FIXED: Filter orders that should be shown in the bell popup - include cancelled orders
+  const visibleOrders = React.useMemo(() => {
+    // Combine regular orders and cancelled orders for display
+    const regularOrders = allOrders.filter(shouldShowOrder);
+    
+    // Convert cancelled orders to the same format as regular orders for display
+    const cancelledOrdersForDisplay = cancelledOrders
+      .filter(cancelledOrder => {
+        const orderId = cancelledOrder.originalOrderId;
+        const removedStatus = removedOrdersMap[orderId];
+        
+        // Show cancelled order if it hasn't been removed or if it was removed but status changed
+        if (!removedStatus) return true;
+        if (removedStatus === 'cancelled') return false;
+        return removedStatus !== 'cancelled';
+      })
+      .map(cancelledOrder => ({
+        ...cancelledOrder,
+        _id: cancelledOrder.originalOrderId,
+        status: 'cancelled',
+        items: cancelledOrder.items || []
+      }));
+    
+    return [...regularOrders, ...cancelledOrdersForDisplay];
+  }, [allOrders, cancelledOrders, shouldShowOrder, removedOrdersMap]);
+
+  // Poll backend for orders every second - FIXED VERSION
+  useEffect(() => {
+    let interval;
+    
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
+        if (!res.ok) return;
+        const allOrders = await res.json();
+        const filtered = allOrders.filter(order => String(order.roomNumber) === String(roomNumber));
+        
+        // Get all orders for this room
+        const customerOrders = filtered.filter(order => 
+          ['pending', 'acknowledged', 'preparing', 'on the way', 'delivered', 'cancelled'].includes(order.status)
+        );
+        
+        // Sort so newest orders appear first
+        const sortedOrders = customerOrders.slice().sort((a, b) => {
+          if (a._id && b._id) return b._id.localeCompare(a._id);
+          return 0;
+        });
+        
+        setAllOrders(sortedOrders);
+
+        // Detect status changes and update notifications
+        const newOrderStatusMap = {};
+        let hasNewNotification = false;
+
+        sortedOrders.forEach(order => {
+          const previousStatus = orderStatusMap[order._id];
+          const currentStatus = order.status;
+          newOrderStatusMap[order._id] = currentStatus;
+          
+          // Skip if no status change
+          if (previousStatus === currentStatus) return;
+          
+          // Check if we should show notification for this status transition
+          if (handleOrderStatusTransition(order, previousStatus, currentStatus)) {
+            hasNewNotification = true;
+            
+            // Remove any existing toast for this order (to replace with new status)
+            setToastNotifications(prev => {
+              const previousNotifications = Array.isArray(prev) ? prev : [];
+              const filtered = previousNotifications.filter(notif => notif._id !== order._id);
+              // Add new notification with current status
+              return [order, ...filtered];
+            });
+          }
+        });
+
+        // Update order status map
+        setOrderStatusMap(newOrderStatusMap);
+
+        // Update counter based on current state - FIXED: Include cancelled orders in counter
+        const activeNotificationOrders = sortedOrders.filter(order => 
+          shouldShowOrder(order) && 
+          shouldShowPopupForStatus(order.status) &&
+          !seenOrderStatuses[`${order._id}-${order.status}`]
+        );
+        
+        const activeCancelledNotifications = cancelledOrders.filter(cancelledOrder => {
+          const orderId = cancelledOrder.originalOrderId;
+          return shouldShowOrder({ _id: orderId, status: 'cancelled' }) &&
+                 shouldShowPopupForStatus('cancelled') &&
+                 !seenOrderStatuses[`${orderId}-cancelled`];
+        });
+        
+        setCounter(activeNotificationOrders.length + activeCancelledNotifications.length);
+
+        // If there are new notifications, play sound for each new one
+        if (hasNewNotification) {
+          sortedOrders.forEach(order => {
+            if (shouldShowOrder(order) && 
+                shouldShowPopupForStatus(order.status) && 
+                !seenOrderStatuses[`${order._id}-${order.status}`] &&
+                orderStatusMap[order._id] !== order.status) {
+              playNotificationSound(order._id, order.status);
+            }
+          });
+        }
+      } catch (e) {
+        // ignore errors
+      }
+    };
+    
+    fetchOrders();
+    interval = setInterval(fetchOrders, 1000);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [roomNumber, removedOrdersMap, shouldShowOrder, seenOrderStatuses, playNotificationSound, orderStatusMap, handleOrderStatusTransition, cancelledOrders]);
+
+  // Poll for cancelled orders
+  useEffect(() => {
+    let interval;
+    
+    const fetchData = async () => {
+      await fetchCancelledOrders();
+    };
+    
+    fetchData();
+    interval = setInterval(fetchData, 1000);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [fetchCancelledOrders]);
+
+  // FIXED: Handle cancelled orders and add to notifications
+  useEffect(() => {
+    cancelledOrders.forEach(cancelledOrder => {
+      const orderId = cancelledOrder.originalOrderId;
+      
+      // Check if this cancelled order should trigger a notification
+      const statusKey = `${orderId}-cancelled`;
+      const isAlreadySeen = seenOrderStatuses[statusKey];
+      
+      // Only show if not already seen as cancelled and should be shown
+      if (!isAlreadySeen && shouldShowOrder({ _id: orderId, status: 'cancelled' })) {
+        const cancelledOrderWithStatus = { 
+          ...cancelledOrder, 
+          status: 'cancelled', 
+          _id: orderId 
+        };
+        
+        setToastNotifications(prev => {
+          const previousNotifications = Array.isArray(prev) ? prev : [];
+          const filtered = previousNotifications.filter(notif => notif._id !== orderId);
+          return [cancelledOrderWithStatus, ...filtered];
+        });
+        
+        playNotificationSound(orderId, 'cancelled');
+        
+        // Update counter
+        setCounter(prev => {
+          const activeNotificationOrders = allOrders.filter(order => 
+            shouldShowOrder(order) && 
+            shouldShowPopupForStatus(order.status) &&
+            !seenOrderStatuses[`${order._id}-${order.status}`]
+          );
+          
+          const activeCancelledNotifications = cancelledOrders.filter(co => {
+            const coId = co.originalOrderId;
+            return shouldShowOrder({ _id: coId, status: 'cancelled' }) &&
+                   shouldShowPopupForStatus('cancelled') &&
+                   !seenOrderStatuses[`${coId}-cancelled`];
+          });
+          
+          return activeNotificationOrders.length + activeCancelledNotifications.length;
+        });
+      }
+    });
+  }, [cancelledOrders, seenOrderStatuses, shouldShowOrder, playNotificationSound, allOrders]);
+
+  // Handle bell click - toggle popup and persist state - FIXED: Include cancelled orders
+  const handleBellClick = () => {
+    setShowPopupNotification(prev => {
+      const opening = !prev;
+      localStorage.setItem('customerShowPopup', JSON.stringify(opening));
+      if (opening) {
+        // Opening bell: clear toast popups and mark all as seen
+        const newSeenStatuses = { ...seenOrderStatuses };
+        
+        // Mark all toast notifications as seen
+        toastNotifications.forEach(order => {
+          const orderId = order._id || order.originalOrderId;
+          const status = order.status || 'cancelled';
+          const key = `${orderId}-${status}`;
+          newSeenStatuses[key] = true;
+        });
+        
+        // Mark all visible orders as seen
+        visibleOrders.forEach(order => {
+          const orderId = order._id || order.originalOrderId;
+          const status = order.status || 'cancelled';
+          const key = `${orderId}-${status}`;
+          newSeenStatuses[key] = true;
+        });
+        
+        setSeenOrderStatuses(newSeenStatuses);
+        localStorage.setItem('seenOrderStatuses', JSON.stringify(newSeenStatuses));
+        
+        // Clear toast notifications
+        setToastNotifications([]);
+        localStorage.setItem('customerToastNotifications', JSON.stringify([]));
+        
+        // Update counter
+        setCounter(0);
+      } else {
+        // Closing bell: mark all current order-status combinations as seen
+        const newSeenStatuses = { ...seenOrderStatuses };
+        visibleOrders.forEach(order => {
+          const orderId = order._id || order.originalOrderId;
+          const status = order.status || 'cancelled';
+          const key = `${orderId}-${status}`;
+          newSeenStatuses[key] = true;
+        });
+        setSeenOrderStatuses(newSeenStatuses);
+        localStorage.setItem('seenOrderStatuses', JSON.stringify(newSeenStatuses));
+        setCounter(0);
+      }
+      return opening;
+    });
+  };
+
+  // FIXED: Handle removing individual notification from bell popup
+  const handleRemoveNotification = (orderId) => {
+    // Find the order in either allOrders or cancelledOrders
+    const order = allOrders.find(o => o._id === orderId) || 
+                 cancelledOrders.find(o => o.originalOrderId === orderId);
+    
+    if (!order) return;
+
+    const orderStatus = order.status || 'cancelled';
+
+    // Store the status at which the order was removed
+    setRemovedOrdersMap(prev => {
+      const updated = { ...prev, [orderId]: orderStatus };
+      localStorage.setItem('removedOrdersMap', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Mark this specific order-status as seen
+    setSeenOrderStatuses(prev => {
+      const updated = { ...prev, [`${orderId}-${orderStatus}`]: true };
+      if (orderStatus === 'cancelled') {
+        updated[`${orderId}-cancelled`] = true;
+      }
+      localStorage.setItem('seenOrderStatuses', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Remove from toast notifications
+    setToastNotifications(prev => {
+      const previousNotifications = Array.isArray(prev) ? prev : [];
+      const updated = previousNotifications.filter(notif => notif._id !== orderId);
+      localStorage.setItem('customerToastNotifications', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Update counter
+    const activeNotificationOrders = allOrders.filter(order =>
+      shouldShowOrder(order) &&
+      shouldShowPopupForStatus(order.status) &&
+      !seenOrderStatuses[`${order._id}-${order.status}`]
+    );
+    
+    const activeCancelledNotifications = cancelledOrders.filter(cancelledOrder => {
+      const coId = cancelledOrder.originalOrderId;
+      return shouldShowOrder({ _id: coId, status: 'cancelled' }) &&
+             shouldShowPopupForStatus('cancelled') &&
+             !seenOrderStatuses[`${coId}-cancelled`];
+    });
+    
+    setCounter(activeNotificationOrders.length + activeCancelledNotifications.length);
+  };
+
+  // FIXED: Handle closing toast notification - properly remove cancelled orders
+  const handleCloseToast = (orderId) => {
+    const order = allOrders.find(o => o._id === orderId) || 
+                 cancelledOrders.find(o => o.originalOrderId === orderId);
+    
+    if (order) {
+      const orderStatus = order.status || 'cancelled';
+      
+      // Mark this specific order-status as seen
+      setSeenOrderStatuses(prev => {
+        const updated = { ...prev, [`${orderId}-${orderStatus}`]: true };
+        localStorage.setItem('seenOrderStatuses', JSON.stringify(updated));
+        return updated;
+      });
+    }
+    
+    // Remove from toast notifications but don't mark as removed in removedOrdersMap
+    // So it can reappear if status changes again, but won't reappear for the same status
+    setToastNotifications(prev => {
+      const previousNotifications = Array.isArray(prev) ? prev : [];
+      const updated = previousNotifications.filter(notif => notif._id !== orderId);
+      localStorage.setItem('customerToastNotifications', JSON.stringify(updated));
+      return updated;
+    });
+    
+    // Update counter
+    const activeNotificationOrders = allOrders.filter(order =>
+      shouldShowOrder(order) &&
+      shouldShowPopupForStatus(order.status) &&
+      !seenOrderStatuses[`${order._id}-${order.status}`]
+    );
+    
+    const activeCancelledNotifications = cancelledOrders.filter(cancelledOrder => {
+      const coId = cancelledOrder.originalOrderId;
+      return shouldShowOrder({ _id: coId, status: 'cancelled' }) &&
+             shouldShowPopupForStatus('cancelled') &&
+             !seenOrderStatuses[`${coId}-cancelled`];
+    });
+    
+    setCounter(activeNotificationOrders.length + activeCancelledNotifications.length);
+  };
+
+  // Close popup when clicking outside, and persist state - FIXED: Include cancelled orders
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showPopupNotification) {
+        const popup = document.querySelector('.notification-popup');
+        const bell = document.querySelector('.notification-bell');
+        if (popup && bell && 
+          !popup.contains(event.target) && 
+          !bell.contains(event.target)) {
+          // Mark all visible notifications as seen
+          const newSeenStatuses = { ...seenOrderStatuses };
+          visibleOrders.forEach(order => {
+            const orderId = order._id || order.originalOrderId;
+            const status = order.status || 'cancelled';
+            const key = `${orderId}-${status}`;
+            newSeenStatuses[key] = true;
+          });
+          setSeenOrderStatuses(newSeenStatuses);
+          localStorage.setItem('seenOrderStatuses', JSON.stringify(newSeenStatuses));
+          setCounter(0);
+          setToastNotifications([]);
+          localStorage.setItem('customerToastNotifications', JSON.stringify([]));
+          setShowPopupNotification(false);
+          localStorage.setItem('customerShowPopup', JSON.stringify(false));
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPopupNotification, seenOrderStatuses, visibleOrders]);
+
+  // Persist removedOrdersMap to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('removedOrdersMap', JSON.stringify(removedOrdersMap));
+  }, [removedOrdersMap]);
+
+  // Persist seenOrderStatuses to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('seenOrderStatuses', JSON.stringify(seenOrderStatuses));
+  }, [seenOrderStatuses]);
+
+  // Persist toast notifications to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('customerToastNotifications', JSON.stringify(toastNotifications));
+  }, [toastNotifications]);
+
+  // Force popup to update when removedOrdersMap changes
+  useEffect(() => {
+    if (showPopupNotification) {
+      // This will trigger a re-render of the popup with updated visible orders
+      setAllOrders(prev => [...prev]);
+    }
+  }, [removedOrdersMap, showPopupNotification]);
+
+  // Add debug info in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Seen order-status combinations: ${Object.keys(seenOrderStatuses).length}`);
+      console.log(`Toast notifications: ${toastNotifications.length}`);
+    }
+    console.log(`Removed orders tracking: ${Object.keys(removedOrdersMap).length} in map`);
+  }, [removedOrdersMap, seenOrderStatuses, toastNotifications]);
+
+  // Styles for notifications (copied from CustomerInterface)
+  const bellStyle = {
+    position: 'relative',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    marginLeft: '12px',
+    marginRight: '4px',
+    outline: 'none',
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+  };
+
+  const bellIconStyle = {
+    fontSize: 22,
+    color: '#F7D700',
+    transition: 'color 0.2s',
+  };
+
+  const bellCounterStyle = {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    background: '#e74c3c',
+    color: '#fff',
+    borderRadius: '50%',
+    fontSize: 11,
+    fontWeight: 700,
+    minWidth: 18,
+    height: 18,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 8px #e74c3c44',
+    zIndex: 2,
+  };
+
+  const popupStyle = {
+    position: 'absolute',
+    top: 40,
+    right: 16,
+    background: '#fff',
+    borderRadius: '8px',
+    boxShadow: '0 4px 16px #0002',
+    padding: '0.8rem 1rem',
+    minWidth: '280px',
+    maxWidth: '320px',
+    zIndex: 999,
+  };
+
+  const removeBtnStyle = {
+    background: '#ff6b6b',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '50%',
+    width: '16px',
+    height: '16px',
+    fontSize: '10px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: '6px',
+    flexShrink: 0,
+  };
+
+  // Toast notification styles
+  const toastContainerStyle = {
+    position: 'fixed',
+    top: '60px',
+    right: '16px',
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    maxWidth: '320px',
+  };
+
+  const toastStyle = {
+    background: '#fff',
+    border: '2px solid #F7D774',
+    borderRadius: '8px',
+    padding: '12px',
+    boxShadow: '0 4px 16px #0002',
+    minWidth: '280px',
+    animation: 'slideInRight 0.3s ease-out',
+  };
+
+  const toastHeaderStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '8px',
+  };
+
+  const toastTitleStyle = {
+    fontWeight: 600,
+    fontSize: '14px',
+    color: '#4B2E06',
+  };
+
+  const toastCloseStyle = {
+    background: '#ff6b6b',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '50%',
+    width: '20px',
+    height: '20px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  };
+
+  // Status badge styles
+  const statusBadgeStyle = (status) => {
+    const baseStyle = {
+      padding: '2px 6px',
+      borderRadius: '12px',
+      fontSize: '10px',
+      fontWeight: '600',
+      textTransform: 'capitalize',
+      marginLeft: '6px',
+    };
+
+    switch (status) {
+      case 'pending':
+        return { ...baseStyle, background: '#fff3cd', color: '#856404', border: '1px solid #ffeaa7' };
+      case 'acknowledged':
+        return { ...baseStyle, background: '#d1ecf1', color: '#0c5460', border: '1px solid #bee5eb' };
+      case 'preparing':
+        return { ...baseStyle, background: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' };
+      case 'on the way':
+        return { ...baseStyle, background: '#cce7ff', color: '#004085', border: '1px solid #b3d7ff' };
+      case 'delivered':
+        return { ...baseStyle, background: '#d1f7c4', color: '#0f5132', border: '1px solid #c3e6cb' };
+      case 'cancelled':
+        return { ...baseStyle, background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' };
+      default:
+        return { ...baseStyle, background: '#e2e3e5', color: '#383d41', border: '1px solid #d6d8db' };
+    }
+  };
+
+  const headerButtonStyle = {
+    background: 'none',
+    border: 'none',
+    color: '#FFD700',
+    fontSize: '0.9rem',
+    fontFamily: 'serif',
+    fontWeight: 500,
+    cursor: 'pointer',
+    padding: '0.3em 0.8em',
+    borderRadius: '0.35em',
+    transition: 'background 0.2s, color 0.2s',
+    outline: 'none',
+  };
 
   return (
     <div style={{ 
@@ -211,6 +940,96 @@ function FoodMaster() {
       display: 'flex',
       flexDirection: 'column'
     }}>
+      {/* Toast Notifications Container */}
+      {toastNotifications.length > 0 && (
+        <div style={toastContainerStyle}>
+          {[...toastNotifications].reverse().map((order) => {
+            const statusInfo = getStatusInfo(order.status);
+            const isCancelled = order.status === 'cancelled';
+            const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
+            
+            return (
+              <div key={order._id} style={{
+                ...toastStyle,
+                border: isCancelled ? '2px solid #f5c6cb' : '2px solid #F7D774',
+                background: isCancelled ? '#fff5f5' : '#fff'
+              }}>
+                <div style={toastHeaderStyle}>
+                  <div style={{...toastTitleStyle, color: isCancelled ? '#721c24' : '#4B2E06'}}>
+                    {statusInfo.emoji} {statusInfo.message}
+                  </div>
+                  <button 
+                    style={toastCloseStyle}
+                    onClick={() => handleCloseToast(order._id)}
+                    title="Close notification"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div style={{ fontSize: '12px', color: isCancelled ? '#a61e2a' : '#666' }}>
+                  Order #{order._id?.slice(-6) || 'N/A'} • 
+                  <span style={statusBadgeStyle(order.status)}>
+                    {order.status}
+                  </span>
+                </div>
+                
+                {/* Cancellation Reason */}
+                {isCancelled && cancelledOrder?.cancellationReason && (
+                  <div style={{ 
+                    marginTop: '8px', 
+                    padding: '8px',
+                    background: '#f8d7da',
+                    border: '1px solid #f5c6cb',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    color: '#721c24'
+                  }}>
+                    <strong>Cancellation Reason:</strong> {cancelledOrder.cancellationReason}
+                  </div>
+                )}
+                
+                {order.items && order.items.length > 0 && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '4px', color: isCancelled ? '#721c24' : '#666' }}>
+                      Items:
+                    </div>
+                    <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '11px' }}>
+                      {order.items.slice(0, 3).map((item, i) => (
+                        <li key={item.name + i} style={{ marginBottom: '2px' }}>
+                          {item.name} (x{item.quantity || 1})
+                        </li>
+                      ))}
+                      {order.items.length > 3 && (
+                        <li style={{ fontStyle: 'italic' }}>
+                          and {order.items.length - 3} more items...
+                        </li>
+                      )}
+                    </ul>
+                    <div style={{ 
+                      borderTop: '1px solid #e0e0e0', 
+                      paddingTop: '4px', 
+                      marginTop: '6px', 
+                      fontWeight: 600, 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      fontSize: '12px',
+                      color: isCancelled ? '#721c24' : '#4B2E06'
+                    }}>
+                      <span>Total:</span>
+                      <span>
+                        ₱{order.items.reduce((total, item) => 
+                          total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Header Bar - Compact for tablet */}
       <div style={{
         width: '100%',
@@ -231,20 +1050,130 @@ function FoodMaster() {
           <img src="/lumine_icon.png" alt="Lumine Logo" style={{ height: '30px', width: '30px', marginRight: '8px', objectFit: 'contain', background: 'transparent', borderRadius: 0, boxShadow: 'none' }} />
           <span style={{ fontSize: '24px', fontWeight: 400, color: '#fff', fontFamily: 'Cinzel, serif', letterSpacing: 1 }}>Lumine</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-          <button onClick={() => setShowCart(true)} style={{ background: 'none', border: 'none', color: '#FFD700', fontSize: '0.9rem', fontFamily: 'serif', fontWeight: 500, cursor: 'pointer', padding: '0.3em 0.8em', borderRadius: '0.35em', transition: 'background 0.2s, color 0.2s', outline: 'none' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', position: 'relative' }}>
+          <button onClick={() => setShowCart(true)} style={headerButtonStyle}
             onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
             onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}>
             Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})
           </button>
-          <button onClick={() => setShowStatus(true)} style={{ background: 'none', border: 'none', color: '#FFD700', fontSize: '0.9rem', fontFamily: 'serif', fontWeight: 500, cursor: 'pointer', padding: '0.3em 0.8em', borderRadius: '0.35em', transition: 'background 0.2s, color 0.2s', outline: 'none' }}
+          <button onClick={() => setShowStatus(true)} style={headerButtonStyle}
             onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
             onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}>
             Status
           </button>
+
+          {/* Notification Bell */}
+          <button 
+            className="notification-bell"
+            style={{...bellStyle, ...(showPopupNotification ? { background: '#F7D700', borderRadius: '50%', padding: '2px' } : {})}} 
+            onClick={handleBellClick} 
+            aria-label="Notifications"
+          >
+            {/* Simple bell SVG */}
+            <span style={{...bellIconStyle, ...(showPopupNotification ? { color: '#4B2E06' } : {})}}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </span>
+            {/* Show counter for new orders - only when popup is closed */}
+            {!showPopupNotification && counter > 0 && <span style={bellCounterStyle}>{counter}</span>}
+          </button>
+
+          {/* Notification Popup */}
+          {showPopupNotification && (
+            <div className="notification-popup" style={popupStyle}>
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Order Updates</span>
+                <span style={{ fontSize: 12, color: '#666', fontWeight: 400 }}>
+                  {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {visibleOrders.length === 0 ? (
+                <div style={{ color: '#888', fontSize: 12 }}>No order updates.</div>
+              ) : (
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {visibleOrders.map((order) => {
+                    const statusInfo = getStatusInfo(order.status);
+                    const isCancelled = order.status === 'cancelled';
+                    const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
+                    const orderId = order._id || order.originalOrderId;
+                    
+                    return (
+                      <div key={orderId} style={{ 
+                        border: '1px solid #f0f0f0', 
+                        borderRadius: '6px', 
+                        padding: '8px', 
+                        marginBottom: '6px',
+                        background: isCancelled ? '#fff5f5' : '#fff9e6'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                          <div style={{ fontWeight: 500, fontSize: '12px' }}>
+                            Order #{orderId?.slice(-6) || 'N/A'}
+                          </div>
+                          <button 
+                            style={removeBtnStyle}
+                            onClick={() => handleRemoveNotification(orderId)}
+                            title="Remove notification"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '11px', marginBottom: '6px', display: 'flex', alignItems: 'center' }}>
+                          <span>{statusInfo.emoji} {statusInfo.message}</span>
+                          <span style={statusBadgeStyle(order.status)}>{order.status}</span>
+                        </div>
+                        
+                        {/* Cancellation Reason */}
+                        {isCancelled && cancelledOrder?.cancellationReason && (
+                          <div style={{ 
+                            marginBottom: '6px', 
+                            padding: '6px',
+                            background: '#f8d7da',
+                            border: '1px solid #f5c6cb',
+                            borderRadius: '4px',
+                            fontSize: '10px',
+                            color: '#721c24'
+                          }}>
+                            <strong>Reason:</strong> {cancelledOrder.cancellationReason}
+                          </div>
+                        )}
+                        
+                        <ul style={{ paddingLeft: 14, margin: 0, fontSize: '11px' }}>
+                          {order.items && order.items.length > 0 ? order.items.map((item, i) => (
+                            <li key={item.name + i} style={{ marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>
+                                {item.name} (x{item.quantity || 1})
+                              </span>
+                              <span style={{ fontWeight: 500, marginLeft: '0.5rem' }}>
+                                ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                              </span>
+                            </li>
+                          )) : (
+                            <li style={{ marginBottom: 4 }}>
+                              No items listed
+                            </li>
+                          )}
+                        </ul>
+                        <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '4px', marginTop: '4px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                          <span>Order Total:</span>
+                          <span>
+                            ₱{order.items ? order.items.reduce((total, item) => 
+                              total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) : '0.00'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Rest of the FoodMaster component remains the same */}
       {/* Main Content Area - Fills remaining space */}
       <div style={{ 
         flex: 1, 
@@ -790,10 +1719,10 @@ function FoodMaster() {
                             <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>₱{totalPrice.toFixed(2)}</td>
                             <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
                               {order.status || 'pending'}
-                              {tab === 'pending' && (
+                              {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
                                 <button
                                   style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
-                                  onClick={() => cancelOrder(order._id)}
+                                  onClick={() => cancelOrder(order)}
                                   onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
                                   onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
                                 >Cancel</button>
@@ -823,6 +1752,22 @@ function FoodMaster() {
           </div>
         )}
       </div>
+
+      {/* Add CSS for slide-in animation */}
+      <style>
+        {`
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }
