@@ -2,7 +2,42 @@ import React from 'react';
 import LogoutButton from '../../Auth/LogoutButton';
 import './RestaurantAdminDashboard.css';
 
-// MenuManager component (keep the same as before)
+// Toast Notification Component
+function ToastNotification({ message, type, onClose }) {
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`toast-notification ${type}`}>
+      <div className="toast-content">
+        <span className="toast-message">{message}</span>
+        <button className="toast-close" onClick={onClose}>×</button>
+      </div>
+    </div>
+  );
+}
+
+// Custom hook for notification sound
+const useNotificationSound = () => {
+  const playSound = React.useCallback(() => {
+    try {
+      const audio = new Audio('/notification-sound.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    } catch (error) {
+      console.log('Notification sound error:', error);
+    }
+  }, []);
+
+  return playSound;
+};
+
+// MenuManager component
 function MenuManager() {
   const [foodItems, setFoodItems] = React.useState([]);
   const [editId, setEditId] = React.useState(null);
@@ -12,17 +47,17 @@ function MenuManager() {
   const [addForm, setAddForm] = React.useState({ name: '', price: '', category: 'breakfast', img: '', details: '', available: true });
   const [showAddPopup, setShowAddPopup] = React.useState(false);
 
-  // Fetch food items
-  const fetchFood = async () => {
+  const fetchFood = React.useCallback(async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food`);
       const data = await res.json();
       setFoodItems(Object.entries(data).flatMap(([cat, arr]) => arr.map(item => ({ ...item, category: cat }))));
-    } catch {}
-  };
+    } catch (error) {
+      console.error('Error fetching food:', error);
+    }
+  }, []);
 
-  // Toggle food availability
-  const handleToggleAvailability = async (item) => {
+  const handleToggleAvailability = React.useCallback(async (item) => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food/${item.category}/${item._id}/availability`, {
         method: 'PATCH',
@@ -35,14 +70,12 @@ function MenuManager() {
       } else {
         setMessage('Failed to update availability.');
       }
-    } catch {
+    } catch (error) {
       setMessage('Failed to update availability.');
     }
-  };
-  React.useEffect(() => { fetchFood(); }, []);
+  }, [fetchFood]);
 
-  // Add food item
-  const handleAdd = async e => {
+  const handleAdd = React.useCallback(async e => {
     e.preventDefault();
     setMessage('');
     if (!addForm.name || !addForm.price || !addForm.category || !addForm.img) {
@@ -64,13 +97,12 @@ function MenuManager() {
         const data = await res.json();
         setMessage(data.error || 'Failed to add food item.');
       }
-    } catch {
+    } catch (error) {
       setMessage('Failed to add food item.');
     }
-  };
+  }, [addForm, fetchFood]);
 
-  // Delete food item
-  const handleDelete = async (id, category) => {
+  const handleDelete = React.useCallback(async (id, category) => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food/${category}/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -79,18 +111,18 @@ function MenuManager() {
       } else {
         setMessage('Failed to delete food item.');
       }
-    } catch {
+    } catch (error) {
       setMessage('Failed to delete food item.');
     }
-  };
+  }, [fetchFood]);
 
-  // Edit food item
-  const startEdit = item => {
+  const startEdit = React.useCallback(item => {
     setEditId(item._id);
     setEditForm({ name: item.name, price: item.price, category: item.category, img: item.img, details: item.details });
     setShowEditPopup(true);
-  };
-  const handleEdit = async e => {
+  }, []);
+
+  const handleEdit = React.useCallback(async e => {
     e.preventDefault();
     setMessage('');
     try {
@@ -107,10 +139,14 @@ function MenuManager() {
       } else {
         setMessage('Failed to update food item.');
       }
-    } catch {
+    } catch (error) {
       setMessage('Failed to update food item.');
     }
-  };
+  }, [editForm, editId, fetchFood]);
+
+  React.useEffect(() => { 
+    fetchFood(); 
+  }, [fetchFood]);
 
   return (
     <div className="menu-manager">
@@ -144,7 +180,6 @@ function MenuManager() {
         </tbody>
       </table>
 
-      {/* Edit Food Item Popup */}
       {showEditPopup && (
         <div className="popup-overlay">
           <div className="popup-content">
@@ -173,7 +208,6 @@ function MenuManager() {
         </div>
       )}
 
-      {/* Add Food Item Popup */}
       {showAddPopup && (
         <div className="popup-overlay">
           <div className="popup-content">
@@ -209,6 +243,15 @@ function MenuManager() {
   );
 }
 
+// Status steps array outside component to avoid recreation
+const statusSteps = [
+  'pending',
+  'acknowledged',
+  'preparing',
+  'on the way',
+  'delivered'
+];
+
 function RestaurantAdminDashboard() {
   const [orders, setOrders] = React.useState([]);
   const [cancelledOrders, setCancelledOrders] = React.useState([]);
@@ -216,52 +259,159 @@ function RestaurantAdminDashboard() {
   const [showCancelPopup, setShowCancelPopup] = React.useState(false);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
   const [cancelReason, setCancelReason] = React.useState('');
+  const [notifications, setNotifications] = React.useState([]);
+  const [showNotificationPopup, setShowNotificationPopup] = React.useState(false);
+  const [notificationCount, setNotificationCount] = React.useState(0);
+  
+  // Refs to track previous state for comparison
+  const previousOrdersRef = React.useRef([]);
+  const previousCancelledOrdersRef = React.useRef([]);
 
-  const statusSteps = [
-    'pending',
-    'acknowledged',
-    'preparing',
-    'on the way',
-    'delivered'
-  ];
+  // Notification sound hook
+  const playNotificationSound = useNotificationSound();
 
-  const fetchOrders = async () => {
+  const fetchOrders = React.useCallback(async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
       const data = await res.json();
       setOrders(data);
-    } catch {}
-  };
+      return data;
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      return [];
+    }
+  }, []);
 
-  const fetchCancelledOrders = async () => {
+  const fetchCancelledOrders = React.useCallback(async () => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancelled`);
       const data = await res.json();
       setCancelledOrders(data);
-    } catch {}
-  };
+      return data;
+    } catch (error) {
+      console.error('Error fetching cancelled orders:', error);
+      return [];
+    }
+  }, []);
+
+  // Add a notification
+  const addNotification = React.useCallback((message, type = 'info') => {
+    const id = Date.now() + Math.random();
+    setNotifications(prev => [...prev, { id, message, type }]);
+  }, []);
+
+  // Remove a notification
+  const removeNotification = React.useCallback((id) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  }, []);
+
+  // Check for new orders and cancellations - FIXED VERSION
+  const checkForNotifications = React.useCallback(async () => {
+    const currentOrders = await fetchOrders();
+    const currentCancelledOrders = await fetchCancelledOrders();
+
+    let newNotificationCount = 0;
+
+    // Check for new orders (only pending orders are considered "new")
+    const newOrders = currentOrders.filter(newOrder => 
+      !previousOrdersRef.current.some(prevOrder => prevOrder._id === newOrder._id) &&
+      newOrder.status === 'pending'
+    );
+    
+    newOrders.forEach(order => {
+      addNotification(`New order received from Room ${order.roomNumber}`, 'new-order');
+      newNotificationCount++;
+    });
+
+    // Check for new cancellations
+    const newCancellations = currentCancelledOrders.filter(newCancelled => 
+      !previousCancelledOrdersRef.current.some(prevCancelled => prevCancelled._id === newCancelled._id)
+    );
+    
+    newCancellations.forEach(cancelledOrder => {
+      addNotification(`Order cancelled from Room ${cancelledOrder.roomNumber}`, 'cancelled');
+      newNotificationCount++;
+    });
+
+    // Update notification count
+    if (newNotificationCount > 0) {
+      setNotificationCount(prev => prev + newNotificationCount);
+
+      // Play sound if there are new notifications and popup is not open
+      if (!showNotificationPopup) {
+        playNotificationSound();
+      }
+    }
+
+    // Update previous state
+    previousOrdersRef.current = currentOrders;
+    previousCancelledOrdersRef.current = currentCancelledOrders;
+  }, [fetchOrders, fetchCancelledOrders, addNotification, playNotificationSound, showNotificationPopup]);
 
   React.useEffect(() => {
-    fetchOrders();
-    fetchCancelledOrders();
+    // Initial data fetch and setup
+    const initializeData = async () => {
+      const initialOrders = await fetchOrders();
+      const initialCancelledOrders = await fetchCancelledOrders();
+      
+      previousOrdersRef.current = initialOrders;
+      previousCancelledOrdersRef.current = initialCancelledOrders;
+    };
+
+    initializeData();
+
+    // Set up polling interval
     const interval = setInterval(() => { 
-      fetchOrders(); 
+      checkForNotifications();
+      fetchOrders(); // Always fetch orders to keep data fresh
       if (activeTab === 'cancelled') {
         fetchCancelledOrders();
       }
     }, 5000);
+    
     return () => clearInterval(interval);
-  }, [activeTab]);
+  }, [activeTab, fetchOrders, fetchCancelledOrders, checkForNotifications]);
 
-  const handleDeleteDelivered = async (orderId) => {
+  // Handle bell click - clear notifications and counter
+  const handleBellClick = () => {
+    setShowNotificationPopup(prev => !prev);
+    if (!showNotificationPopup) {
+      // Clear notification count when opening the popup
+      setNotificationCount(0);
+    }
+  };
+
+  // Close notification popup when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showNotificationPopup) {
+        const popup = document.querySelector('.notification-popup');
+        const bell = document.querySelector('.notification-bell');
+        if (popup && bell && 
+          !popup.contains(event.target) && 
+          !bell.contains(event.target)) {
+          setShowNotificationPopup(false);
+        }
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotificationPopup]);
+
+  const handleDeleteDelivered = React.useCallback(async (orderId) => {
     try {
       await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/${orderId}`, { method: 'DELETE' });
       fetchOrders();
-    } catch {}
-  };
+    } catch (error) {
+      console.error('Error deleting delivered order:', error);
+    }
+  }, [fetchOrders]);
 
   // Progress order status to next step
-  const handleProgressStatus = async (order) => {
+  const handleProgressStatus = React.useCallback(async (order) => {
     const currentIdx = statusSteps.indexOf(order.status);
     if (currentIdx === -1 || currentIdx === statusSteps.length - 1) return;
     const nextStatus = statusSteps[currentIdx + 1];
@@ -272,25 +422,26 @@ function RestaurantAdminDashboard() {
         body: JSON.stringify({ status: nextStatus })
       });
       fetchOrders();
-    } catch {}
-  };
+    } catch (error) {
+      console.error('Error progressing order status:', error);
+    }
+  }, [fetchOrders]);
 
   // Open cancellation popup
-  const openCancelPopup = (order) => {
+  const openCancelPopup = React.useCallback((order) => {
     setSelectedOrder(order);
     setCancelReason('');
     setShowCancelPopup(true);
-  };
+  }, []);
 
   // Handle order cancellation with reason
-  const handleCancelOrder = async () => {
+  const handleCancelOrder = React.useCallback(async () => {
     if (!cancelReason.trim()) {
       alert('Please provide a reason for cancellation.');
       return;
     }
 
     try {
-      // Move the order to cancelled collection
       const cancelResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -316,9 +467,9 @@ function RestaurantAdminDashboard() {
       console.error('Error cancelling order:', error);
       alert('Error cancelling order.');
     }
-  };
+  }, [cancelReason, selectedOrder, fetchOrders, fetchCancelledOrders, activeTab]);
 
-  const handleDeleteCancelled = async (cancelledOrderId) => {
+  const handleDeleteCancelled = React.useCallback(async (cancelledOrderId) => {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancelled/${cancelledOrderId}`, { method: 'DELETE' });
       if (res.ok) {
@@ -326,10 +477,10 @@ function RestaurantAdminDashboard() {
       } else {
         alert('Failed to delete cancelled order.');
       }
-    } catch {
+    } catch (error) {
       alert('Failed to delete cancelled order.');
     }
-  };
+  }, [fetchCancelledOrders]);
 
   const pendingOrders = orders.filter(order => order.status === 'pending');
   const acknowledgedOrders = orders.filter(order => order.status === 'acknowledged');
@@ -339,8 +490,70 @@ function RestaurantAdminDashboard() {
 
   return (
     <div className="dashboard">
-      <LogoutButton />
-      <h2 className="dashboard-title">Restaurant Admin Dashboard</h2>
+      <div className="dashboard-header">
+        <h2 className="dashboard-title">Restaurant Admin Dashboard</h2>
+        <div className="header-controls">
+          {/* Notification Bell */}
+          <button 
+            className={`notification-bell ${showNotificationPopup ? 'active' : ''}`}
+            onClick={handleBellClick}
+            aria-label="Notifications"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            {/* Show counter for new notifications */}
+            {!showNotificationPopup && notificationCount > 0 && (
+              <span className="bell-counter">{notificationCount > 99 ? '99+' : notificationCount}</span>
+            )}
+          </button>
+          <LogoutButton />
+        </div>
+      </div>
+      
+      {/* Toast Notifications Container */}
+      <div className="toast-container">
+        {notifications.map(notification => (
+          <ToastNotification
+            key={notification.id}
+            message={notification.message}
+            type={notification.type}
+            onClose={() => removeNotification(notification.id)}
+          />
+        ))}
+      </div>
+
+      {/* Notification Popup */}
+      {showNotificationPopup && (
+        <div className="notification-popup">
+          <div className="notification-popup-header">
+            <h3>Recent Notifications</h3>
+            <span className="notification-count">
+              {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {notifications.length === 0 ? (
+            <div className="no-notifications">No new notifications</div>
+          ) : (
+            <div className="notification-list">
+              {notifications.map((notification) => (
+                <div key={notification.id} className={`notification-item ${notification.type}`}>
+                  <div className="notification-message">{notification.message}</div>
+                  <button 
+                    className="notification-close"
+                    onClick={() => removeNotification(notification.id)}
+                    title="Remove notification"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="tabs">
         <button className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>Pending</button>
         <button className={`tab-btn ${activeTab === 'acknowledged' ? 'active' : ''}`} onClick={() => setActiveTab('acknowledged')}>Acknowledged</button>
