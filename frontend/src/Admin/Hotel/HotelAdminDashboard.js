@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaTachometerAlt, FaBed, FaBroom, FaTools, FaHistory, FaBell } from 'react-icons/fa';
 import LogoutButton from '../../Auth/LogoutButton';
@@ -6,9 +6,46 @@ import './HotelAdminDashboard.css';
 
 // This is now the master layout (HotelAdminLayout)
 
-function HotelAdminLayout({ children }) {
+function HotelAdminDashboard({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Notification state
+  const [notification, setNotification] = useState(null);
+  const [showNotification, setShowNotification] = useState(false);
+  const prevStatusesRef = useRef([]);
+
+  useEffect(() => {
+    let intervalId;
+    const fetchBookings = async () => {
+      try {
+        const res = await fetch('/api/bookings');
+        if (!res.ok) return;
+        const data = await res.json();
+        // Compare statuses only
+        const prevStatuses = prevStatusesRef.current;
+        const newStatuses = data.map(b => ({ id: b._id, status: b.status }));
+        if (prevStatuses.length > 0) {
+          for (let i = 0; i < newStatuses.length; i++) {
+            const prev = prevStatuses.find(p => p.id === newStatuses[i].id);
+            if (prev && prev.status !== newStatuses[i].status) {
+              const booking = data.find(b => b._id === newStatuses[i].id);
+              const roomNumber = booking ? booking.roomNumber : newStatuses[i].id;
+              setNotification(`Room number ${roomNumber} status changed: ${prev.status} → ${newStatuses[i].status}`);
+              setShowNotification(true);
+              break;
+            }
+          }
+        }
+        prevStatusesRef.current = newStatuses;
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    fetchBookings();
+    intervalId = setInterval(fetchBookings, 20000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const sidebarButtons = [
     { name: 'Dashboard', path: '/admin/hotel', icon: <FaTachometerAlt /> },
@@ -41,8 +78,23 @@ function HotelAdminLayout({ children }) {
         <img src="/lumine_logo.png" alt="Lumine Logo" className="hotel-admin-dashboard-logo" />
 
         <div className="hotel-admin-dashboard-logout-btn">
-          <span className="hotel-admin-dashboard-notification-icon" title="Notifications" style={{ marginRight: '1.2rem', fontSize: '1.5rem', verticalAlign: 'middle', cursor: 'pointer', color: '#fff' }}>
+          <span
+            className="hotel-admin-dashboard-notification-icon"
+            title="Notifications"
+            style={{ marginRight: '1.2rem', fontSize: '1.5rem', verticalAlign: 'middle', cursor: 'pointer', color: '#fff', position: 'relative' }}
+            onClick={() => setShowNotification(!showNotification)}
+          >
             <FaBell />
+            {notification && showNotification && (
+              <div className="hotel-admin-dashboard-notification-popup">
+                <button
+                  className="hotel-admin-dashboard-notification-close"
+                  aria-label="Dismiss notification"
+                  onClick={() => { setNotification(null); setShowNotification(false); }}
+                >&#10005;</button>
+                <span className="hotel-admin-dashboard-notification-text">{notification}</span>
+              </div>
+            )}
           </span>
           <LogoutButton />
         </div>
@@ -74,4 +126,4 @@ function HotelAdminLayout({ children }) {
   );
 }
 
-export default HotelAdminLayout;
+export default HotelAdminDashboard;
