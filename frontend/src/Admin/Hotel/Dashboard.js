@@ -22,6 +22,10 @@ function Dashboard() {
   const [ongoingHousekeeping, setOngoingHousekeeping] = useState(0);
   const [ongoingMaintenance, setOngoingMaintenance] = useState(0);
   const [monthlyCounts, setMonthlyCounts] = useState([]);
+  const [bookingsData, setBookingsData] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState('All');
+  const [selectedMonth, setSelectedMonth] = useState('All');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [roomTypeCounts, setRoomTypeCounts] = useState({});
@@ -33,16 +37,23 @@ function Dashboard() {
         const res = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings`);
         if (!res.ok) throw new Error('Failed to fetch bookings');
         const data = await res.json();
-        // Aggregate bookings by month using booking.checkInDate
-        const counts = Array(12).fill(0);
-        data.forEach(b => {
+        // store raw bookings so chart filters can be applied
+        setBookingsData(data || []);
+
+        // discover available years from bookings
+        const yearsSet = new Set();
+        (data || []).forEach(b => {
           const dateStr = b.checkInDate || b.checkIn || b.checkinDate || b.bookedAt;
           if (dateStr) {
             const d = new Date(dateStr);
-            if (!isNaN(d)) counts[d.getMonth()]++;
+            if (!isNaN(d)) yearsSet.add(d.getFullYear());
           }
         });
-        setMonthlyCounts(counts);
+        const yearsArr = Array.from(yearsSet).sort((a, b) => b - a);
+        setAvailableYears(yearsArr);
+        // default to current year if present, otherwise All
+        const currentYear = new Date().getFullYear();
+        setSelectedYear(yearsArr.includes(currentYear) ? currentYear.toString() : 'All');
 
         // Fetch rooms and compute occupied-room stats from room.status
         const roomsRes = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
@@ -114,11 +125,60 @@ function Dashboard() {
     fetchBookingsAndTasks();
   }, []);
 
+  // Recompute chart counts when bookings or filters change
+  useEffect(() => {
+    const monthsCount = Array(12).fill(0);
+
+    // helper to get booking date
+    function getBookingDate(b) {
+      const dateStr = b.checkInDate || b.checkIn || b.checkinDate || b.bookedAt;
+      if (!dateStr) return null;
+      const d = new Date(dateStr);
+      return isNaN(d) ? null : d;
+    }
+
+    if (selectedMonth === 'All') {
+      // monthly aggregation
+      bookingsData.forEach(b => {
+        const d = getBookingDate(b);
+        if (!d) return;
+        if (selectedYear !== 'All' && d.getFullYear().toString() !== selectedYear) return;
+        monthsCount[d.getMonth()]++;
+      });
+      setMonthlyCounts(monthsCount);
+    } else {
+      // daily aggregation for selected month (requires a year)
+      if (selectedYear === 'All') {
+        // if year not selected, fall back to monthly counts
+        bookingsData.forEach(b => {
+          const d = getBookingDate(b);
+          if (!d) return;
+          monthsCount[d.getMonth()]++;
+        });
+        setMonthlyCounts(monthsCount);
+      } else {
+        const year = parseInt(selectedYear, 10);
+        const monthIndex = parseInt(selectedMonth, 10); // 0-11
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        const dayCounts = Array(daysInMonth).fill(0);
+        bookingsData.forEach(b => {
+          const d = getBookingDate(b);
+          if (!d) return;
+          if (d.getFullYear() !== year) return;
+          if (d.getMonth() !== monthIndex) return;
+          dayCounts[d.getDate() - 1]++;
+        });
+        // store daily counts in monthlyCounts for chart rendering
+        setMonthlyCounts(dayCounts);
+      }
+    }
+  }, [bookingsData, selectedYear, selectedMonth]);
+
   const chartData = {
-    labels: [
+    labels: (selectedMonth === 'All') ? [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ],
+    ] : Array.from({ length: monthlyCounts.length }, (_, i) => `Day ${i + 1}`),
     datasets: [
       {
         label: 'Bookings',
@@ -209,7 +269,28 @@ function Dashboard() {
         ) : (
           <div className="dashboard-analytics-grid">
             <div className="chart-panel bar">
-              <Bar data={chartData} options={chartOptions} />
+                <div style={{ marginBottom: 12, display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div>
+                    <label style={{ marginRight: 8 }}>Year:</label>
+                    <select value={selectedYear} onChange={e => { setSelectedYear(e.target.value); setSelectedMonth('All'); }}>
+                      <option value="All">All Years</option>
+                      {availableYears.map(y => (
+                        <option key={y} value={y.toString()}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ marginRight: 8 }}>Month:</label>
+                    <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} disabled={selectedYear === 'All'}>
+                      <option value="All">All Months</option>
+                      {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, idx) => (
+                        <option key={m} value={idx.toString()}>{m}</option>
+                      ))}
+                    </select>
+                    {selectedYear === 'All' && <small style={{ marginLeft: 8, color: '#666' }}>Select a year to enable month filter</small>}
+                  </div>
+                </div>
+                <Bar data={chartData} options={chartOptions} />
             </div>
             <div className="chart-panel pie">
               <Pie data={pieData} options={pieOptions} />
