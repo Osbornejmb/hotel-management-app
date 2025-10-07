@@ -237,8 +237,8 @@
     padding: 2.5rem 2rem 2rem 2rem;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    overflow-y: auto;  /* allow vertical scroll */
+    /* avoid forcing its own vertical scroll; let page handle scrolling if needed */
+    overflow-y: visible;
     overflow-x: hidden;
 }
 .hotel-admin-rooms-title {
@@ -353,6 +353,14 @@
 	left: 0;
 	margin-bottom: 0.5rem;
 }
+
+.floor-select {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-weight: 600;
+    background: #fff;
+}
 .hotel-admin-rooms-floor-btn {
 	background: #eee;
 	color: #444;
@@ -374,4 +382,43 @@
 .hotel-admin-rooms-floor-btn:hover {
     background: #a57c2b;
     color: #fff;
+}
+
+/* middle-left/right round buttons */
+.rooms-scroll-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #111;
+    background: #fff;
+    color: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 1100;
+}
+.rooms-scroll-btn-left { left: 12px; }
+.rooms-scroll-btn-right { right: 12px; }
+.rooms-scroll-btn:disabled { opacity: 0.45; cursor: default; }
+
+/* Footer area with larger, static buttons */
+.rooms-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+.rooms-footer .rooms-scroll-btn {
+    position: static;
+    transform: none;
+    width: 64px;
+    height: 64px;
+    font-size: 1.8rem;
+    border-radius: 12px;
 }

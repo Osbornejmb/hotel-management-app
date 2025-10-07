@@ -6,16 +6,13 @@ function getRoomCardColor(status, type) {
   return 'room-card-gray';
 }
 
-const floors = [1,2,3,4,5,6,7,8,9,10];
-
 export default function HotelAdminRooms() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedFloor, setSelectedFloor] = useState(1);
-  const [selectedType, setSelectedType] = useState('all');
   const [modalRoom, setModalRoom] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, jobType: '', room: null });
+  // Note: removed floor/type selection to show all rooms in a single scrollable view
   
 
   useEffect(() => {
@@ -34,17 +31,23 @@ export default function HotelAdminRooms() {
     fetchRooms();
   }, []);
 
-  // Dynamically get all unique room types from data
-  const allTypes = Array.from(new Set(rooms.map(r => r.roomType))).filter(Boolean);
-  // Filter rooms by selected floor, ignore type if 'all' is selected
-  const filteredRooms = rooms.filter(r => {
-    if (!r.roomNumber) return false;
-    const roomNumStr = String(r.roomNumber);
-    const floorNum = parseInt(roomNumStr[0], 10);
-    const floorMatch = floorNum === selectedFloor;
-    if (selectedType === 'all') return floorMatch;
-    return floorMatch && r.roomType === selectedType;
+  // Show all rooms (no sorting/filtering) but ensure we only render entries with a roomNumber
+  const filteredRooms = rooms.filter(r => r && r.roomNumber);
+
+  // Group and sort rooms by floor (e.g., 101 -> floor 1, 201 -> floor 2)
+  const roomsSorted = [...filteredRooms].sort((a, b) => {
+    const aNum = Number(a.roomNumber);
+    const bNum = Number(b.roomNumber);
+    const aFloor = Math.floor(aNum / 100);
+    const bFloor = Math.floor(bNum / 100);
+    if (aFloor !== bFloor) return aFloor - bFloor;
+    return aNum - bNum;
   });
+
+  const floors = Array.from(new Set(roomsSorted.map(r => Math.floor(Number(r.roomNumber) / 100))));
+  const [currentFloorIndex, setCurrentFloorIndex] = useState(0);
+  const currentFloor = floors[currentFloorIndex];
+  const roomsForCurrentFloor = roomsSorted.filter(r => Math.floor(Number(r.roomNumber) / 100) === currentFloor);
 
   return (
     <HotelAdminDashboard>
@@ -54,9 +57,25 @@ export default function HotelAdminRooms() {
         ) : error ? (
           <div className="hotel-admin-rooms-error">{error}</div>
         ) : (
-          <div className="hotel-admin-rooms-grid">
-            {filteredRooms.map(room => (
-              <div key={room._id} className={`room-card-v2 ${getRoomCardColor(room.status, room.roomType)}`}>
+          <div style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '0.8rem' }}>
+              <label htmlFor="floor-select" style={{ fontWeight: 700, color: '#444', marginRight: 12 }}>Floor</label>
+              <select
+                id="floor-select"
+                className="floor-select"
+                value={currentFloorIndex}
+                onChange={e => setCurrentFloorIndex(Number(e.target.value))}
+              >
+                {floors.map((f, idx) => (
+                  <option key={f} value={idx}>{`Floor ${f}`}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rooms-scroll-wrapper">
+              <div className="hotel-admin-rooms-grid">
+                {roomsForCurrentFloor.map(room => (
+                  <div key={room._id} className={`room-card-v2 ${getRoomCardColor(room.status, room.roomType)}`}>
                 <div style={{display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.2rem'}}>
                   <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0}}>
                     <div className="room-card-v2-number">{room.roomNumber}</div>
@@ -98,55 +117,34 @@ export default function HotelAdminRooms() {
                   )}
                 </div>
                 <button className="room-card-v2-manage" onClick={() => setModalRoom(room)}>Manage</button>
-              </div>
-            ))}
+                </div>
+                ))}
+              </div> {/* close hotel-admin-rooms-grid */}
+            </div> {/* close rooms-scroll-wrapper */}
+
+            {/* footer with Prev/Next buttons */}
+            <div className="rooms-footer">
+              <button
+                className="rooms-scroll-btn rooms-scroll-btn-left"
+                onClick={() => setCurrentFloorIndex(i => Math.max(0, i - 1))}
+                disabled={currentFloorIndex <= 0}
+                aria-label="Previous Floor"
+              >
+                ‹
+              </button>
+              <button
+                className="rooms-scroll-btn rooms-scroll-btn-right"
+                onClick={() => setCurrentFloorIndex(i => Math.min(floors.length - 1, i + 1))}
+                disabled={currentFloorIndex >= floors.length - 1}
+                aria-label="Next Floor"
+              >
+                ›
+              </button>
+            </div>
+
           </div>
         )}
-        {/* Floating bottom filter buttons, no panel */}
-        <div style={{
-          position: 'fixed',
-          left: 220,
-          bottom: 20,
-          width: 'calc(100vw - 220px)',
-          zIndex: 99,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          pointerEvents: 'none',
-        }}>
-          <div style={{ display: 'flex', gap: '0.7rem', justifyContent: 'center', marginBottom: '0.3rem', pointerEvents: 'auto' }}>
-            {floors.map(f => (
-              <button
-                key={f}
-                className={`hotel-admin-rooms-floor-btn${selectedFloor === f ? ' selected' : ''}`}
-                onClick={() => setSelectedFloor(f)}
-                style={{ boxShadow: '0 2px 8px #bbb', background: '#fff' }}
-              >
-                {f}F
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '0.7rem', justifyContent: 'center', pointerEvents: 'auto' }}>
-            <button
-              key="all"
-              className={`hotel-admin-rooms-floor-btn${selectedType === 'all' ? ' selected' : ''}`}
-              onClick={() => setSelectedType('all')}
-              style={{ textTransform: 'capitalize', boxShadow: '0 2px 8px #bbb', background: '#fff' }}
-            >
-              All Types
-            </button>
-            {allTypes.map(type => (
-              <button
-                key={type}
-                className={`hotel-admin-rooms-floor-btn${selectedType === type ? ' selected' : ''}`}
-                onClick={() => setSelectedType(type)}
-                style={{ textTransform: 'capitalize', boxShadow: '0 2px 8px #bbb', background: '#fff' }}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Filters removed: showing all rooms in a single scrollable grid to avoid layout/sorting issues for now */}
         {/* Modal Placeholder */}
         {modalRoom && (
           <div className="room-modal-backdrop" onClick={() => setModalRoom(null)}>
