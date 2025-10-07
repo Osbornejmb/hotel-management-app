@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Cart = require('./Cart');
 const { Order, CancelledOrder } = require('./Order');
+const Billing = require('./Billing');
 
 // Cancel order and move to cancelled collection
 router.post('/orders/cancel', async (req, res) => {
@@ -119,8 +120,37 @@ router.post('/orders/:orderId/status', async (req, res) => {
     const { status } = req.body;
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    const prevStatus = order.status;
     order.status = status;
     await order.save();
+
+    // If status changed to delivered, create a billing record
+    if (status === 'delivered' && prevStatus !== 'delivered') {
+      try {
+        // Prevent duplicate billing for the same order
+        const existing = await Billing.findOne({ orderId: order._id });
+        if (!existing) {
+          const totalPrice = order.items.reduce((sum, item) =>
+            sum + ((item.price || 0) * (item.quantity || 1)), 0
+          );
+
+          const billing = new Billing({
+            orderId: order._id,
+            roomNumber: order.roomNumber,
+            items: order.items,
+            checkedOutAt: order.checkedOutAt,
+            deliveredAt: Date.now(),
+            totalPrice
+          });
+          await billing.save();
+        }
+      } catch (billingErr) {
+        console.error('Failed to create billing record:', billingErr);
+        // do not fail the main request because billing failed, but inform in response
+        return res.status(500).json({ error: 'Order updated but failed to create billing record' });
+      }
+    }
+
     res.json({ success: true, order });
   } catch (err) {
     res.status(500).json({ error: err.message });
