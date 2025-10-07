@@ -255,7 +255,8 @@ const statusSteps = [
 function RestaurantAdminDashboard() {
   const [orders, setOrders] = React.useState([]);
   const [cancelledOrders, setCancelledOrders] = React.useState([]);
-  const [activeTab, setActiveTab] = React.useState('pending');
+  const [activeTab, setActiveTab] = React.useState('orders');
+  const [orderFilter, setOrderFilter] = React.useState('pending');
   const [showCancelPopup, setShowCancelPopup] = React.useState(false);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
   const [cancelReason, setCancelReason] = React.useState('');
@@ -555,13 +556,27 @@ function RestaurantAdminDashboard() {
       )}
 
       <div className="tabs">
-        <button className={`tab-btn ${activeTab === 'pending' ? 'active' : ''}`} onClick={() => setActiveTab('pending')}>Pending</button>
-        <button className={`tab-btn ${activeTab === 'acknowledged' ? 'active' : ''}`} onClick={() => setActiveTab('acknowledged')}>Acknowledged</button>
-        <button className={`tab-btn ${activeTab === 'preparing' ? 'active' : ''}`} onClick={() => setActiveTab('preparing')}>Preparing</button>
-        <button className={`tab-btn ${activeTab === 'on the way' ? 'active' : ''}`} onClick={() => setActiveTab('on the way')}>On The Way</button>
-        <button className={`tab-btn ${activeTab === 'delivered' ? 'active' : ''}`} onClick={() => setActiveTab('delivered')}>Delivered</button>
-        <button className={`tab-btn ${activeTab === 'cancelled' ? 'active' : ''}`} onClick={() => { setActiveTab('cancelled'); fetchCancelledOrders(); }}>Cancelled</button>
+        <button className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Orders</button>
         <button className={`tab-btn ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>Manage Menu</button>
+        {activeTab === 'orders' && (
+          <select 
+            className="order-filter" 
+            value={orderFilter} 
+            onChange={(e) => {
+              setOrderFilter(e.target.value);
+              if (e.target.value === 'cancelled') {
+                fetchCancelledOrders();
+              }
+            }}
+          >
+            <option value="pending">Pending Orders</option>
+            <option value="acknowledged">Acknowledged Orders</option>
+            <option value="preparing">Preparing Orders</option>
+            <option value="on the way">Orders On The Way</option>
+            <option value="delivered">Delivered Orders</option>
+            <option value="cancelled">Cancelled Orders</option>
+          </select>
+        )}
       </div>
 
       {/* Cancellation Popup */}
@@ -592,7 +607,7 @@ function RestaurantAdminDashboard() {
 
       {activeTab === 'menu' ? (
         <MenuManager />
-      ) : activeTab === 'pending' ? (
+      ) : activeTab === 'orders' && orderFilter === 'pending' ? (
         <>
           <h3 className="orders-title">Pending Orders</h3>
           {pendingOrders.length === 0 ? (
@@ -645,7 +660,7 @@ function RestaurantAdminDashboard() {
             </table>
           )}
         </>
-      ) : activeTab === 'acknowledged' ? (
+      ) : activeTab === 'orders' && orderFilter === 'acknowledged' ? (
         <>
           <h3 className="orders-title">Acknowledged Orders</h3>
           {acknowledgedOrders.length === 0 ? (
@@ -698,7 +713,7 @@ function RestaurantAdminDashboard() {
             </table>
           )}
         </>
-      ) : activeTab === 'preparing' ? (
+      ) : activeTab === 'orders' && orderFilter === 'preparing' ? (
         <>
           <h3 className="orders-title">Preparing Orders</h3>
           {preparingOrders.length === 0 ? (
@@ -748,7 +763,7 @@ function RestaurantAdminDashboard() {
             </table>
           )}
         </>
-      ) : activeTab === 'on the way' ? (
+      ) : activeTab === 'orders' && orderFilter === 'on the way' ? (
         <>
           <h3 className="orders-title">Orders On The Way</h3>
           {onTheWayOrders.length === 0 ? (
@@ -798,7 +813,7 @@ function RestaurantAdminDashboard() {
             </table>
           )}
         </>
-      ) : activeTab === 'delivered' ? (
+      ) : activeTab === 'orders' && orderFilter === 'delivered' ? (
         <>
           <h3 className="orders-title">Delivered Orders</h3>
           {deliveredOrders.length === 0 ? (
@@ -846,7 +861,7 @@ function RestaurantAdminDashboard() {
             </table>
           )}
         </>
-      ) : activeTab === 'cancelled' ? (
+      ) : activeTab === 'orders' && orderFilter === 'cancelled' ? (
         <>
           <h3 className="orders-title">Cancelled Orders</h3>
           {cancelledOrders.length === 0 ? (
