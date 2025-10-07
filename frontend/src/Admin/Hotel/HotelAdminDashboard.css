@@ -126,6 +126,111 @@ html, body {
 	right: 1rem;
 }
 
+/* Notification panel */
+.hotel-admin-dashboard-notification-panel {
+  position: absolute;
+  right: 1rem;
+  top: 3.4rem;
+  width: 320px;
+  max-height: 420px;
+  background: #fff;
+  color: #222;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  z-index: 120;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.hotel-admin-dashboard-notification-panel-header {
+  padding: 0.8rem 1rem;
+  background: #f7f3ea;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hotel-admin-dashboard-notification-panel-close {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.hotel-admin-dashboard-notification-panel-body {
+  padding: 0.6rem 0.6rem;
+  overflow-y: auto;
+}
+.hotel-admin-dashboard-notification-item {
+  padding: 0.6rem;
+  border-bottom: 1px solid #f0efe8;
+  display: flex;
+  flex-direction: column;
+}
+.hotel-admin-dashboard-notification-item-text {
+  font-size: 0.95rem;
+  color: #222;
+}
+.hotel-admin-dashboard-notification-item-meta {
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 0.25rem;
+}
+.hotel-admin-dashboard-notification-empty {
+  padding: 1rem;
+  color: #666;
+  text-align: center;
+}
+
+.hotel-admin-dashboard-notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Toast overlay */
+.hotel-admin-dashboard-toast-container {
+  position: fixed;
+  right: 1rem;
+  top: 4.5rem; /* below the top nav */
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 200;
+}
+.hotel-admin-dashboard-toast {
+  background: #fff;
+  border-left: 4px solid #b48a2c;
+  padding: 0.6rem 0.8rem;
+  min-width: 240px;
+  max-width: 360px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hotel-admin-dashboard-toast-body {
+  display: flex;
+  flex-direction: column;
+}
+.hotel-admin-dashboard-toast-text {
+  font-size: 0.95rem;
+  color: #333;
+}
+.hotel-admin-dashboard-toast-close {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #666;
+}
+
 .hotel-admin-dashboard-logout-btn-actual {
   margin: 1rem;
   padding: 0.5rem 1.5rem;

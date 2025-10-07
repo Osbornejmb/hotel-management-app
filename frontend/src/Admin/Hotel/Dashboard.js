@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,10 +9,11 @@ import {
   Title,
   Tooltip,
   Legend,
+  ArcElement,
 } from 'chart.js';
 import './Dashboard.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 
 function Dashboard() {
@@ -23,30 +24,62 @@ function Dashboard() {
   const [monthlyCounts, setMonthlyCounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [roomTypeCounts, setRoomTypeCounts] = useState({});
 
   useEffect(() => {
-    async function fetchBookingsAndTasks() {
+  async function fetchBookingsAndTasks() {
       try {
         // Fetch bookings
         const res = await fetch(`${process.env.REACT_APP_API_URL}/api/bookings`);
         if (!res.ok) throw new Error('Failed to fetch bookings');
         const data = await res.json();
-        // Aggregate bookings by month
+        // Aggregate bookings by month using booking.checkInDate
         const counts = Array(12).fill(0);
-        let checkedIn = 0;
         data.forEach(b => {
-          if (b.checkIn) {
-            const d = new Date(b.checkIn);
-            if (!isNaN(d)) {
-              counts[d.getMonth()]++;
-            }
-          }
-          if (b.status && b.status.toLowerCase() === 'checked in') {
-            checkedIn++;
+          const dateStr = b.checkInDate || b.checkIn || b.checkinDate || b.bookedAt;
+          if (dateStr) {
+            const d = new Date(dateStr);
+            if (!isNaN(d)) counts[d.getMonth()]++;
           }
         });
         setMonthlyCounts(counts);
-        setCheckedInCount(checkedIn);
+
+        // Fetch rooms and compute occupied-room stats from room.status
+        const roomsRes = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
+        if (!roomsRes.ok) throw new Error('Failed to fetch rooms');
+        const roomsData = await roomsRes.json();
+        // Occupied rooms: consider several possible indicators
+        const occupiedStatuses = new Set(['booked', 'booked ', 'checked in', 'checked_in', 'checked-in', 'occupied', 'in use']);
+        const occupiedRooms = roomsData.filter(r => {
+          const status = (r.status || '').toString().trim().toLowerCase();
+          // if guestName exists, treat as occupied as well
+          const hasGuest = !!(r.guestName || r.guestname || r.guest);
+          return occupiedStatuses.has(status) || hasGuest;
+        });
+        setCheckedInCount(occupiedRooms.length);
+
+        // Normalize room type values to canonical labels
+        function normalizeRoomType(raw) {
+          if (!raw) return 'Unknown';
+          const s = raw.toString().trim().toLowerCase();
+          if (s.includes('president')) return 'Presidential';
+          if (s.includes('suite')) return 'Suite';
+          if (s.includes('deluxe')) return 'Deluxe';
+          if (s.includes('econom') || s.includes('standard')) return 'Economy';
+          return raw.toString();
+        }
+
+        const typeCounts = {};
+        occupiedRooms.forEach(room => {
+          const type = normalizeRoomType(room.roomType);
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+        });
+        setRoomTypeCounts(typeCounts);
+
+        // Debug: log fetched rooms and computed counts so you can inspect in browser console
+        console.debug('roomsData (fetched):', roomsData);
+        console.debug('occupiedRooms (detected):', occupiedRooms);
+        console.debug('roomTypeCounts (computed):', typeCounts);
 
         // Fetch tasks for housekeeping/maintenance
         const taskRes = await fetch(`${process.env.REACT_APP_API_URL}/api/tasks`);
@@ -75,6 +108,8 @@ function Dashboard() {
       } finally {
         setLoading(false);
       }
+
+  // pieData and pieOptions are computed in component scope below
     }
     fetchBookingsAndTasks();
   }, []);
@@ -95,6 +130,7 @@ function Dashboard() {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       title: { display: true, text: 'Monthly Booking Count' },
@@ -119,6 +155,27 @@ function Dashboard() {
           color: '#333',
         },
       },
+    },
+  };
+
+  // Pie chart data for room type usage (computed from roomTypeCounts state)
+  const pieData = {
+    labels: Object.keys(roomTypeCounts),
+    datasets: [
+      {
+        data: Object.values(roomTypeCounts),
+        backgroundColor: [
+          '#b48a2c', '#e0c36e', '#8a6d3b', '#f5e6c4', '#c0a16b', '#e6b800', '#b4b4b4', '#a3c9a8', '#f7cac9', '#92a8d1'
+        ],
+      },
+    ],
+  };
+
+  const pieOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' },
+      title: { display: true, text: 'Room Type Usage (Occupied Rooms)' },
     },
   };
 
@@ -150,7 +207,14 @@ function Dashboard() {
         ) : error ? (
           <div style={{ color: 'red' }}>{error}</div>
         ) : (
-          <Bar data={chartData} options={chartOptions} />
+          <div className="dashboard-analytics-grid">
+            <div className="chart-panel bar">
+              <Bar data={chartData} options={chartOptions} />
+            </div>
+            <div className="chart-panel pie">
+              <Pie data={pieData} options={pieOptions} />
+            </div>
+          </div>
         )}
       </div>
     </div>

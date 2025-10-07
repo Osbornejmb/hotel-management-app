@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaTachometerAlt, FaBed, FaBroom, FaTools, FaHistory, FaBell } from 'react-icons/fa';
 import LogoutButton from '../../Auth/LogoutButton';
 import './HotelAdminDashboard.css';
+import { io } from 'socket.io-client';
 
 // This is now the master layout (HotelAdminLayout)
 
@@ -10,10 +11,14 @@ function HotelAdminDashboard({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Notification state
-  const [notification, setNotification] = useState(null);
+  // Notification state: persistent list shown in panel
+  const [notifications, setNotifications] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
-  const prevStatusesRef = useRef([]);
+  const [toasts, setToasts] = useState([]);
+  const prevStatusesRef = useRef({});
+  const socketRef = useRef(null);
+  // Ref for notification sound
+  const notificationAudioRef = useRef(null);
 
   useEffect(() => {
     let intervalId;
@@ -22,29 +27,119 @@ function HotelAdminDashboard({ children }) {
         const res = await fetch('/api/bookings');
         if (!res.ok) return;
         const data = await res.json();
-        // Compare statuses only
-        const prevStatuses = prevStatusesRef.current;
-        const newStatuses = data.map(b => ({ id: b._id, status: b.status }));
-        if (prevStatuses.length > 0) {
-          for (let i = 0; i < newStatuses.length; i++) {
-            const prev = prevStatuses.find(p => p.id === newStatuses[i].id);
-            if (prev && prev.status !== newStatuses[i].status) {
-              const booking = data.find(b => b._id === newStatuses[i].id);
-              const roomNumber = booking ? booking.roomNumber : newStatuses[i].id;
-              setNotification(`Room number ${roomNumber} status changed: ${prev.status} → ${newStatuses[i].status}`);
-              setShowNotification(true);
-              break;
-            }
+        // Compare statuses and create persistent notifications for changes
+        const prevStatuses = prevStatusesRef.current || {};
+        const currentStatuses = {};
+        data.forEach(b => {
+          const status = b.bookingStatus || b.status || b.paymentStatus || '';
+          currentStatuses[b._id] = status;
+          const prevStatus = prevStatuses[b._id];
+          if (prevStatus !== undefined && prevStatus !== status) {
+            // status changed: create notification
+            const roomNumber = b.roomNumber || (b.room && b.room.roomNumber) || 'Unknown';
+            const notif = {
+              id: `${b._id}-${Date.now()}`,
+              bookingId: b._id,
+              roomNumber,
+              oldStatus: prevStatus,
+              newStatus: status,
+              timestamp: new Date().toISOString(),
+              read: false,
+            };
+            addNotification(notif);
           }
-        }
-        prevStatusesRef.current = newStatuses;
+        });
+  prevStatusesRef.current = currentStatuses;
       } catch (err) {
         // Optionally handle error
       }
     };
-    fetchBookings();
-    intervalId = setInterval(fetchBookings, 20000);
-    return () => clearInterval(intervalId);
+    // perform initial fetch then start polling and socket after prevStatusesRef is populated
+    fetchBookings().then(() => {
+      intervalId = setInterval(fetchBookings, 20000);
+      // Setup socket.io client for real-time notifications
+      const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
+      socketRef.current = socket;
+      socket.on('connect', () => console.debug('socket connected', socket.id));
+      socket.on('bookingStatusChanged', (payload) => {
+        // payload: { bookingId, roomNumber, newStatus }
+        // try to retrieve the last-seen status stored in prevStatusesRef
+        const lastSeen = (prevStatusesRef.current && prevStatusesRef.current[payload.bookingId]) || null;
+        const notif = {
+          id: `${payload.bookingId}-socket-${Date.now()}`,
+          bookingId: payload.bookingId,
+          roomNumber: payload.roomNumber,
+          oldStatus: lastSeen,
+          newStatus: payload.newStatus,
+          timestamp: new Date().toISOString(),
+          read: false,
+        };
+        addNotification(notif);
+        // mark prevStatuses so polling won't duplicate the same change
+        try {
+          if (!prevStatusesRef.current) prevStatusesRef.current = {};
+          prevStatusesRef.current[payload.bookingId] = payload.newStatus;
+        } catch (err) {}
+      });
+      socket.on('roomStatusChanged', (payload) => {
+        // payload: { roomId, roomNumber, roomType, status }
+        const notif = {
+          id: `${payload.roomId}-room-${Date.now()}`,
+          bookingId: null,
+          roomNumber: payload.roomNumber,
+          roomType: payload.roomType,
+          oldStatus: null,
+          newStatus: payload.status,
+          timestamp: new Date().toISOString(),
+          read: false,
+          isRoomNotification: true,
+        };
+        // Add to notifications and toasts using same addNotification (will dedupe by bookingId+newStatus, so room notifications need unique id)
+        addNotification(notif);
+      });
+      socket.on('taskChanged', (payload) => {
+        // payload: { taskId, room, employeeId, type, status }
+        const notif = {
+          id: `${payload.taskId}-task-${Date.now()}`,
+          bookingId: null,
+          taskId: payload.taskId,
+          roomNumber: payload.room,
+          employeeId: payload.employeeId,
+          taskType: payload.type,
+          oldStatus: null,
+          newStatus: payload.status,
+          timestamp: new Date().toISOString(),
+          read: false,
+          isTaskNotification: true,
+        };
+        addNotification(notif);
+      });
+    }).catch(() => {
+      // initial fetch failed; still try to start polling and socket
+      intervalId = setInterval(fetchBookings, 20000);
+      const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
+      socketRef.current = socket;
+      socket.on('connect', () => console.debug('socket connected', socket.id));
+      socket.on('bookingStatusChanged', (payload) => {
+        const lastSeen = (prevStatusesRef.current && prevStatusesRef.current[payload.bookingId]) || null;
+        const notif = {
+          id: `${payload.bookingId}-socket-${Date.now()}`,
+          bookingId: payload.bookingId,
+          roomNumber: payload.roomNumber,
+          oldStatus: lastSeen,
+          newStatus: payload.newStatus,
+          timestamp: new Date().toISOString(),
+          read: false,
+        };
+        addNotification(notif);
+        try {
+          if (!prevStatusesRef.current) prevStatusesRef.current = {};
+          prevStatusesRef.current[payload.bookingId] = payload.newStatus;
+        } catch (err) {}
+      });
+    });
+
+    return () => { clearInterval(intervalId); if (socketRef.current && socketRef.current.disconnect) socketRef.current.disconnect(); };
   }, []);
 
   const sidebarButtons = [
@@ -55,8 +150,57 @@ function HotelAdminDashboard({ children }) {
     { name: 'Booking History', path: '/admin/hotel/booking-history', icon: <FaHistory /> },
   ];
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const dismissNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const dismissToast = (toastId) => {
+    setToasts(prev => prev.filter(t => t.toastId !== toastId));
+  };
+
+  // Add notification if not duplicate (same bookingId + newStatus). Also push toast and browser notification.
+  const addNotification = (notif) => {
+    setNotifications(prev => {
+      const exists = prev.some(n => n.bookingId === notif.bookingId && n.newStatus === notif.newStatus);
+      if (exists) return prev;
+      // Play notification sound
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.currentTime = 0;
+        notificationAudioRef.current.play().catch(() => {});
+      }
+      return [notif, ...prev];
+    });
+    setToasts(prev => {
+      const exists = prev.some(t => t.bookingId === notif.bookingId && t.newStatus === notif.newStatus);
+      if (exists) return prev;
+      return [{ ...notif, toastId: `t-${notif.id}` }, ...prev];
+    });
+    // Browser notification
+    try {
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          const n = new Notification('Room status changed', { body: `Room ${notif.roomNumber}: ${notif.oldStatus ? notif.oldStatus + ' → ' : ''}${notif.newStatus}`, requireInteraction: true });
+          n.onclick = () => { window.focus(); n.close(); };
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              const n = new Notification('Room status changed', { body: `Room ${notif.roomNumber}: ${notif.oldStatus ? notif.oldStatus + ' → ' : ''}${notif.newStatus}`, requireInteraction: true });
+              n.onclick = () => { window.focus(); n.close(); };
+            }
+          }).catch(() => {});
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
   return (
     <div className="hotel-admin-dashboard-root gold-theme">
+      {/* Hidden audio element for notification sound */}
+      <audio ref={notificationAudioRef} src="/notification-sound.mp3" preload="auto" style={{ display: 'none' }} />
       {/* Top navbar */}
       <nav className="hotel-admin-dashboard-nav gold-theme">
         <div className="hotel-admin-dashboard-home-btn">
@@ -85,17 +229,55 @@ function HotelAdminDashboard({ children }) {
             onClick={() => setShowNotification(!showNotification)}
           >
             <FaBell />
-            {notification && showNotification && (
-              <div className="hotel-admin-dashboard-notification-popup">
-                <button
-                  className="hotel-admin-dashboard-notification-close"
-                  aria-label="Dismiss notification"
-                  onClick={() => { setNotification(null); setShowNotification(false); }}
-                >&#10005;</button>
-                <span className="hotel-admin-dashboard-notification-text">{notification}</span>
-              </div>
+            {unreadCount > 0 && (
+              <span className="hotel-admin-dashboard-notification-badge" aria-hidden>{unreadCount}</span>
             )}
           </span>
+          {/* Notification panel */}
+          {showNotification && (
+            <div className="hotel-admin-dashboard-notification-panel" role="region" aria-label="Notifications">
+              <div className="hotel-admin-dashboard-notification-panel-header">
+                <strong>Notifications</strong>
+                <button
+                  className="hotel-admin-dashboard-notification-panel-close"
+                  aria-label="Close notifications"
+                  onClick={() => setShowNotification(false)}
+                >
+                  &#10005;
+                </button>
+              </div>
+              <div className="hotel-admin-dashboard-notification-panel-body">
+                {notifications.length === 0 ? (
+                  <div className="hotel-admin-dashboard-notification-empty">No notifications</div>
+                ) : (
+                  notifications.map(n => (
+                    <div key={n.id} className="hotel-admin-dashboard-notification-item">
+                      <div className="hotel-admin-dashboard-notification-item-label" style={{ fontWeight: 'bold', marginBottom: '2px', color: '#c9a74b' }}>
+                        {n.isTaskNotification ? 'Task' : (n.isRoomNotification ? 'Room' : 'Booking')}
+                      </div>
+                      <div className="hotel-admin-dashboard-notification-item-text">
+                        {n.isTaskNotification ?
+                          `Task ${n.taskId} - ${n.taskType} in ROOM ${n.roomNumber} - ${n.newStatus} - Employee ${n.employeeId}` : (
+                          n.isRoomNotification ? `Room ${n.roomNumber} - ${n.roomType}, is now ${n.newStatus}` : `Room ${n.roomNumber} status changed: ${n.oldStatus || 'unknown'} -> ${n.newStatus}`
+                        )}
+                      </div>
+                      <div className="hotel-admin-dashboard-notification-item-meta">
+                        <span>{new Date(n.timestamp).toLocaleString()}</span>
+                        <button
+                          className="hotel-admin-dashboard-notification-panel-close"
+                          aria-label={`Dismiss notification ${n.id}`}
+                          onClick={() => dismissNotification(n.id)}
+                          style={{ marginLeft: '0.5rem' }}
+                        >
+                          &#10005;
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
           <LogoutButton />
         </div>
       </nav>
@@ -121,6 +303,32 @@ function HotelAdminDashboard({ children }) {
         <div className="hotel-admin-dashboard-main">
           <div className="hotel-admin-dashboard-content gold-theme">{children}</div>
         </div>
+      </div>
+      {/* Toast overlay container */}
+      <div className="hotel-admin-dashboard-toast-container" aria-live="polite">
+        {toasts.map(t => (
+          <div key={t.toastId} className="hotel-admin-dashboard-toast">
+            <div className="hotel-admin-dashboard-toast-body">
+              {t.isTaskNotification ? (
+                <>
+                  <strong>{`Task ${t.taskId} - ${t.taskType}`}</strong>
+                  <div className="hotel-admin-dashboard-toast-text">{` in ROOM ${t.roomNumber} - ${t.newStatus} - Employee ${t.employeeId}`}</div>
+                </>
+              ) : t.isRoomNotification ? (
+                <>
+                  <strong>{`Room ${t.roomNumber} - ${t.roomType},`}</strong>
+                  <div className="hotel-admin-dashboard-toast-text">{` is now ${t.newStatus}`}</div>
+                </>
+              ) : (
+                <>
+                  <strong>{`Room ${t.roomNumber} status changed:`}</strong>
+                  <div className="hotel-admin-dashboard-toast-text">{`${t.oldStatus || 'unknown'} -> ${t.newStatus}`}</div>
+                </>
+              )}
+            </div>
+            <button className="hotel-admin-dashboard-toast-close" onClick={() => dismissToast(t.toastId)} aria-label="Dismiss toast">✕</button>
+          </div>
+        ))}
       </div>
     </div>
   );
