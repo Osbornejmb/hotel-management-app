@@ -39,6 +39,7 @@ function App() {
         {/* Customer routes */}
         <Route path="/customer/login" element={<CustomerLogin />} />
         <Route path="/customer/interface" element={<CustomerInterface />} />
+        <Route path="/customer/facilities" element={<Facilities />} />
         <Route path="/customer/food" element={<FoodAndBeverages />} />
         <Route path="/customer/food/:category" element={<FoodMaster />} />
         <Route path="/customer/contact" element={<ContactFrontDesk />} />
