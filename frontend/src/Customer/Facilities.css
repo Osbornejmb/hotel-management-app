@@ -39,14 +39,14 @@
     font-size: 1.4rem;
     color: #4B2E06;
     margin-bottom: 0.7rem;
-    font-family: 'serif';
+    
     letter-spacing: 1px;
 }
 .facility-modal-desc {
     font-size: 1rem;
     color: #222;
     margin-bottom: 1.5rem;
-    font-family: 'serif';
+    
     line-height: 1.4;
 }
 .facility-modal-close {
@@ -88,7 +88,9 @@
     height: 100vh;
     max-height: 100vh;
     background: #fff;
-    font-family: 'serif', Georgia, Times, 'Times New Roman', serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -124,7 +126,7 @@
     font-size: 24px;
     font-weight: 400;
     color: #fff;
-    font-family: 'serif';
+    
     letter-spacing: 1px;
     text-shadow: 0 1px 4px #0006;
 }
@@ -148,7 +150,7 @@
     display: flex;
     align-items: center;
     font-weight: 500;
-    margin-left: 1.5rem;
+    margin-left: 1.8rem;
     padding: 0.35em 1.2em;
     border-radius: 0.35em;
     box-shadow: 0 2px 8px #e5c16c44;
@@ -167,7 +169,7 @@
     background: #F7D774;
     color: #4B2E06;
     font-size: 1.6rem;
-    font-family: 'serif';
+    
     font-weight: 400;
     padding: 0.2em 1.5em;
     border-radius: 0.2em;
@@ -178,13 +180,15 @@
 .facilities-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    /* slightly tighter gap to better use tablet space */
+    gap: 1.1rem;
     justify-items: center;
     align-items: start;
-    padding: 0 1.5rem 1rem 1.5rem;
+    /* reduce side padding so cards are larger on tablet */
+    padding: 0 1rem 0.8rem 1rem;
     flex: 1;
-    overflow: hidden;
-    max-height: calc(100vh - 180px); /* Account for header, topbar, and title */
+    overflow: visible;
+    max-height: calc(100vh - 160px); /* Account for header, topbar, and title */
 }
 
 .facilities-card {
@@ -204,10 +208,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0.5rem;
+    padding: 0.75rem 0.6rem;
     width: 100%;
     height: 100%;
-    min-height: 180px;
+    /* increase min-height for larger tap targets on tablets */
+    min-height: 200px;
     border: 2px solid #f7e6b0;
     transition: box-shadow 0.18s, border 0.18s;
     box-sizing: border-box;
@@ -216,7 +221,7 @@
 .facilities-card:hover .facilities-card-inner {
     box-shadow: 0 8px 24px #e5c16c99;
     border: 2.5px solid #F7D774;
-    transform: translateY(-4px) scale(1.02);
+    transform: translateY(-2px) scale(1.02);
 }
 
 .facilities-card-img {
@@ -231,14 +236,13 @@
 }
 
 .facilities-card-name {
-    font-size: 1rem;
+    font-size: 1.05rem;
     color: #222;
-    font-family: 'serif';
-    font-weight: 500;
-    margin-top: 0.1rem;
+    font-weight: 600;
+    margin-top: 0.2rem;
     text-align: center;
-    letter-spacing: 0.5px;
-    padding: 0.5rem 0;
+    letter-spacing: 0.6px;
+    padding: 0.6rem 0;
 }
 
 /* Media query for additional tablet optimization */
@@ -263,7 +267,7 @@
     }
     
     .facilities-back {
-        margin-left: 1rem;
+        margin-left: 1.2rem;
         padding: 0.3em 1em;
         font-size: 0.9rem;
     }
@@ -280,7 +284,7 @@
     }
     
     .facilities-card-inner {
-        min-height: 160px;
+        min-height: 180px;
     }
     
     .facilities-card-img {

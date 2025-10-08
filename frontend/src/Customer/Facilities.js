@@ -884,7 +884,7 @@ function Facilities() {
     border: 'none',
     color: '#FFD700',
     fontSize: '0.9rem',
-    fontFamily: 'serif',
+    
     fontWeight: 500,
     cursor: 'pointer',
     padding: '0.3em 0.8em',
@@ -1177,10 +1177,10 @@ function Facilities() {
             textAlign: 'center', 
             color: '#4B2E06', 
             border: '2.5px solid #F7D774', 
-            fontFamily: 'serif',
+            
             overflow: 'auto'
           }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>
+            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>
               Your Cart
             </h2>
 
@@ -1188,7 +1188,7 @@ function Facilities() {
               <p style={{ color: '#4B2E06', fontSize: '1rem' }}>Your cart is empty.</p>
             ) : (
               <div style={{ maxHeight: '35vh', overflowY: 'auto', marginBottom: '1rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#4B2E06', fontSize: '0.8rem' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                     <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
                       <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
@@ -1269,7 +1269,7 @@ function Facilities() {
                                 padding: '0.2rem 0.5rem', borderRadius: '0.4em',
                                 border: '2px solid #FFD700', background: '#F7D774',
                                 color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                                fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
+                                boxShadow: '0 2px 8px #e5c16c44',
                                 transition: 'background 0.2s, color 0.2s',
                                 fontSize: '0.7rem'
                               }}
@@ -1312,7 +1312,7 @@ function Facilities() {
                   padding: '0.4rem 1rem',
                   borderRadius: '0.4em', border: '2px solid #FFD700',
                   background: '#F7D774', color: '#4B2E06',
-                  fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                  fontWeight: 500, cursor: 'pointer',
                   boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
@@ -1328,7 +1328,7 @@ function Facilities() {
                   padding: '0.4rem 1rem',
                   borderRadius: '0.4em', border: '2px solid #FFD700',
                   background: '#fff', color: '#4B2E06',
-                  fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                  fontWeight: 500, cursor: 'pointer',
                   boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
@@ -1362,15 +1362,15 @@ function Facilities() {
             textAlign: 'center', 
             color: '#4B2E06', 
             border: '2.5px solid #F7D774', 
-            fontFamily: 'serif',
+            
             overflow: 'auto'
           }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
+            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
             {/* Tabs */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', gap: '0.8rem' }}>
               <button
                 style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
                 onClick={() => setTab('pending')}
@@ -1379,7 +1379,7 @@ function Facilities() {
               >Pending</button>
               <button
                 style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
                 onClick={() => setTab('delivered')}
@@ -1392,7 +1392,7 @@ function Facilities() {
               <p style={{ color: '#4B2E06', fontSize: '1rem' }}>No checked-out orders yet.</p>
             ) : (
               <div style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', color: '#4B2E06', fontSize: '0.8rem' }}>
                   <thead>
                     <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
                       <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Items</th>
@@ -1423,7 +1423,7 @@ function Facilities() {
                             {order.status || 'pending'}
                             {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
                               <button
-                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
+                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
                                 onClick={() => cancelOrder(order)}
                                 onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
                                 onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
@@ -1443,7 +1443,7 @@ function Facilities() {
                 marginTop: '1rem', padding: '0.4rem 1rem',
                 borderRadius: '0.4em', border: '2px solid #FFD700',
                 background: '#fff', color: '#4B2E06',
-                fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                 fontSize: '0.8rem'
               }}
               onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}

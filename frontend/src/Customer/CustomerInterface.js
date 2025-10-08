@@ -685,7 +685,6 @@ export default function CustomerInterface() {
     border: 'none',
     color: '#FFD700',
     fontSize: '0.9rem',
-    fontFamily: 'serif',
     fontWeight: 500,
     cursor: 'pointer',
     padding: '0.3em 0.8em',
@@ -891,7 +890,7 @@ export default function CustomerInterface() {
     fontSize: '22px',
     fontWeight: 400,
     color: '#fff',
-    fontFamily: 'Cinzel, serif',
+    
     letterSpacing: 1,
     textShadow: '0 1px 4px #0006',
   };
@@ -913,13 +912,12 @@ export default function CustomerInterface() {
     }
   }, [removedOrdersMap, showPopup]);
 
-  return (
+    return (
     <div style={{ 
       background: '#fff', 
       height: '100vh', 
       padding: 0, 
       margin: 0, 
-      fontFamily: 'Cinzel, serif',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden'
@@ -1166,16 +1164,15 @@ export default function CustomerInterface() {
 						padding: '1.2rem',
 						borderRadius: '1rem', 
 						boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-						width: '90vw',
+                    width: '90vw',
 						maxWidth: '600px',
 						maxHeight: '70vh',
 						textAlign: 'center', 
 						color: '#4B2E06', 
 						border: '2.5px solid #F7D774', 
-						fontFamily: 'serif',
 						overflow: 'auto'
 					}}>
-						<h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>
+          <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>
 							Your Cart
 						</h2>
 
@@ -1183,7 +1180,7 @@ export default function CustomerInterface() {
 							<p style={{ color: '#4B2E06', fontSize: '1rem' }}>Your cart is empty.</p>
 						) : (
 							<div style={{ maxHeight: '35vh', overflowY: 'auto', marginBottom: '1rem' }}>
-								<table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#4B2E06', fontSize: '0.8rem' }}>
 									<thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
 										<tr style={{ background: '#F7D774', color: '#4B2E06' }}>
 											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
@@ -1264,7 +1261,7 @@ export default function CustomerInterface() {
 																padding: '0.2rem 0.5rem', borderRadius: '0.4em',
 																border: '2px solid #FFD700', background: '#F7D774',
 																color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-																fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
+                                                        boxShadow: '0 2px 8px #e5c16c44',
 																transition: 'background 0.2s, color 0.2s',
 																fontSize: '0.7rem'
 															}}
@@ -1289,7 +1286,7 @@ export default function CustomerInterface() {
 							</div>
 						)}
 
-						<div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '1rem' }}>
 							<button
 								onClick={async () => {
 									if (roomNumber && cart.length > 0) {
@@ -1304,12 +1301,12 @@ export default function CustomerInterface() {
 									}
 								}}
 								style={{
-									padding: '0.4rem 1rem',
-									borderRadius: '0.4em', border: '2px solid #FFD700',
-									background: '#F7D774', color: '#4B2E06',
-									fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
-									boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-									fontSize: '0.8rem'
+                  padding: '0.4rem 1rem',
+                  borderRadius: '0.4em', border: '2px solid #FFD700',
+                  background: '#F7D774', color: '#4B2E06',
+                  fontWeight: 500, cursor: 'pointer',
+                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  fontSize: '0.8rem'
 								}}
 								onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
 								onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
@@ -1319,14 +1316,14 @@ export default function CustomerInterface() {
 
 							<button
 								onClick={() => setShowCart(false)}
-								style={{
-									padding: '0.4rem 1rem',
-									borderRadius: '0.4em', border: '2px solid #FFD700',
-									background: '#fff', color: '#4B2E06',
-									fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
-									boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-									fontSize: '0.8rem'
-								}}
+                style={{
+                  padding: '0.4rem 1rem',
+                  borderRadius: '0.4em', border: '2px solid #FFD700',
+                  background: '#fff', color: '#4B2E06',
+                  fontWeight: 500, cursor: 'pointer',
+                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  fontSize: '0.8rem'
+                }}
 								onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
 								onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
 							>
@@ -1346,26 +1343,25 @@ export default function CustomerInterface() {
 					display: 'flex', alignItems: 'center',
 					justifyContent: 'center', zIndex: 1200
 				}}>
-					<div style={{
+          <div style={{
 						background: '#fff', 
 						padding: '1.2rem',
 						borderRadius: '1rem', 
 						boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-						width: '90vw',
+                        width: '90vw',
 						maxWidth: '600px',
 						maxHeight: '70vh',
 						textAlign: 'center', 
 						color: '#4B2E06', 
 						border: '2.5px solid #F7D774', 
-						fontFamily: 'serif',
 						overflow: 'auto'
 					}}>
-						<h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
+                        <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
 						{/* Tabs */}
 						<div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', gap: '0.8rem' }}>
 							<button
 								style={{
-									padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
 									fontSize: '0.8rem'
 								}}
 								onClick={() => setTab('pending')}
@@ -1373,10 +1369,10 @@ export default function CustomerInterface() {
 								onMouseOut={e => { e.target.style.background = tab === 'pending' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
 							>Pending</button>
 							<button
-								style={{
-									padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-									fontSize: '0.8rem'
-								}}
+                style={{
+                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  fontSize: '0.8rem'
+                }}
 								onClick={() => setTab('delivered')}
 								onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
 								onMouseOut={e => { e.target.style.background = tab === 'delivered' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
@@ -1387,7 +1383,7 @@ export default function CustomerInterface() {
 							<p style={{ color: '#4B2E06', fontSize: '1rem' }}>No checked-out orders yet.</p>
 						) : (
 							<div style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-								<table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', color: '#4B2E06', fontSize: '0.8rem' }}>
 									<thead>
 										<tr style={{ background: '#F7D774', color: '#4B2E06' }}>
 											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Items</th>
@@ -1414,11 +1410,11 @@ export default function CustomerInterface() {
 														</ul>
 													</td>
 													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>₱{totalPrice.toFixed(2)}</td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
+                              <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
                             {order.status || 'pending'}
                             {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
                               <button
-                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
+                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
                                 onClick={() => cancelOrder(order)}
                                 onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
                                 onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
@@ -1438,7 +1434,7 @@ export default function CustomerInterface() {
 								marginTop: '1rem', padding: '0.4rem 1rem',
 								borderRadius: '0.4em', border: '2px solid #FFD700',
 								background: '#fff', color: '#4B2E06',
-								fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                            fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
 								fontSize: '0.8rem'
 							}}
 							onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
@@ -1503,7 +1499,7 @@ export default function CustomerInterface() {
 							position: 'relative',
 						}}>
 							<img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Facilities" style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: '0.3rem', marginBottom: 12 }} />
-							<div style={{ fontSize: 20, color: '#222', fontWeight: 400, fontFamily: 'Cinzel, serif', marginTop: 8 }}>Facilities</div>
+                            <div style={{ fontSize: 20, color: '#222', fontWeight: 400, marginTop: 8 }}>Facilities</div>
 						</div>
 					</div>
 
@@ -1542,7 +1538,7 @@ export default function CustomerInterface() {
 							position: 'relative',
 						}}>
 							<img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80" alt="Food and Beverages" style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: '0.3rem', marginBottom: 12 }} />
-							<div style={{ fontSize: 18, color: '#222', fontWeight: 400, fontFamily: 'Cinzel, serif', marginTop: 8, textAlign: 'center' }}>Food & Beverage</div>
+                            <div style={{ fontSize: 18, color: '#222', fontWeight: 400, marginTop: 8, textAlign: 'center' }}>Food & Beverage</div>
 						</div>
 					</div>
 
@@ -1581,7 +1577,7 @@ export default function CustomerInterface() {
 							position: 'relative',
 						}}>
 							<img src="https://img.icons8.com/ios-filled/100/000000/contacts.png" alt="Contact Front Desk" style={{ width: 70, height: 70, objectFit: 'contain', marginBottom: 12 }} />
-							<div style={{ fontSize: 18, color: '#222', fontWeight: 400, fontFamily: 'Cinzel, serif', marginTop: 8, textAlign: 'center' }}>Contact Frontdesk</div>
+                            <div style={{ fontSize: 18, color: '#222', fontWeight: 400, marginTop: 8, textAlign: 'center' }}>Contact Frontdesk</div>
 						</div>
 					</div>
 				</div>

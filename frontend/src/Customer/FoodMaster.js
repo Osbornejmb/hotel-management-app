@@ -919,7 +919,6 @@ function FoodMaster() {
     border: 'none',
     color: '#FFD700',
     fontSize: '0.9rem',
-    fontFamily: 'serif',
     fontWeight: 500,
     cursor: 'pointer',
     padding: '0.3em 0.8em',
@@ -933,10 +932,9 @@ function FoodMaster() {
       height: '100vh',
       maxHeight: '800px',
       background: '#fff', 
-      fontFamily: 'Cinzel, serif', 
       padding: 0, 
       margin: 0,
-      overflow: 'hidden',
+        overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column'
     }}>
@@ -1048,7 +1046,11 @@ function FoodMaster() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <img src="/lumine_icon.png" alt="Lumine Logo" style={{ height: '30px', width: '30px', marginRight: '8px', objectFit: 'contain', background: 'transparent', borderRadius: 0, boxShadow: 'none' }} />
-          <span style={{ fontSize: '24px', fontWeight: 400, color: '#fff', fontFamily: 'Cinzel, serif', letterSpacing: 1 }}>Lumine</span>
+          <span style={{ fontSize: '24px', fontWeight: 400, color: '#fff', letterSpacing: 1 }}>Lumine</span>
+              
+              
+              
+              
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', position: 'relative' }}>
           <button onClick={() => setShowCart(true)} style={headerButtonStyle}
@@ -1191,36 +1193,15 @@ function FoodMaster() {
           flexShrink: 0
         }}>
           <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-start', padding: '0 1rem' }}>
-            <button
-              onClick={() => navigate('/customer/food')}
-              style={{
-                background: '#F7D774',
-                border: 'none',
-                color: '#4B2E06',
-                fontSize: '0.8rem',
-                fontFamily: 'Cinzel, serif',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                fontWeight: 500,
-                padding: '0.3em 1em',
-                borderRadius: '0.5em',
-                boxShadow: '0 2px 8px #e5c16c44',
-                transition: 'background 0.2s, color 0.2s',
-                outline: 'none',
-              }}
-              onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-              onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-            >
-              <span style={{ fontSize: '1rem', marginRight: '0.3rem' }}>&#8592;</span> Back
+            <button className="facilities-back" onClick={() => navigate('/customer/food')}>
+              <span className="facilities-back-arrow">&#8592;</span> Back
             </button>
           </div>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '0.35rem' }}>
             <span style={{ 
               background: '#F7D774', 
               color: '#4B2E06', 
               fontSize: '1.2rem', 
-              fontFamily: 'Cinzel, serif', 
               fontWeight: 400, 
               padding: '0.2em 1.2em', 
               borderRadius: '0.2em', 
@@ -1257,7 +1238,6 @@ function FoodMaster() {
               boxShadow: '0 2px 8px #FFD700', 
               outline: 'none', 
               textAlign: 'center', 
-              fontFamily: 'Cinzel, serif', 
             }}
           />
         </div>
@@ -1272,7 +1252,7 @@ function FoodMaster() {
           overflow: 'auto',
           flex: 1
         }}>
-          {foods.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).map((food, idx) => (
+              {foods.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).map((food, idx) => (
             <div key={food.name + idx} style={{
               width: '100%',
               maxWidth: '180px',
@@ -1286,7 +1266,6 @@ function FoodMaster() {
               justifyContent: 'flex-start',
               fontSize: '0.9rem',
               color: '#222',
-              fontFamily: 'Cinzel, serif',
               fontWeight: 400,
               letterSpacing: 1,
               textAlign: 'center',
@@ -1341,7 +1320,6 @@ function FoodMaster() {
               textAlign: 'center',
               color: '#4B2E06',
               border: '2.5px solid #F7D774',
-              fontFamily: 'serif',
               maxHeight: '80vh',
               display: 'flex',
               flexDirection: 'column',
@@ -1351,7 +1329,8 @@ function FoodMaster() {
               {popup.img && (
                 <img src={popup.img} alt={popup.name} style={{ width: '100%', maxWidth: '180px', height: '110px', objectFit: 'cover', borderRadius: '0.8em', marginBottom: '8px', border: '1.5px solid #F7D774', background: '#fff', display: 'block' }} />
               )}
-              <h3 style={{ color: '#4B2E06', fontWeight: 500, fontFamily: 'Cinzel, serif', fontSize: '1rem', margin: 0, marginBottom: '0.4rem' }}>{popup.name}</h3>
+              <h3 style={{ color: '#4B2E06', fontWeight: 500, fontSize: '1rem', margin: 0, marginBottom: '0.4rem' }}>{popup.name}</h3>
+              <h3 style={{ color: '#4B2E06', fontWeight: 500, fontSize: '1rem', margin: 0, marginBottom: '0.4rem' }}>{popup.name}</h3>
               <div style={{ fontSize: '0.9rem', color: '#4B2E06', fontWeight: 500, marginBottom: '0.4rem' }}>₱{popup.price ? popup.price.toFixed(2) : '0.00'}</div>
               {popup.details && (
                 <p style={{ margin: 0, marginBottom: '0.6rem', color: '#4B2E06', fontWeight: 400, fontSize: '0.8rem' }}>{popup.details}</p>
@@ -1390,7 +1369,6 @@ function FoodMaster() {
                     textAlign: 'center', 
                     fontSize: '0.9rem',
                     fontWeight: 500,
-                    fontFamily: 'Cinzel, serif'
                   }}>
                     {popup.quantity || 1}
                   </span>
@@ -1428,7 +1406,7 @@ function FoodMaster() {
                     padding: '0.4rem 1rem',
                     borderRadius: '0.4em', border: '2px solid #FFD700',
                     background: addingToCart ? '#e5c16c88' : '#F7D774', color: '#4B2E06',
-                    fontWeight: 500, fontFamily: 'serif', cursor: addingToCart ? 'not-allowed' : 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                    fontWeight: 500, cursor: addingToCart ? 'not-allowed' : 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                     fontSize: '0.8rem'
                   }}
                   onMouseOver={e => { if (!addingToCart) { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}}
@@ -1442,7 +1420,7 @@ function FoodMaster() {
                     padding: '0.4rem 1rem',
                     borderRadius: '0.4em', border: '2px solid #FFD700',
                     background: '#fff', color: '#4B2E06',
-                    fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                    fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                     fontSize: '0.8rem'
                   }}
                   onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
@@ -1475,10 +1453,9 @@ function FoodMaster() {
               textAlign: 'center', 
               color: '#4B2E06', 
               border: '2.5px solid #F7D774', 
-              fontFamily: 'serif',
               overflow: 'auto'
             }}>
-              <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>
+              <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>
                 Your Cart
               </h2>
 
@@ -1486,7 +1463,7 @@ function FoodMaster() {
                 <p style={{ color: '#4B2E06', fontSize: '1rem' }}>Your cart is empty.</p>
               ) : (
                 <div style={{ maxHeight: '35vh', overflowY: 'auto', marginBottom: '1rem' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#4B2E06', fontSize: '0.8rem' }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                       <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
                         <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
@@ -1567,7 +1544,7 @@ function FoodMaster() {
                                   padding: '0.2rem 0.5rem', borderRadius: '0.4em',
                                   border: '2px solid #FFD700', background: '#F7D774',
                                   color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                                  fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
+                                  boxShadow: '0 2px 8px #e5c16c44',
                                   transition: 'background 0.2s, color 0.2s',
                                   fontSize: '0.7rem'
                                 }}
@@ -1610,7 +1587,7 @@ function FoodMaster() {
                     padding: '0.4rem 1rem',
                     borderRadius: '0.4em', border: '2px solid #FFD700',
                     background: '#F7D774', color: '#4B2E06',
-                    fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                    fontWeight: 500, cursor: 'pointer',
                     boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                     fontSize: '0.8rem'
                   }}
@@ -1626,7 +1603,7 @@ function FoodMaster() {
                     padding: '0.4rem 1rem',
                     borderRadius: '0.4em', border: '2px solid #FFD700',
                     background: '#fff', color: '#4B2E06',
-                    fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                    fontWeight: 500, cursor: 'pointer',
                     boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                     fontSize: '0.8rem'
                   }}
@@ -1660,15 +1637,14 @@ function FoodMaster() {
               textAlign: 'center', 
               color: '#4B2E06', 
               border: '2.5px solid #F7D774', 
-              fontFamily: 'serif',
               overflow: 'auto'
             }}>
-              <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
+              <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
               {/* Tabs */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', gap: '0.8rem' }}>
                 <button
                   style={{
-                    padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                    padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                     fontSize: '0.8rem'
                   }}
                   onClick={() => setTab('pending')}
@@ -1677,7 +1653,7 @@ function FoodMaster() {
                 >Pending</button>
                 <button
                   style={{
-                    padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                    padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                     fontSize: '0.8rem'
                   }}
                   onClick={() => setTab('delivered')}
@@ -1690,7 +1666,7 @@ function FoodMaster() {
                 <p style={{ color: '#4B2E06', fontSize: '1rem' }}>No checked-out orders yet.</p>
               ) : (
                 <div style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', color: '#4B2E06', fontSize: '0.8rem' }}>
                     <thead>
                       <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
                         <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Items</th>
@@ -1721,7 +1697,7 @@ function FoodMaster() {
                               {order.status || 'pending'}
                               {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
                                 <button
-                                  style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
+                                  style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
                                   onClick={() => cancelOrder(order)}
                                   onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
                                   onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
@@ -1741,7 +1717,7 @@ function FoodMaster() {
                   marginTop: '1rem', padding: '0.4rem 1rem',
                   borderRadius: '0.4em', border: '2px solid #FFD700',
                   background: '#fff', color: '#4B2E06',
-                  fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
                 onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}

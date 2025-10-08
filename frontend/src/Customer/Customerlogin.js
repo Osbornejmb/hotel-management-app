@@ -36,7 +36,7 @@ function CustomerLogin() {
       width: '100vw',
       background: `url(${bgUrl}) center center / cover no-repeat fixed`,
       position: 'relative',
-      fontFamily: 'serif, Georgia, Times, Times New Roman, serif',
+      
       overflow: 'hidden',
     }}>
       {/* Overlay for darkening the background */}
@@ -59,7 +59,7 @@ function CustomerLogin() {
         alignItems: 'center',
       }}>
         <img src={process.env.PUBLIC_URL + '/logo192.png'} alt="Lumine Logo" style={{ height: 38, width: 38, marginRight: 10, objectFit: 'contain', filter: 'brightness(1.2)' }} />
-        <span style={{ color: '#fff', fontSize: 32, fontFamily: 'serif', letterSpacing: 1 }}>LUMINE</span>
+  <span style={{ color: '#fff', fontSize: 32, letterSpacing: 1 }}>LUMINE</span>
       </div>
       {/* Centered login content */}
       <div style={{
@@ -72,16 +72,16 @@ function CustomerLogin() {
         minHeight: '100vh',
       }}>
         <div style={{ marginTop: '2.5rem', marginBottom: '2.5rem' }}>
-          <div style={{ fontSize: '3.5rem', color: '#fff', fontFamily: 'serif', fontWeight: 400, textAlign: 'center', textShadow: '0 2px 12px #000', letterSpacing: 1 }}>
+          <div style={{ fontSize: '3.5rem', color: '#fff', fontWeight: 400, textAlign: 'center', textShadow: '0 2px 12px #000', letterSpacing: 1 }}>
             Welcome to our hotel
           </div>
-          <div style={{ fontSize: '1.5rem', color: '#fff', fontFamily: 'serif', fontWeight: 300, textAlign: 'center', marginTop: '0.5rem', textShadow: '0 2px 8px #000' }}>
+          <div style={{ fontSize: '1.5rem', color: '#fff', fontWeight: 300, textAlign: 'center', marginTop: '0.5rem', textShadow: '0 2px 8px #000' }}>
             Your comfort and assistance are just one click away!
           </div>
         </div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2.2rem' }}>
-            <label htmlFor="roomId" style={{ color: '#fff', fontSize: '1.35rem', fontFamily: 'serif', marginRight: 18, textShadow: '0 2px 8px #000' }}>
+            <label htmlFor="roomId" style={{ color: '#fff', fontSize: '1.35rem', marginRight: 18, textShadow: '0 2px 8px #000' }}>
               Enter room ID
             </label>
             <input
@@ -101,7 +101,7 @@ function CustomerLogin() {
                 color: '#222',
                 minWidth: 260,
                 boxShadow: '0 2px 8px #0004',
-                fontFamily: 'serif',
+                
               }}
             />
           </div>
@@ -111,7 +111,7 @@ function CustomerLogin() {
               background: '#bfa14a',
               color: '#fff',
               fontSize: '1.35rem',
-              fontFamily: 'serif',
+              
               border: 'none',
               borderRadius: 6,
               padding: '0.5em 2.2em',

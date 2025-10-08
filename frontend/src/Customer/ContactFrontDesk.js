@@ -843,7 +843,7 @@ function ContactFrontDesk() {
     border: 'none',
     color: '#FFD700',
     fontSize: '0.9rem',
-    fontFamily: 'serif',
+    
     fontWeight: 500,
     cursor: 'pointer',
     padding: '0.3em 0.8em',
@@ -858,7 +858,6 @@ function ContactFrontDesk() {
       margin: 0, 
       background: '#fff', 
       height: '100vh', 
-      fontFamily: 'Cinzel, serif',
       padding: '0',
       boxSizing: 'border-box',
       display: 'flex',
@@ -968,26 +967,8 @@ function ContactFrontDesk() {
         height: '45px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <img
-            src="/lumine_icon.png"
-            alt="Lumine Logo"
-            style={{
-              height: '28px',
-              width: '28px',
-              marginRight: '8px',
-              objectFit: 'contain',
-              background: 'transparent',
-              borderRadius: 0,
-              boxShadow: 'none'
-            }}
-          />
-          <span style={{
-            color: '#fff',
-            fontSize: '22px',
-            fontFamily: 'Cinzel, serif',
-            letterSpacing: 1,
-            textShadow: '0 2px 8px #BFA06A'
-          }}>Lumine</span>
+          <img src="/lumine_icon.png" alt="Lumine Logo" style={{ height: '28px', width: '28px', marginRight: '8px', objectFit: 'contain', background: 'transparent', borderRadius: 0, boxShadow: 'none' }} />
+          <span style={{ fontSize: '22px', letterSpacing: 1, color: '#fff', fontWeight: 400 }}>Lumine</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
@@ -1138,35 +1119,19 @@ function ContactFrontDesk() {
           display: 'flex', 
           justifyContent: 'flex-start', 
           alignItems: 'center',
-          marginBottom: '0.5rem',
+          marginBottom: '0.35rem',
           flexShrink: 0
         }}>
-          <button
-            onClick={() => navigate('/customer/interface')}
-            style={{
-              padding: '0.3rem 0.8rem',
-              borderRadius: '6px',
-              border: '2px solid #BFA06A',
-              background: '#F7D774',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              boxShadow: '0 2px 8px #BFA06A',
-              transition: 'background 0.2s, color 0.2s',
-              fontFamily: 'Cinzel, serif',
-              color: '#000',
-              fontSize: '12px'
-            }}
-            onMouseOver={e => { e.target.style.background = '#BFA06A'; e.target.style.color = '#000'; }}
-            onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#000'; }}
-          >Back</button>
+          <button className="facilities-back" onClick={() => navigate('/customer/interface')}>
+            <span className="facilities-back-arrow">&#8592;</span> Back
+          </button>
         </div>
 
         {/* Title */}
         <h2 style={{ 
           letterSpacing: '1px', 
-          fontFamily: 'Cinzel, serif',
-          fontSize: '1.1rem',
-          margin: '0 0 0.8rem 0',
+          fontSize: '1.15rem',
+          margin: '0 0 0.6rem 0',
           color: '#000',
           flexShrink: 0
         }}>Contact Front Desk</h2>
@@ -1182,20 +1147,17 @@ function ContactFrontDesk() {
           width: '100%',
           maxHeight: 'calc(100vh - 120px)' // Account for browser chrome
         }}>
-          <form
-            onSubmit={handleSubmit}
-            style={{
+          <form onSubmit={handleSubmit} style={{
               display: 'flex',
               flexDirection: 'column',
               textAlign: 'left',
-              width: 'min(350px, 95vw)',
+              width: 'min(420px, 95vw)',
               background: '#fff',
-              padding: '1rem',
+              padding: '1.1rem',
               borderRadius: '12px',
               boxShadow: '0 2px 16px #FFD700',
               color: '#000',
               border: '2px solid #BFA06A',
-              fontFamily: 'Cinzel, serif',
               boxSizing: 'border-box',
               maxHeight: '100%',
               overflow: 'hidden'
@@ -1207,7 +1169,7 @@ function ContactFrontDesk() {
             }}>
               <label style={{ 
                 color: '#000000ff', 
-                fontFamily: 'Cinzel, serif',
+                
                 fontSize: '12px',
                 display: 'block',
                 marginBottom: '0.3rem'
@@ -1224,7 +1186,7 @@ function ContactFrontDesk() {
                   border: '1px solid #BFA06A',
                   background: '#fff',
                   color: '#000',
-                  fontFamily: 'Cinzel, serif',
+                  
                   fontSize: '12px',
                   boxSizing: 'border-box'
                 }}
@@ -1237,7 +1199,7 @@ function ContactFrontDesk() {
             }}>
               <label style={{ 
                 color: '#000000ff', 
-                fontFamily: 'Cinzel, serif',
+                
                 fontSize: '12px',
                 display: 'block',
                 marginBottom: '0.3rem'
@@ -1254,7 +1216,7 @@ function ContactFrontDesk() {
                   border: '1px solid #BFA06A',
                   background: '#fff',
                   color: '#000',
-                  fontFamily: 'Cinzel, serif',
+                  
                   fontSize: '12px',
                   boxSizing: 'border-box'
                 }}
@@ -1268,7 +1230,7 @@ function ContactFrontDesk() {
             }}>
               <label style={{ 
                 color: '#000000ff', 
-                fontFamily: 'Cinzel, serif',
+                
                 fontSize: '12px',
                 display: 'block',
                 marginBottom: '0.3rem'
@@ -1284,7 +1246,7 @@ function ContactFrontDesk() {
                   border: '1px solid #FFD700',
                   background: '#fff',
                   color: '#000',
-                  fontFamily: 'Cinzel, serif',
+                  
                   fontSize: '12px',
                   boxSizing: 'border-box',
                   resize: 'none',
@@ -1306,7 +1268,7 @@ function ContactFrontDesk() {
                 cursor: 'pointer',
                 boxShadow: '0 2px 8px #F7D700',
                 transition: 'background 0.2s, color 0.2s',
-                fontFamily: 'Cinzel, serif',
+                
                 fontSize: '12px',
                 width: '100%',
                 flexShrink: 0
@@ -1322,7 +1284,7 @@ function ContactFrontDesk() {
           marginTop: '0.3rem', 
           color: status.includes('success') ? '#4caf50' : '#f44336', 
           textShadow: '0 1px 4px #000', 
-          fontFamily: 'Cinzel, serif',
+          
           fontSize: '11px',
           flexShrink: 0
         }}>{status}</p>}
@@ -1348,10 +1310,10 @@ function ContactFrontDesk() {
             textAlign: 'center', 
             color: '#4B2E06', 
             border: '2.5px solid #F7D774', 
-            fontFamily: 'serif',
+            
             overflow: 'auto'
           }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>
+            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>
               Your Cart
             </h2>
 
@@ -1359,7 +1321,7 @@ function ContactFrontDesk() {
               <p style={{ color: '#4B2E06', fontSize: '1rem' }}>Your cart is empty.</p>
             ) : (
               <div style={{ maxHeight: '35vh', overflowY: 'auto', marginBottom: '1rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#4B2E06', fontSize: '0.8rem' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                     <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
                       <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
@@ -1440,7 +1402,7 @@ function ContactFrontDesk() {
                                 padding: '0.2rem 0.5rem', borderRadius: '0.4em',
                                 border: '2px solid #FFD700', background: '#F7D774',
                                 color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                                fontFamily: 'serif', boxShadow: '0 2px 8px #e5c16c44',
+                                boxShadow: '0 2px 8px #e5c16c44',
                                 transition: 'background 0.2s, color 0.2s',
                                 fontSize: '0.7rem'
                               }}
@@ -1483,7 +1445,7 @@ function ContactFrontDesk() {
                   padding: '0.4rem 1rem',
                   borderRadius: '0.4em', border: '2px solid #FFD700',
                   background: '#F7D774', color: '#4B2E06',
-                  fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                  fontWeight: 500, cursor: 'pointer',
                   boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
@@ -1499,7 +1461,7 @@ function ContactFrontDesk() {
                   padding: '0.4rem 1rem',
                   borderRadius: '0.4em', border: '2px solid #FFD700',
                   background: '#fff', color: '#4B2E06',
-                  fontWeight: 500, fontFamily: 'serif', cursor: 'pointer',
+                  fontWeight: 500, cursor: 'pointer',
                   boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
@@ -1533,15 +1495,15 @@ function ContactFrontDesk() {
             textAlign: 'center', 
             color: '#4B2E06', 
             border: '2.5px solid #F7D774', 
-            fontFamily: 'serif',
+            
             overflow: 'auto'
           }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontFamily: 'serif', fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
+            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
             {/* Tabs */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', gap: '0.8rem' }}>
               <button
                 style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
                 onClick={() => setTab('pending')}
@@ -1550,7 +1512,7 @@ function ContactFrontDesk() {
               >Pending</button>
               <button
                 style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                   fontSize: '0.8rem'
                 }}
                 onClick={() => setTab('delivered')}
@@ -1563,7 +1525,7 @@ function ContactFrontDesk() {
               <p style={{ color: '#4B2E06', fontSize: '1rem' }}>No checked-out orders yet.</p>
             ) : (
               <div style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', fontFamily: 'serif', color: '#4B2E06', fontSize: '0.8rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', color: '#4B2E06', fontSize: '0.8rem' }}>
                   <thead>
                     <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
                       <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Items</th>
@@ -1594,7 +1556,7 @@ function ContactFrontDesk() {
                             {order.status || 'pending'}
                             {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
                               <button
-                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
+                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
                                 onClick={() => cancelOrder(order)}
                                 onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
                                 onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
@@ -1614,7 +1576,7 @@ function ContactFrontDesk() {
                 marginTop: '1rem', padding: '0.4rem 1rem',
                 borderRadius: '0.4em', border: '2px solid #FFD700',
                 background: '#fff', color: '#4B2E06',
-                fontWeight: 500, fontFamily: 'serif', cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
+                fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
                 fontSize: '0.8rem'
               }}
               onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
