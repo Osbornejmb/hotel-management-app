@@ -667,22 +667,6 @@ export default function CustomerInterface() {
     localStorage.setItem('seenOrderStatuses', JSON.stringify(seenOrderStatuses));
   }, [seenOrderStatuses]);
 
-  // Header style - Compact version
-  const headerStyle = {
-    width: '100%',
-    background: '#4B2E06',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '0.3rem 1rem',
-    boxSizing: 'border-box',
-    height: '45px',
-    boxShadow: '0 2px 8px #0001',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-  };
-
   // --- Product carousel (ads) state and data ---
   const carouselItems = [
     { id: 'p1', title: 'Spa Relaxation Package', price: '₱1,200', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRJTL8auN0STxRsusN1WL2T3fb8WrXq5zdKA&s' },
@@ -719,178 +703,6 @@ export default function CustomerInterface() {
     return () => window.removeEventListener('keydown', onKey);
   }, [carouselNext, carouselPrev]);
 
-  // Button styles for Cart and Status
-  const headerButtonStyle = {
-    background: 'none',
-    border: 'none',
-    color: '#FFD700',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    padding: '0.3em 0.8em',
-    borderRadius: '0.35em',
-    transition: 'background 0.2s, color 0.2s',
-    outline: 'none',
-  };
-
-  const logoutBtnStyle = {
-    background: '#F7D774',
-    color: '#4B2E06',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontFamily: 'inherit',
-    fontWeight: 500,
-    padding: '0.3rem 0.8rem',
-    boxShadow: '0 2px 8px #e5c16c44',
-    cursor: 'pointer',
-    transition: 'background 0.2s, color 0.2s',
-    outline: 'none',
-    marginLeft: '12px',
-  };
-  const bellStyle = {
-    position: 'relative',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    marginLeft: '12px',
-    marginRight: '4px',
-    outline: 'none',
-    padding: 0,
-    display: 'flex',
-    alignItems: 'center',
-  };
-  const bellIconStyle = {
-    fontSize: 22,
-    color: '#F7D700',
-    transition: 'color 0.2s',
-  };
-  const bellCounterStyle = {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    background: '#e74c3c',
-    color: '#fff',
-    borderRadius: '50%',
-    fontSize: 11,
-    fontWeight: 700,
-    minWidth: 18,
-    height: 18,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 2px 8px #e74c3c44',
-    zIndex: 2,
-  };
-  const popupStyle = {
-    position: 'absolute',
-    top: 40,
-    right: 16,
-    background: '#fff',
-    borderRadius: '8px',
-    boxShadow: '0 4px 16px #0002',
-    padding: '0.8rem 1rem',
-    minWidth: '280px',
-    maxWidth: '320px',
-    zIndex: 999,
-  };
-  const removeBtnStyle = {
-    background: '#ff6b6b',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '50%',
-    width: '16px',
-    height: '16px',
-    fontSize: '10px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: '6px',
-    flexShrink: 0,
-  };
-
-  // Toast notification styles
-  const toastContainerStyle = {
-    position: 'fixed',
-    top: '60px',
-    right: '16px',
-    zIndex: 1000,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    maxWidth: '320px',
-  };
-
-  const toastStyle = {
-    background: '#fff',
-    border: '2px solid #F7D774',
-    borderRadius: '8px',
-    padding: '12px',
-    boxShadow: '0 4px 16px #0002',
-    minWidth: '280px',
-    animation: 'slideInRight 0.3s ease-out',
-  };
-
-  const toastHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  };
-
-  const toastTitleStyle = {
-    fontWeight: 600,
-    fontSize: '14px',
-    color: '#4B2E06',
-  };
-
-  const toastCloseStyle = {
-    background: '#ff6b6b',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '50%',
-    width: '20px',
-    height: '20px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  };
-
-  // Status badge styles
-  const statusBadgeStyle = (status) => {
-    const baseStyle = {
-      padding: '2px 6px',
-      borderRadius: '12px',
-      fontSize: '10px',
-      fontWeight: '600',
-      textTransform: 'capitalize',
-      marginLeft: '6px',
-    };
-
-    switch (status) {
-      case 'pending':
-        return { ...baseStyle, background: '#fff3cd', color: '#856404', border: '1px solid #ffeaa7' };
-      case 'acknowledged':
-        return { ...baseStyle, background: '#d1ecf1', color: '#0c5460', border: '1px solid #bee5eb' };
-      case 'preparing':
-        return { ...baseStyle, background: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' };
-      case 'on the way':
-        return { ...baseStyle, background: '#cce7ff', color: '#004085', border: '1px solid #b3d7ff' };
-      case 'delivered':
-        return { ...baseStyle, background: '#d1f7c4', color: '#0f5132', border: '1px solid #c3e6cb' };
-      case 'cancelled':
-        return { ...baseStyle, background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' };
-      default:
-        return { ...baseStyle, background: '#e2e3e5', color: '#383d41', border: '1px solid #d6d8db' };
-    }
-  };
-
   const handleLogout = async () => {
     const password = window.prompt('Enter hotel admin password to log out:');
     if (!password) return;
@@ -916,23 +728,6 @@ export default function CustomerInterface() {
     } catch (err) {
       alert('Error verifying password. Please try again.');
     }
-  };
-  const logoStyle = {
-    height: '28px',
-    width: '28px',
-    marginRight: '8px',
-    objectFit: 'contain',
-    background: 'transparent',
-    borderRadius: 0,
-    boxShadow: 'none',
-  };
-  const appNameStyle = {
-    fontSize: '22px',
-    fontWeight: 400,
-    color: '#fff',
-    
-    letterSpacing: 1,
-    textShadow: '0 1px 4px #0006',
   };
 
   // Add debug info in development
@@ -976,93 +771,93 @@ export default function CustomerInterface() {
     return () => window.removeEventListener('keydown', onKey);
   }, [showCart, showStatus]);
 
-    return (
-    <div className="min-h-screen bg-gray-50" style={{ 
-      background: '#fff', 
-      height: '100vh', 
-      padding: 0, 
-      margin: 0, 
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
+  // Status badge styles with Tailwind classes
+  const getStatusBadgeClass = (status) => {
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-semibold capitalize ml-2 border";
+    switch (status) {
+      case 'pending':
+        return `${baseClasses} bg-yellow-50 text-yellow-800 border-yellow-200`;
+      case 'acknowledged':
+        return `${baseClasses} bg-blue-50 text-blue-800 border-blue-200`;
+      case 'preparing':
+        return `${baseClasses} bg-green-50 text-green-800 border-green-200`;
+      case 'on the way':
+        return `${baseClasses} bg-indigo-50 text-indigo-800 border-indigo-200`;
+      case 'delivered':
+        return `${baseClasses} bg-emerald-50 text-emerald-800 border-emerald-200`;
+      case 'cancelled':
+        return `${baseClasses} bg-red-50 text-red-800 border-red-200`;
+      default:
+        return `${baseClasses} bg-gray-50 text-gray-800 border-gray-200`;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col overflow-hidden">
       {/* Toast Notifications Container */}
       {toastNotifications.length > 0 && (
-        <div className="fixed top-16 right-4 z-50 flex flex-col gap-2 max-w-xs" style={toastContainerStyle}>
+        <div className="fixed top-20 right-4 z-50 flex flex-col gap-3 max-w-sm">
           {[...toastNotifications].reverse().map((order) => {
             const statusInfo = getStatusInfo(order.status);
             const isCancelled = order.status === 'cancelled';
             const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
             
             return (
-              <div key={order._id} style={{
-                ...toastStyle,
-                border: isCancelled ? '2px solid #f5c6cb' : '2px solid #F7D774',
-                background: isCancelled ? '#fff5f5' : '#fff'
-              }}>
-                <div style={toastHeaderStyle}>
-                  <div style={{...toastTitleStyle, color: isCancelled ? '#721c24' : '#4B2E06'}}>
+              <div 
+                key={order._id} 
+                className={`bg-white rounded-xl shadow-lg border-l-4 p-4 animate-slide-in-right ${
+                  isCancelled ? 'border-red-400 bg-red-50' : 'border-amber-400'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className={`font-semibold ${isCancelled ? 'text-red-800' : 'text-amber-800'}`}>
                     {statusInfo.emoji} {statusInfo.message}
                   </div>
                   <button 
-                    style={toastCloseStyle}
+                    className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
                     onClick={() => handleCloseToast(order._id)}
                     title="Close notification"
                   >
                     ×
                   </button>
                 </div>
-                <div style={{ fontSize: '12px', color: isCancelled ? '#a61e2a' : '#666' }}>
+                <div className={`text-sm ${isCancelled ? 'text-red-700' : 'text-gray-600'} mb-2 flex items-center`}>
                   Order #{order._id?.slice(-6) || 'N/A'} • 
-                  <span style={statusBadgeStyle(order.status)}>
+                  <span className={getStatusBadgeClass(order.status)}>
                     {order.status}
                   </span>
                 </div>
                 
                 {/* Cancellation Reason */}
                 {isCancelled && cancelledOrder?.cancellationReason && (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    padding: '8px',
-                    background: '#f8d7da',
-                    border: '1px solid #f5c6cb',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    color: '#721c24'
-                  }}>
+                  <div className="mt-2 p-2 bg-red-100 border border-red-200 rounded-lg text-xs text-red-800">
                     <strong>Cancellation Reason:</strong> {cancelledOrder.cancellationReason}
                   </div>
                 )}
                 
                 {order.items && order.items.length > 0 && (
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '4px', color: isCancelled ? '#721c24' : '#666' }}>
+                  <div className="mt-3">
+                    <div className={`text-xs font-medium mb-1 ${isCancelled ? 'text-red-700' : 'text-gray-600'}`}>
                       Items:
                     </div>
-                    <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '11px' }}>
+                    <ul className="text-xs space-y-1 pl-2">
                       {order.items.slice(0, 3).map((item, i) => (
-                        <li key={item.name + i} style={{ marginBottom: '2px' }}>
-                          {item.name} (x{item.quantity || 1})
+                        <li key={item.name + i} className="flex justify-between">
+                          <span>{item.name} (x{item.quantity || 1})</span>
+                          <span className="font-medium ml-2">
+                            ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          </span>
                         </li>
                       ))}
                       {order.items.length > 3 && (
-                        <li style={{ fontStyle: 'italic' }}>
+                        <li className="italic text-gray-500">
                           and {order.items.length - 3} more items...
                         </li>
                       )}
                     </ul>
-                    <div style={{ 
-                      borderTop: '1px solid #e0e0e0', 
-                      paddingTop: '4px', 
-                      marginTop: '6px', 
-                      fontWeight: 600, 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      fontSize: '12px',
-                      color: isCancelled ? '#721c24' : '#4B2E06'
-                    }}>
-                      <span>Total:</span>
-                      <span>
+                    <div className="border-t border-gray-200 pt-2 mt-2 font-semibold flex justify-between text-sm">
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>Total:</span>
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>
                         ₱{order.items.reduce((total, item) => 
                           total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)
                         }
@@ -1076,265 +871,488 @@ export default function CustomerInterface() {
         </div>
       )}
 
-      {/* Header with logo and app name */}
-      <div className="w-full bg-amber-900 flex items-center justify-between px-4 h-12 shadow-md sticky top-0 z-50" style={headerStyle}>
-        <div className="flex items-center space-x-3" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src='/lumine_icon.png' alt="Lumine Logo" style={logoStyle} />
-          <span className="text-white text-lg font-medium" style={appNameStyle}>Lumine</span>
-        </div>
-        <div className="flex items-center space-x-2" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-          {/* Cart and Status buttons */}
-          <button 
-            onClick={() => setShowCart(true)} 
-            className="px-3 py-1 rounded-md text-amber-200 hover:bg-amber-200 hover:text-amber-900 transition-colors"
-            style={headerButtonStyle}
-            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
-            onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
-          >
-            Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})
-          </button>
-          <button 
-            onClick={() => setShowStatus(true)} 
-            className="px-3 py-1 rounded-md text-amber-200 hover:bg-amber-200 hover:text-amber-900 transition-colors"
-            style={headerButtonStyle}
-            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
-            onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
-          >
-            Status
-          </button>
+      {/* Header */}
+      <header className="bg-gradient-to-r from-amber-900 to-amber-800 shadow-lg sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo and App Name */}
+            <div className="flex items-center space-x-3">
+              <img 
+                src='/lumine_icon.png' 
+                alt="Lumine Logo" 
+                className="h-8 w-8 object-contain" 
+              />
+              <span className="text-white text-xl font-light tracking-wider">
+                Lumine
+              </span>
+            </div>
 
-          {/* Notification Bell */}
-          <button 
-            className="notification-bell relative p-2 rounded-full hover:bg-amber-100 focus:outline-none"
-            style={{...bellStyle, ...(showPopup ? { background: '#F7D700', borderRadius: '50%', padding: '2px' } : {})}} 
-            onClick={handleBellClick} 
-            aria-label="Notifications"
-          >
-            {/* Simple bell SVG */}
-            <span style={{...bellIconStyle, ...(showPopup ? { color: '#4B2E06' } : {})}}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
+            {/* Navigation Controls */}
+            <div className="flex items-center space-x-4">
+              {/* Cart and Status buttons */}
+              <button 
+                onClick={() => setShowCart(true)} 
+                className="px-4 py-2 rounded-lg text-amber-100 hover:bg-amber-700 hover:text-white transition-all duration-200 font-medium flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})</span>
+              </button>
+              
+              <button 
+                onClick={() => setShowStatus(true)} 
+                className="px-4 py-2 rounded-lg text-amber-100 hover:bg-amber-700 hover:text-white transition-all duration-200 font-medium flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Status</span>
+              </button>
+
+             {/* Notification Bell */}
+<button 
+  className="notification-bell relative p-1 rounded hover:bg-amber-700 transition-colors focus:outline-none"
+  onClick={handleBellClick} 
+  aria-label="Notifications"
+>
+  <div className={`p-1 rounded ${showPopup ? 'bg-amber-600' : ''}`}>
+    <svg className="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+    </svg>
+  </div>
+  
+  {/* Notification Counter */}
+  {!showPopup && counter > 0 && (
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold">
+      {counter}
+    </span>
+  )}
+</button>
+
+              {/* Logout Button */}
+              <button 
+                className="ml-2 px-4 py-2 rounded-lg bg-amber-200 text-amber-900 hover:bg-amber-300 shadow-md transition-all duration-200 font-medium flex items-center space-x-2"
+                onClick={handleLogout}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Notification Popup */}
+      {showPopup && (
+        <div className="notification-popup absolute top-20 right-4 bg-white rounded-2xl shadow-2xl p-6 min-w-80 max-w-sm z-50 border border-amber-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-amber-900">Order Updates</h3>
+            <span className="text-sm text-gray-500 bg-amber-100 px-2 py-1 rounded-full">
+              {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
             </span>
-            {/* Show counter for new orders - only when popup is closed */}
-            {!showPopup && counter > 0 && <span style={bellCounterStyle}>{counter}</span>}
-          </button>
-          <button className="ml-3 px-3 py-1 rounded-md bg-amber-200 text-amber-900 hover:bg-amber-100 shadow-sm" style={logoutBtnStyle} onClick={handleLogout} onMouseOver={e => { e.target.style.background = '#ffe9a7'; }} onMouseOut={e => { e.target.style.background = '#F7D774'; }}>
-            Log Out
-          </button>
-          {/* Notification Popup */}
-          {showPopup && (
-            <div className="notification-popup bg-white rounded-lg shadow-lg p-3" style={popupStyle}>
-              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Order Updates</span>
-                <span style={{ fontSize: 12, color: '#666', fontWeight: 400 }}>
-                  {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-                {visibleOrders.length === 0 ? (
-                <div className="text-sm text-gray-500">No order updates.</div>
-              ) : (
-                <div className="max-h-52 overflow-y-auto">
-                  {visibleOrders.map((order) => {
-                    const statusInfo = getStatusInfo(order.status);
-                    const isCancelled = order.status === 'cancelled';
-                    const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
-                    const orderId = order._id || order.originalOrderId;
+          </div>
+          
+          {visibleOrders.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <svg className="w-12 h-12 mx-auto text-amber-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>No order updates</p>
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto space-y-3">
+              {visibleOrders.map((order) => {
+                const statusInfo = getStatusInfo(order.status);
+                const isCancelled = order.status === 'cancelled';
+                const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
+                const orderId = order._id || order.originalOrderId;
+                
+                return (
+                  <div 
+                    key={orderId} 
+                    className={`border rounded-xl p-4 transition-all duration-200 ${
+                      isCancelled 
+                        ? 'border-red-200 bg-red-50' 
+                        : 'border-amber-200 bg-amber-50 hover:bg-amber-100'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="font-medium text-sm text-amber-900">
+                        Order #{orderId?.slice(-6) || 'N/A'}
+                      </div>
+                      <button 
+                        className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                        onClick={() => handleRemoveNotification(orderId)}
+                        title="Remove notification"
+                      >
+                        ×
+                      </button>
+                    </div>
                     
-                    return (
-                      <div key={orderId} style={{ 
-                        border: '1px solid #f0f0f0', 
-                        borderRadius: '6px', 
-                        padding: '8px', 
-                        marginBottom: '6px',
-                        background: isCancelled ? '#fff5f5' : '#fff9e6'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                          <div style={{ fontWeight: 500, fontSize: '12px' }}>
-                            Order #{orderId?.slice(-6) || 'N/A'}
-                          </div>
-                          <button 
-                            style={removeBtnStyle}
-                            onClick={() => handleRemoveNotification(orderId)}
-                            title="Remove notification"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <div style={{ fontSize: '11px', marginBottom: '6px', display: 'flex', alignItems: 'center' }}>
-                          <span>{statusInfo.emoji} {statusInfo.message}</span>
-                          <span style={statusBadgeStyle(order.status)}>{order.status}</span>
-                        </div>
-                        
-                        {/* Cancellation Reason */}
-                        {isCancelled && cancelledOrder?.cancellationReason && (
-                          <div style={{ 
-                            marginBottom: '6px', 
-                            padding: '6px',
-                            background: '#f8d7da',
-                            border: '1px solid #f5c6cb',
-                            borderRadius: '4px',
-                            fontSize: '10px',
-                            color: '#721c24'
-                          }}>
-                            <strong>Reason:</strong> {cancelledOrder.cancellationReason}
-                          </div>
-                        )}
-                        
-                        <ul style={{ paddingLeft: 14, margin: 0, fontSize: '11px' }}>
-                          {order.items && order.items.length > 0 ? order.items.map((item, i) => (
-                            <li key={item.name + i} style={{ marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>
-                                {item.name} (x{item.quantity || 1})
-                              </span>
-                              <span style={{ fontWeight: 500, marginLeft: '0.5rem' }}>
-                                ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                              </span>
-                            </li>
-                          )) : (
-                            <li style={{ marginBottom: 4 }}>
-                              No items listed
-                            </li>
-                          )}
-                        </ul>
-                        <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '4px', marginTop: '4px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                          <span>Order Total:</span>
-                          <span>
-                            ₱{order.items ? order.items.reduce((total, item) => 
-                              total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) : '0.00'
-                            }
+                    <div className="flex items-center mb-3">
+                      <span className="text-lg mr-2">{statusInfo.emoji}</span>
+                      <span className="text-sm font-medium">{statusInfo.message}</span>
+                      <span className={getStatusBadgeClass(order.status)}>
+                        {order.status}
+                      </span>
+                    </div>
+                    
+                    {/* Cancellation Reason */}
+                    {isCancelled && cancelledOrder?.cancellationReason && (
+                      <div className="mb-3 p-2 bg-red-100 border border-red-200 rounded-lg text-xs text-red-800">
+                        <strong>Reason:</strong> {cancelledOrder.cancellationReason}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      {order.items && order.items.length > 0 ? order.items.map((item, i) => (
+                        <div key={item.name + i} className="flex justify-between items-center text-sm">
+                          <span className="text-amber-800">
+                            {item.name} (x{item.quantity || 1})
+                          </span>
+                          <span className="font-semibold text-amber-900">
+                            ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                           </span>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      )) : (
+                        <div className="text-sm text-gray-500">No items listed</div>
+                      )}
+                    </div>
+                    
+                    <div className="border-t border-amber-200 pt-2 mt-3 flex justify-between font-semibold text-sm">
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>Order Total:</span>
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>
+                        ₱{order.items ? order.items.reduce((total, item) => 
+                          total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) : '0.00'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* Product Carousel (Ads) - placed directly below the header */}
-      <div className="mx-auto w-full max-w-4xl px-4 mt-3" style={{ pointerEvents: 'auto' }}>
-        <div ref={carouselContainerRef} onMouseEnter={() => { carouselPausedRef.current = true; }} onMouseLeave={() => { carouselPausedRef.current = false; }} className="relative bg-white rounded-lg shadow-sm overflow-hidden" style={{ border: '1px solid #fff3cd' }}>
-          <div className="flex items-center justify-between px-4 py-2 border-b" style={{ background: '#fff9e6' }}>
-            <div className="text-sm font-semibold text-amber-800">Recommended for you</div>
-            <div className="text-xs text-gray-600">Offers & hotel extras</div>
+      {/* Product Carousel */}
+      <div className="container mx-auto px-4 mt-6">
+        <div 
+          ref={carouselContainerRef} 
+          onMouseEnter={() => { carouselPausedRef.current = true; }} 
+          onMouseLeave={() => { carouselPausedRef.current = false; }} 
+          className="bg-white rounded-2xl shadow-lg overflow-hidden border border-amber-200"
+        >
+          <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-amber-100 to-orange-100 border-b border-amber-200">
+            <div className="text-lg font-semibold text-amber-900">Recommended for you</div>
+            <div className="text-sm text-amber-700 bg-amber-200 px-3 py-1 rounded-full">Offers & hotel extras</div>
           </div>
-          <div className="flex items-center gap-3 p-3">
-            <button aria-label="previous" onClick={carouselPrev} className="p-2 rounded-md hover:bg-amber-100 text-amber-800" style={{ background: 'transparent', border: 'none' }}>
-              ‹
+          
+          <div className="flex items-center gap-4 p-6">
+            <button 
+              aria-label="previous" 
+              onClick={carouselPrev} 
+              className="p-3 rounded-full hover:bg-amber-100 text-amber-700 transition-colors duration-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
+            
             <div className="flex-1 overflow-hidden">
-              <div className="flex transition-transform duration-500" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
+              <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
                 {carouselItems.map(item => (
-                  <div key={item.id} className="flex-shrink-0 w-full" style={{ minWidth: '100%' }}>
-                    <div className="flex items-center gap-3 p-2">
-                      <img src={item.img} alt={item.title} className="w-32 h-20 object-cover rounded-md shadow-sm" />
+                  <div key={item.id} className="flex-shrink-0 w-full">
+                    <div className="flex items-center gap-6 p-4">
+                      <img 
+                        src={item.img} 
+                        alt={item.title} 
+                        className="w-40 h-28 object-cover rounded-xl shadow-md" 
+                      />
                       <div className="flex-1">
-                        <div className="text-sm font-semibold text-amber-900">{item.title}</div>
-                        <div className="text-xs text-gray-600 mt-1">{item.price}</div>
-                        <div className="mt-2">
-                          <button onClick={() => alert(item.title + ' — More info coming soon')} className="px-3 py-1 rounded-md text-sm shadow-sm" style={{ background: '#F7D774', border: '2px solid #FFD700', color: '#4B2E06' }}>View</button>
+                        <div className="text-xl font-bold text-amber-900 mb-2">{item.title}</div>
+                        <div className="text-2xl font-bold text-orange-600 mb-4">{item.price}</div>
+                        <div>
+                          <button 
+                            onClick={() => alert(item.title + ' — More info coming soon')} 
+                            className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 transform hover:scale-105"
+                          >
+                            View Details
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              {/* Dots */}
-              <div className="flex items-center justify-center gap-2 mt-3">
+              
+              {/* Dots Indicator */}
+              <div className="flex items-center justify-center gap-3 mt-6">
                 {carouselItems.map((_, idx) => (
-                  <button key={idx} onClick={() => setCarouselIndex(idx)} aria-label={`Go to slide ${idx + 1}`} className={`w-2 h-2 rounded-full ${idx === carouselIndex ? 'bg-amber-900' : 'bg-amber-200'}`}></button>
+                  <button 
+                    key={idx} 
+                    onClick={() => setCarouselIndex(idx)} 
+                    aria-label={`Go to slide ${idx + 1}`} 
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      idx === carouselIndex 
+                        ? 'bg-amber-600 w-8' 
+                        : 'bg-amber-300 hover:bg-amber-400'
+                    }`}
+                  />
                 ))}
               </div>
             </div>
-            <button aria-label="next" onClick={carouselNext} className="p-2 rounded-md hover:bg-amber-100 text-amber-800" style={{ background: 'transparent', border: 'none' }}>
-              ›
+            
+            <button 
+              aria-label="next" 
+              onClick={carouselNext} 
+              className="p-3 rounded-full hover:bg-amber-100 text-amber-700 transition-colors duration-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
         </div>
       </div>
-	  
+
       {/* Cart Popup */}
       {showCart && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 bg-amber-900/10 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-11/12 max-w-lg max-h-[70vh] overflow-auto border-2 border-amber-200" style={{ color: '#4B2E06' }}>
-            <h2 className="text-2xl font-medium text-amber-900 mb-4">Your Cart</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Your Cart
+              </h2>
+            </div>
 
-            {cart.length === 0 ? (
-              <p className="text-amber-800">Your cart is empty.</p>
-            ) : (
-              <div className="max-h-[35vh] overflow-y-auto mb-4">
-                <table className="w-full text-sm text-amber-900">
-                  <thead className="sticky top-0 bg-amber-100">
-                    <tr>
-                      <th className="py-2 px-2 text-left">Item</th>
-                      <th className="py-2 px-2">Price</th>
-                      <th className="py-2 px-2">Qty</th>
-                      <th className="py-2 px-2">Total</th>
-                      <th className="py-2 px-2">Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.map((item, idx) => {
-                      const itemTotal = (item.price || 0) * (item.quantity || 1);
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              {cart.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p className="text-lg">Your cart is empty</p>
+                  <p className="text-sm mt-2">Add some items from our menu</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item, idx) => {
+                    const itemTotal = (item.price || 0) * (item.quantity || 1);
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-200">
+                        <div className="flex items-center space-x-4 flex-1">
+                          <img src={item.img} alt={item.name} className="w-16 h-16 rounded-lg object-cover border border-amber-300" />
+                          <div className="flex-1">
+                            <div className="font-semibold text-amber-900">{item.name}</div>
+                            <div className="text-amber-700">₱{item.price ? item.price.toFixed(2) : '0.00'}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-3">
+                            <button 
+                              onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)} 
+                              className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                            >
+                              −
+                            </button>
+                            <span className="min-w-[40px] text-center font-semibold text-amber-900">
+                              {item.quantity || 1}
+                            </span>
+                            <button 
+                              onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)} 
+                              className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+                          
+                          <div className="text-right min-w-[100px]">
+                            <div className="font-bold text-amber-900">₱{itemTotal.toFixed(2)}</div>
+                          </div>
+                          
+                          <button 
+                            onClick={() => removeFromCart(idx)} 
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove item"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  <div className="border-t border-amber-200 pt-4 mt-6">
+                    <div className="flex justify-between items-center text-lg font-bold text-amber-900">
+                      <span>Total:</span>
+                      <span>₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-amber-50 border-t border-amber-200">
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={async () => {
+                    if (roomNumber && cart.length > 0) {
+                      try {
+                        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+                        setCart([]);
+                        alert('Checkout successful! Your order has been sent to the restaurant.');
+                        setShowCart(false);
+                      } catch {
+                        alert('Checkout failed. Please try again.');
+                      }
+                    }
+                  }}
+                  disabled={cart.length === 0}
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Checkout</span>
+                </button>
+
+                <button
+                  ref={cartCloseBtnRef}
+                  onClick={() => setShowCart(false)}
+                  className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Popup */}
+      {showStatus && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Order Status
+              </h2>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex justify-center p-4 bg-amber-50 border-b border-amber-200">
+              <div className="flex space-x-2 bg-white p-1 rounded-xl border border-amber-200">
+                <button
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    tab === 'pending' 
+                      ? 'bg-amber-500 text-white shadow-md' 
+                      : 'text-amber-700 hover:bg-amber-100'
+                  }`}
+                  onClick={() => setTab('pending')}
+                >
+                  Pending Orders
+                </button>
+                <button
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    tab === 'delivered' 
+                      ? 'bg-amber-500 text-white shadow-md' 
+                      : 'text-amber-700 hover:bg-amber-100'
+                  }`}
+                  onClick={() => setTab('delivered')}
+                >
+                  Order History
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              {orders.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-lg">No orders yet</p>
+                  <p className="text-sm mt-2">Your order history will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orders
+                    .filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered')))
+                    .map((order, idx) => {
+                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
                       return (
-                        <tr key={idx} className="border-b border-amber-50">
-                          <td className="py-2 px-2 text-left flex items-center gap-2">
-                            <img src={item.img} alt={item.name} className="w-6 h-6 rounded-md border border-amber-200" />
-                            <span>{item.name}</span>
-                          </td>
-                          <td className="py-2 px-2">₱{item.price ? item.price.toFixed(2) : '0.00'}</td>
-                          <td className="py-2 px-2">
-                            <div className="flex items-center gap-2 justify-center">
-                              <button onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)} className="w-6 h-6 rounded-full border border-amber-200 bg-amber-100">-</button>
-                              <span className="min-w-[20px] text-center">{item.quantity || 1}</span>
-                              <button onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)} className="w-6 h-6 rounded-full border border-amber-200 bg-amber-100">+</button>
+                        <div key={order._id || idx} className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <div className="font-semibold text-amber-900">Order #{order._id?.slice(-6) || 'N/A'}</div>
+                              <div className="text-sm text-amber-700">Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString()}</div>
                             </div>
-                          </td>
-                          <td className="py-2 px-2 font-semibold">₱{itemTotal.toFixed(2)}</td>
-                          <td className="py-2 px-2">
-                            <button onClick={() => removeFromCart(idx)} className="px-2 py-1 rounded bg-red-500 text-white text-xs">Remove</button>
-                          </td>
-                        </tr>
+                            <div className="flex items-center space-x-3">
+                              <span className={getStatusBadgeClass(order.status)}>
+                                {order.status || 'pending'}
+                              </span>
+                              {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
+                                <button 
+                                  className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                                  onClick={() => cancelOrder(order)}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {order.items.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100">
+                                <div className="flex items-center space-x-3">
+                                  {item.img && (
+                                    <img src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-amber-200" />
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-amber-900">{item.name}</div>
+                                    <div className="text-sm text-amber-700">Quantity: {item.quantity || 1}</div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-amber-900">
+                                    ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="border-t border-amber-200 pt-3 mt-3 flex justify-between items-center">
+                            <div className="font-semibold text-amber-900">Order Total</div>
+                            <div className="text-xl font-bold text-amber-900">₱{totalPrice.toFixed(2)}</div>
+                          </div>
+                        </div>
                       );
                     })}
-                    <tr className="bg-amber-100 font-semibold">
-                      <td colSpan={3} className="py-2 px-2 text-right">Total:</td>
-                      <td className="py-2 px-2">₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}</td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
 
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={async () => {
-                  if (roomNumber && cart.length > 0) {
-                    try {
-                      await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-                      setCart([]);
-                      alert('Checkout successful! Your order has been sent to the restaurant.');
-                      setShowCart(false);
-                    } catch {
-                      alert('Checkout failed. Please try again.');
-                    }
-                  }
-                }}
-                className="px-4 py-2 rounded-md bg-amber-200 border-2 border-amber-300 text-amber-900 font-medium shadow-sm"
-              >
-                Checkout
-              </button>
-
-              <button
-                ref={cartCloseBtnRef}
-                onClick={() => setShowCart(false)}
-                className="px-4 py-2 rounded-md border-2 border-amber-200 bg-white text-amber-900 font-medium"
+            <div className="p-6 bg-amber-50 border-t border-amber-200 text-center">
+              <button 
+                ref={statusCloseBtnRef} 
+                className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                onClick={() => setShowStatus(false)}
               >
                 Close
               </button>
@@ -1343,118 +1361,99 @@ export default function CustomerInterface() {
         </div>
       )}
 
-      {/* Status Popup with tabs for Pending and Delivered */}
-      {showStatus && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 bg-amber-900/10 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-11/12 max-w-lg max-h-[70vh] overflow-auto border-2 border-amber-200">
-            <h2 className="text-2xl font-medium text-amber-900 mb-4">Order Status</h2>
-            {/* Tabs */}
-            <div className="flex justify-center mb-4 gap-3">
-              <button
-                className={`px-4 py-2 rounded-md font-medium ${tab === 'pending' ? 'bg-amber-200 border-2 border-amber-300 text-amber-900' : 'bg-white border-2 border-amber-200 text-amber-800'}`}
-                onClick={() => setTab('pending')}
-              >Pending</button>
-              <button
-                className={`px-4 py-2 rounded-md font-medium ${tab === 'delivered' ? 'bg-amber-200 border-2 border-amber-300 text-amber-900' : 'bg-white border-2 border-amber-200 text-amber-800'}`}
-                onClick={() => setTab('delivered')}
-              >Delivered</button>
-            </div>
-            {/* Orders Table, scrollable if too many items */}
-            {orders.length === 0 ? (
-              <p className="text-amber-800">No checked-out orders yet.</p>
-            ) : (
-              <div className="max-h-[35vh] overflow-y-auto">
-                <table className="w-full text-sm text-amber-900">
-                  <thead className="bg-amber-100 sticky top-0">
-                    <tr>
-                      <th className="py-2 px-2 text-left">Items</th>
-                      <th className="py-2 px-2">Total Price</th>
-                      <th className="py-2 px-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered'))).map((order, idx) => {
-                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                      return (
-                        <tr key={order._id || idx} className="border-b border-amber-50">
-                          <td className="py-2 px-2">
-                            <ul className="list-none p-0 m-0">
-                              {order.items.map((item, i) => (
-                                <li key={i} className="flex items-center mb-2">
-                                  {item.img && (
-                                    <img src={item.img} alt={item.name} className="w-6 h-6 rounded-md mr-2 border border-amber-200" />
-                                  )}
-                                  <span className="font-medium">{item.name}</span>
-                                  <span className="ml-2 text-sm text-amber-800">(x{item.quantity || 1})</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </td>
-                          <td className="py-2 px-2 font-semibold">₱{totalPrice.toFixed(2)}</td>
-                          <td className="py-2 px-2">
-                            <span className="capitalize">{order.status || 'pending'}</span>
-                            {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
-                              <button className="ml-2 px-2 py-1 rounded bg-amber-200 border-2 border-amber-300" onClick={() => cancelOrder(order)}>Cancel</button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+      {/* Main Content Area */}
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-amber-900 mb-4">Welcome to Lumine Hotel</h1>
+          <p className="text-xl text-amber-700 max-w-2xl mx-auto">
+            Discover our premium services and amenities designed to make your stay unforgettable
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Facilities Card */}
+          <div 
+            onClick={() => handleNavigate('/customer/facilities')} 
+            className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+          >
+            <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-1 shadow-xl">
+              <div className="bg-white rounded-xl p-8 text-center group-hover:bg-amber-50 transition-colors duration-300 h-full flex flex-col items-center justify-center">
+                <div className="w-20 h-20 bg-amber-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-amber-200 transition-colors">
+                  <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-amber-900 mb-3">Facilities</h3>
+                <p className="text-amber-700 mb-4">Explore our premium hotel amenities and services</p>
+                <div className="px-6 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold group-hover:bg-amber-200 transition-colors">
+                  View Facilities
+                </div>
               </div>
-            )}
-            <div className="mt-4 text-center">
-              <button ref={statusCloseBtnRef} className="px-4 py-2 rounded-md border-2 border-amber-200 bg-white text-amber-900" onClick={() => setShowStatus(false)}>Close</button>
+            </div>
+          </div>
+
+          {/* Food & Beverage Card */}
+          <div 
+            onClick={() => handleNavigate('/customer/food')} 
+            className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+          >
+            <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-1 shadow-xl">
+              <div className="bg-white rounded-xl p-8 text-center group-hover:bg-amber-50 transition-colors duration-300 h-full flex flex-col items-center justify-center">
+                <div className="w-20 h-20 bg-amber-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-amber-200 transition-colors">
+                  <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-amber-900 mb-3">Food & Beverage</h3>
+                <p className="text-amber-700 mb-4">Order delicious meals and drinks to your room</p>
+                <div className="px-6 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold group-hover:bg-amber-200 transition-colors">
+                  Order Now
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Front Desk Card */}
+          <div 
+            onClick={() => handleNavigate('/customer/contact')} 
+            className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+          >
+            <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-1 shadow-xl">
+              <div className="bg-white rounded-xl p-8 text-center group-hover:bg-amber-50 transition-colors duration-300 h-full flex flex-col items-center justify-center">
+                <div className="w-20 h-20 bg-amber-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-amber-200 transition-colors">
+                  <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-amber-900 mb-3">Contact Front Desk</h3>
+                <p className="text-amber-700 mb-4">Get assistance from our friendly staff</p>
+                <div className="px-6 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold group-hover:bg-amber-200 transition-colors">
+                  Contact Us
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </main>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col items-center p-4 overflow-hidden">
-        <div className="flex flex-wrap justify-center items-center gap-6">
-					{/* Facilities Card */}
-          <div onClick={() => handleNavigate('/customer/facilities')} onMouseEnter={() => {}} onMouseLeave={() => {}} className="w-60 h-60 rounded-2xl bg-amber-100 shadow-md hover:shadow-xl transform transition-transform duration-200 flex items-center justify-center cursor-pointer">
-            <div className="bg-white rounded-xl shadow-inner w-44 h-44 flex flex-col items-center justify-center">
-              <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Facilities" className="w-24 h-16 object-cover rounded-md mb-3" />
-              <div className="text-lg text-amber-900">Facilities</div>
-            </div>
-          </div>
-
-					{/* Food & Beverage Card */}
-          <div onClick={() => handleNavigate('/customer/food')} onMouseEnter={() => {}} onMouseLeave={() => {}} className="w-60 h-60 rounded-2xl bg-amber-100 shadow-md hover:shadow-xl transform transition-transform duration-200 flex items-center justify-center cursor-pointer">
-            <div className="bg-white rounded-xl shadow-inner w-44 h-44 flex flex-col items-center justify-center">
-              <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80" alt="Food and Beverages" className="w-24 h-16 object-cover rounded-md mb-3" />
-              <div className="text-lg text-amber-900 text-center">Food & Beverage</div>
-            </div>
-          </div>
-
-					{/* Contact Front Desk Card */}
-          <div onClick={() => handleNavigate('/customer/contact')} onMouseEnter={() => {}} onMouseLeave={() => {}} className="w-60 h-60 rounded-2xl bg-amber-100 shadow-md hover:shadow-xl transform transition-transform duration-200 flex items-center justify-center cursor-pointer">
-            <div className="bg-white rounded-xl shadow-inner w-44 h-44 flex flex-col items-center justify-center">
-              <img src="https://img.icons8.com/ios-filled/100/000000/contacts.png" alt="Contact Front Desk" className="w-16 h-16 mb-3" />
-              <div className="text-lg text-amber-900 text-center">Contact Frontdesk</div>
-            </div>
-          </div>
-				</div>
-			</div>
-
-			{/* Add CSS for slide-in animation */}
-			<style>
-				{`
-					@keyframes slideInRight {
-						from {
-							transform: translateX(100%);
-							opacity: 0;
-						}
-						to {
-							transform: translateX(0);
-							opacity: 1;
-						}
-					}
-				`}
-			</style>
-		</div>
-	);
+      {/* Add CSS for animations */}
+      <style>
+        {`
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out;
+          }
+        `}
+      </style>
+    </div>
+  );
 }
