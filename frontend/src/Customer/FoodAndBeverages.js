@@ -63,7 +63,7 @@ function FoodAndBeverages() {
   const roomNumber = localStorage.getItem('customerRoomNumber');
 
   // COMPREHENSIVE NOTIFICATION SYSTEM FROM CUSTOMERINTERFACE
-  const [showPopup, setShowPopup] = useState(() => {
+  const [showPopupNotification, setShowPopupNotification] = useState(() => {
     const stored = localStorage.getItem('customerShowPopup');
     return stored ? JSON.parse(stored) : false;
   });
@@ -519,7 +519,7 @@ function FoodAndBeverages() {
 
   // Handle bell click - toggle popup and persist state
   const handleBellClick = () => {
-    setShowPopup(prev => {
+    setShowPopupNotification(prev => {
       const opening = !prev;
       localStorage.setItem('customerShowPopup', JSON.stringify(opening));
       if (opening) {
@@ -650,7 +650,7 @@ function FoodAndBeverages() {
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showPopup) {
+      if (showPopupNotification) {
         const popup = document.querySelector('.notification-popup');
         const bell = document.querySelector('.notification-bell');
         if (popup && bell && 
@@ -668,7 +668,7 @@ function FoodAndBeverages() {
           setCounter(0);
           setToastNotifications([]);
           localStorage.setItem('customerToastNotifications', JSON.stringify([]));
-          setShowPopup(false);
+          setShowPopupNotification(false);
           localStorage.setItem('customerShowPopup', JSON.stringify(false));
         }
       }
@@ -677,7 +677,7 @@ function FoodAndBeverages() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showPopup, seenOrderStatuses, visibleOrders]);
+  }, [showPopupNotification, seenOrderStatuses, visibleOrders]);
 
   // Persist states to localStorage
   useEffect(() => {
@@ -692,252 +692,119 @@ function FoodAndBeverages() {
     localStorage.setItem('seenOrderStatuses', JSON.stringify(seenOrderStatuses));
   }, [seenOrderStatuses]);
 
-  // NOTIFICATION STYLES FROM CUSTOMERINTERFACE
-  const bellStyle = {
-    position: 'relative',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    marginLeft: '12px',
-    marginRight: '4px',
-    outline: 'none',
-    padding: 0,
-    display: 'flex',
-    alignItems: 'center',
-  };
-  const bellIconStyle = {
-    fontSize: 22,
-    color: '#F7D700',
-    transition: 'color 0.2s',
-  };
-  const bellCounterStyle = {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    background: '#e74c3c',
-    color: '#fff',
-    borderRadius: '50%',
-    fontSize: 11,
-    fontWeight: 700,
-    minWidth: 18,
-    height: 18,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 2px 8px #e74c3c44',
-    zIndex: 2,
-  };
-  const popupStyle = {
-    position: 'absolute',
-    top: 40,
-    right: 16,
-    background: '#fff',
-    borderRadius: '8px',
-    boxShadow: '0 4px 16px #0002',
-    padding: '0.8rem 1rem',
-    minWidth: '280px',
-    maxWidth: '320px',
-    zIndex: 999,
-  };
-  const removeBtnStyle = {
-    background: '#ff6b6b',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '50%',
-    width: '16px',
-    height: '16px',
-    fontSize: '10px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: '6px',
-    flexShrink: 0,
-  };
-
-  // Status badge styles
-  const statusBadgeStyle = (status) => {
-    const baseStyle = {
-      padding: '2px 6px',
-      borderRadius: '12px',
-      fontSize: '10px',
-      fontWeight: '600',
-      textTransform: 'capitalize',
-      marginLeft: '6px',
-    };
-
+  // Status badge styles with Tailwind classes
+  const getStatusBadgeClass = (status) => {
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-semibold capitalize ml-2 border";
     switch (status) {
       case 'pending':
-        return { ...baseStyle, background: '#fff3cd', color: '#856404', border: '1px solid #ffeaa7' };
+        return `${baseClasses} bg-yellow-50 text-yellow-800 border-yellow-200`;
       case 'acknowledged':
-        return { ...baseStyle, background: '#d1ecf1', color: '#0c5460', border: '1px solid #bee5eb' };
+        return `${baseClasses} bg-blue-50 text-blue-800 border-blue-200`;
       case 'preparing':
-        return { ...baseStyle, background: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' };
+        return `${baseClasses} bg-green-50 text-green-800 border-green-200`;
       case 'on the way':
-        return { ...baseStyle, background: '#cce7ff', color: '#004085', border: '1px solid #b3d7ff' };
+        return `${baseClasses} bg-indigo-50 text-indigo-800 border-indigo-200`;
       case 'delivered':
-        return { ...baseStyle, background: '#d1f7c4', color: '#0f5132', border: '1px solid #c3e6cb' };
+        return `${baseClasses} bg-emerald-50 text-emerald-800 border-emerald-200`;
       case 'cancelled':
-        return { ...baseStyle, background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' };
+        return `${baseClasses} bg-red-50 text-red-800 border-red-200`;
       default:
-        return { ...baseStyle, background: '#e2e3e5', color: '#383d41', border: '1px solid #d6d8db' };
+        return `${baseClasses} bg-gray-50 text-gray-800 border-gray-200`;
     }
   };
 
-  // Toast notification styles
-  const toastContainerStyle = {
-    position: 'fixed',
-    top: '60px',
-    right: '16px',
-    zIndex: 1000,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    maxWidth: '320px',
-  };
-
-  const toastStyle = {
-    background: '#fff',
-    border: '2px solid #F7D774',
-    borderRadius: '8px',
-    padding: '12px',
-    boxShadow: '0 4px 16px #0002',
-    minWidth: '280px',
-    animation: 'slideInRight 0.3s ease-out',
-  };
-
-  const toastHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  };
-
-  const toastTitleStyle = {
-    fontWeight: 600,
-    fontSize: '14px',
-    color: '#4B2E06',
-  };
-
-  const toastCloseStyle = {
-    background: '#ff6b6b',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '50%',
-    width: '20px',
-    height: '20px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  };
-
-  // Header button styles
-  const headerButtonStyle = {
-    background: 'none',
-    border: 'none',
-    color: '#FFD700',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    padding: '0.3em 0.8em',
-    borderRadius: '0.35em',
-    transition: 'background 0.2s, color 0.2s',
-    outline: 'none',
+  const handleLogout = async () => {
+    const password = window.prompt('Enter hotel admin password to log out:');
+    if (!password) return;
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/users/verify-hoteladmin-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        localStorage.removeItem('removedOrdersMap');
+        localStorage.removeItem('seenOrderStatuses');
+        localStorage.removeItem('customerToastNotifications');
+        localStorage.removeItem('customerShowPopup');
+        localStorage.removeItem('playedNotifications');
+        localStorage.clear();
+        navigate('/customer/login', { replace: true });
+      } else {
+        alert('Invalid password. Logout cancelled.');
+      }
+    } catch (err) {
+      alert('Error verifying password. Please try again.');
+    }
   };
 
   return (
-    <div style={{ 
-      height: '100vh',
-      maxHeight: '800px',
-      background: '#fff', 
-      padding: 0, 
-      margin: 0,
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col overflow-hidden">
       {/* Toast Notifications Container */}
       {toastNotifications.length > 0 && (
-        <div style={toastContainerStyle}>
+        <div className="fixed top-20 right-4 z-50 flex flex-col gap-3 max-w-sm">
           {[...toastNotifications].reverse().map((order) => {
             const statusInfo = getStatusInfo(order.status);
             const isCancelled = order.status === 'cancelled';
             const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
             
             return (
-              <div key={order._id} style={{
-                ...toastStyle,
-                border: isCancelled ? '2px solid #f5c6cb' : '2px solid #F7D774',
-                background: isCancelled ? '#fff5f5' : '#fff'
-              }}>
-                <div style={toastHeaderStyle}>
-                  <div style={{...toastTitleStyle, color: isCancelled ? '#721c24' : '#4B2E06'}}>
+              <div 
+                key={order._id} 
+                className={`bg-white rounded-xl shadow-lg border-l-4 p-4 animate-slide-in-right ${
+                  isCancelled ? 'border-red-400 bg-red-50' : 'border-amber-400'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className={`font-semibold ${isCancelled ? 'text-red-800' : 'text-amber-800'}`}>
                     {statusInfo.emoji} {statusInfo.message}
                   </div>
                   <button 
-                    style={toastCloseStyle}
+                    className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
                     onClick={() => handleCloseToast(order._id)}
                     title="Close notification"
                   >
                     ×
                   </button>
                 </div>
-                <div style={{ fontSize: '12px', color: isCancelled ? '#a61e2a' : '#666' }}>
+                <div className={`text-sm ${isCancelled ? 'text-red-700' : 'text-gray-600'} mb-2 flex items-center`}>
                   Order #{order._id?.slice(-6) || 'N/A'} • 
-                  <span style={statusBadgeStyle(order.status)}>
+                  <span className={getStatusBadgeClass(order.status)}>
                     {order.status}
                   </span>
                 </div>
                 
                 {/* Cancellation Reason */}
                 {isCancelled && cancelledOrder?.cancellationReason && (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    padding: '8px',
-                    background: '#f8d7da',
-                    border: '1px solid #f5c6cb',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    color: '#721c24'
-                  }}>
+                  <div className="mt-2 p-2 bg-red-100 border border-red-200 rounded-lg text-xs text-red-800">
                     <strong>Cancellation Reason:</strong> {cancelledOrder.cancellationReason}
                   </div>
                 )}
                 
                 {order.items && order.items.length > 0 && (
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '4px', color: isCancelled ? '#721c24' : '#666' }}>
+                  <div className="mt-3">
+                    <div className={`text-xs font-medium mb-1 ${isCancelled ? 'text-red-700' : 'text-gray-600'}`}>
                       Items:
                     </div>
-                    <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '11px' }}>
+                    <ul className="text-xs space-y-1 pl-2">
                       {order.items.slice(0, 3).map((item, i) => (
-                        <li key={item.name + i} style={{ marginBottom: '2px' }}>
-                          {item.name} (x{item.quantity || 1})
+                        <li key={item.name + i} className="flex justify-between">
+                          <span>{item.name} (x{item.quantity || 1})</span>
+                          <span className="font-medium ml-2">
+                            ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          </span>
                         </li>
                       ))}
                       {order.items.length > 3 && (
-                        <li style={{ fontStyle: 'italic' }}>
+                        <li className="italic text-gray-500">
                           and {order.items.length - 3} more items...
                         </li>
                       )}
                     </ul>
-                    <div style={{ 
-                      borderTop: '1px solid #e0e0e0', 
-                      paddingTop: '4px', 
-                      marginTop: '6px', 
-                      fontWeight: 600, 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      fontSize: '12px',
-                      color: isCancelled ? '#721c24' : '#4B2E06'
-                    }}>
-                      <span>Total:</span>
-                      <span>
+                    <div className="border-t border-gray-200 pt-2 mt-2 font-semibold flex justify-between text-sm">
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>Total:</span>
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>
                         ₱{order.items.reduce((total, item) => 
                           total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)
                         }
@@ -951,329 +818,623 @@ function FoodAndBeverages() {
         </div>
       )}
 
-      {/* Header Bar - Compact for tablet */}
-      <div style={{
-        width: '100%',
-        background: '#4B2E06',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0.4rem 1rem',
-        minHeight: '50px',
-        boxSizing: 'border-box',
-        boxShadow: '0 2px 8px #0001',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        flexShrink: 0
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/lumine_icon.png" alt="Lumine Logo" style={{ height: '30px', width: '30px', marginRight: '8px', objectFit: 'contain', background: 'transparent', borderRadius: 0, boxShadow: 'none' }} />
-          <span style={{ fontSize: '24px', fontWeight: 400, color: '#fff', letterSpacing: 1 }}>Lumine</span>
+      {/* Header */}
+      <header className="bg-gradient-to-r from-amber-900 to-amber-800 shadow-lg sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo and App Name */}
+            <div className="flex items-center space-x-3">
+              <img 
+                src='/lumine_icon.png' 
+                alt="Lumine Logo" 
+                className="h-8 w-8 object-contain" 
+              />
+              <span className="text-white text-xl font-light tracking-wider">
+                Lumine
+              </span>
+            </div>
+
+            {/* Navigation Controls */}
+            <div className="flex items-center space-x-4">
+              {/* Cart and Status buttons */}
+              <button 
+                onClick={() => setShowCart(true)} 
+                className="px-4 py-2 rounded-lg text-amber-100 hover:bg-amber-700 hover:text-white transition-all duration-200 font-medium flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})</span>
+              </button>
+              
+              <button 
+                onClick={() => setShowStatus(true)} 
+                className="px-4 py-2 rounded-lg text-amber-100 hover:bg-amber-700 hover:text-white transition-all duration-200 font-medium flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Status</span>
+              </button>
+
+              {/* Notification Bell */}
+              <button 
+                className="notification-bell relative p-1 rounded hover:bg-amber-700 transition-colors focus:outline-none"
+                onClick={handleBellClick} 
+                aria-label="Notifications"
+              >
+                <div className={`p-1 rounded ${showPopupNotification ? 'bg-amber-600' : ''}`}>
+                  <svg className="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                </div>
+                
+                {/* Notification Counter */}
+                {!showPopupNotification && counter > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold">
+                    {counter}
+                  </span>
+                )}
+              </button>
+
+              {/* Logout Button */}
+              <button 
+                className="ml-2 px-4 py-2 rounded-lg bg-amber-200 text-amber-900 hover:bg-amber-300 shadow-md transition-all duration-200 font-medium flex items-center space-x-2"
+                onClick={handleLogout}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', position: 'relative' }}>
-          <button 
-            onClick={() => setShowCart(true)} 
-            style={headerButtonStyle}
-            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
-            onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
-          >
-            Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})
-          </button>
-          <button 
-            onClick={() => setShowStatus(true)} 
-            style={headerButtonStyle}
-            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
-            onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
-          >
-            Status
-          </button>
+      </header>
 
-          {/* Notification Bell */}
-          <button 
-            className="notification-bell"
-            style={{...bellStyle, ...(showPopup ? { background: '#F7D700', borderRadius: '50%', padding: '2px' } : {})}} 
-            onClick={handleBellClick} 
-            aria-label="Notifications"
-          >
-            <span style={{...bellIconStyle, ...(showPopup ? { color: '#4B2E06' } : {})}}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
+      {/* Notification Popup */}
+      {showPopupNotification && (
+        <div className="notification-popup absolute top-20 right-4 bg-white rounded-2xl shadow-2xl p-6 min-w-80 max-w-sm z-50 border border-amber-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-amber-900">Order Updates</h3>
+            <span className="text-sm text-gray-500 bg-amber-100 px-2 py-1 rounded-full">
+              {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
             </span>
-            {!showPopup && counter > 0 && <span style={bellCounterStyle}>{counter}</span>}
-          </button>
-
-          {/* Notification Popup */}
-          {showPopup && (
-            <div className="notification-popup" style={popupStyle}>
-              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Order Updates</span>
-                <span style={{ fontSize: 12, color: '#666', fontWeight: 400 }}>
-                  {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              {visibleOrders.length === 0 ? (
-                <div style={{ color: '#888', fontSize: 12 }}>No order updates.</div>
-              ) : (
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {visibleOrders.map((order) => {
-                    const statusInfo = getStatusInfo(order.status);
-                    const isCancelled = order.status === 'cancelled';
-                    const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
-                    const orderId = order._id || order.originalOrderId;
+          </div>
+          
+          {visibleOrders.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <svg className="w-12 h-12 mx-auto text-amber-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>No order updates</p>
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto space-y-3">
+              {visibleOrders.map((order) => {
+                const statusInfo = getStatusInfo(order.status);
+                const isCancelled = order.status === 'cancelled';
+                const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
+                const orderId = order._id || order.originalOrderId;
+                
+                return (
+                  <div 
+                    key={orderId} 
+                    className={`border rounded-xl p-4 transition-all duration-200 ${
+                      isCancelled 
+                        ? 'border-red-200 bg-red-50' 
+                        : 'border-amber-200 bg-amber-50 hover:bg-amber-100'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="font-medium text-sm text-amber-900">
+                        Order #{orderId?.slice(-6) || 'N/A'}
+                      </div>
+                      <button 
+                        className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                        onClick={() => handleRemoveNotification(orderId)}
+                        title="Remove notification"
+                      >
+                        ×
+                      </button>
+                    </div>
                     
-                    return (
-                      <div key={orderId} style={{ 
-                        border: '1px solid #f0f0f0', 
-                        borderRadius: '6px', 
-                        padding: '8px', 
-                        marginBottom: '6px',
-                        background: isCancelled ? '#fff5f5' : '#fff9e6'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                          <div style={{ fontWeight: 500, fontSize: '12px' }}>
-                            Order #{orderId?.slice(-6) || 'N/A'}
-                          </div>
-                          <button 
-                            style={removeBtnStyle}
-                            onClick={() => handleRemoveNotification(orderId)}
-                            title="Remove notification"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <div style={{ fontSize: '11px', marginBottom: '6px', display: 'flex', alignItems: 'center' }}>
-                          <span>{statusInfo.emoji} {statusInfo.message}</span>
-                          <span style={statusBadgeStyle(order.status)}>{order.status}</span>
-                        </div>
-                        
-                        {/* Cancellation Reason */}
-                        {isCancelled && cancelledOrder?.cancellationReason && (
-                          <div style={{ 
-                            marginBottom: '6px', 
-                            padding: '6px',
-                            background: '#f8d7da',
-                            border: '1px solid #f5c6cb',
-                            borderRadius: '4px',
-                            fontSize: '10px',
-                            color: '#721c24'
-                          }}>
-                            <strong>Reason:</strong> {cancelledOrder.cancellationReason}
-                          </div>
-                        )}
-                        
-                        <ul style={{ paddingLeft: 14, margin: 0, fontSize: '11px' }}>
-                          {order.items && order.items.length > 0 ? order.items.map((item, i) => (
-                            <li key={item.name + i} style={{ marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>
-                                {item.name} (x{item.quantity || 1})
-                              </span>
-                              <span style={{ fontWeight: 500, marginLeft: '0.5rem' }}>
-                                ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                              </span>
-                            </li>
-                          )) : (
-                            <li style={{ marginBottom: 4 }}>
-                              No items listed
-                            </li>
-                          )}
-                        </ul>
-                        <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '4px', marginTop: '4px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                          <span>Order Total:</span>
-                          <span>
-                            ₱{order.items ? order.items.reduce((total, item) => 
-                              total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) : '0.00'
-                            }
+                    <div className="flex items-center mb-3">
+                      <span className="text-lg mr-2">{statusInfo.emoji}</span>
+                      <span className="text-sm font-medium">{statusInfo.message}</span>
+                      <span className={getStatusBadgeClass(order.status)}>
+                        {order.status}
+                      </span>
+                    </div>
+                    
+                    {/* Cancellation Reason */}
+                    {isCancelled && cancelledOrder?.cancellationReason && (
+                      <div className="mb-3 p-2 bg-red-100 border border-red-200 rounded-lg text-xs text-red-800">
+                        <strong>Reason:</strong> {cancelledOrder.cancellationReason}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      {order.items && order.items.length > 0 ? order.items.map((item, i) => (
+                        <div key={item.name + i} className="flex justify-between items-center text-sm">
+                          <span className="text-amber-800">
+                            {item.name} (x{item.quantity || 1})
                           </span>
+                          <span className="font-semibold text-amber-900">
+                            ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          </span>
+                        </div>
+                      )) : (
+                        <div className="text-sm text-gray-500">No items listed</div>
+                      )}
+                    </div>
+                    
+                    <div className="border-t border-amber-200 pt-2 mt-3 flex justify-between font-semibold text-sm">
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>Order Total:</span>
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>
+                        ₱{order.items ? order.items.reduce((total, item) => 
+                          total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) : '0.00'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Back Button and Title */}
+      <div className="container mx-auto px-4 mt-6">
+        <button 
+          onClick={() => navigate('/customer/interface')} 
+          className="flex items-center space-x-2 text-amber-700 hover:text-amber-900 transition-colors mb-6"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back to Dashboard</span>
+        </button>
+
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-amber-900 mb-4">Food & Beverage</h1>
+          <p className="text-xl text-amber-700 max-w-2xl mx-auto">
+            Order delicious meals and drinks delivered directly to your room
+          </p>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="container mx-auto px-4 mb-8">
+        <div className="flex justify-center">
+          <div className="relative w-full max-w-md">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search food items..."
+              className="w-full px-6 py-4 rounded-2xl border-2 border-amber-300 bg-white text-amber-900 placeholder-amber-500 focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100 transition-all duration-200 shadow-lg"
+            />
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-amber-500">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 pb-8 flex-1">
+        {/* Food Search Results Grid */}
+        {search.trim() && foodLoaded && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {foodItems.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).map((food) => (
+              <div 
+                key={food.name} 
+                className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                onClick={() => handleFoodClick(food)}
+              >
+                <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-1 shadow-xl">
+                  <div className={`bg-white rounded-xl p-6 text-center group-hover:bg-amber-50 transition-colors duration-300 h-full flex flex-col ${
+                    food.available === false ? 'opacity-50' : ''
+                  }`}>
+                    <div className="w-full h-48 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-200 transition-colors overflow-hidden">
+                      {food.img ? (
+                        <img 
+                          src={food.img} 
+                          alt={food.name}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      ) : (
+                        <div className="text-amber-600">
+                          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-xl font-bold text-amber-900 mb-2">{food.name}</h3>
+                    <p className="text-amber-700 text-sm mb-3">{food.category}</p>
+                    <div className="flex justify-between items-center mt-auto">
+                      <div className="text-2xl font-bold text-orange-600">₱{food.price ? food.price.toFixed(2) : '0.00'}</div>
+                      {food.available === false && (
+                        <div className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                          Unavailable
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {foodItems.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
+              <div className="col-span-full text-center py-12 text-gray-500">
+                <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <p className="text-lg">No food items found</p>
+                <p className="text-sm mt-2">Try a different search term</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Food Category Grid */}
+        {!search.trim() && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {categories.map((cat) => (
+              <div 
+                key={cat.name} 
+                className="group cursor-pointer transform transition-all duration-300 hover:scale-105"
+                onClick={() => navigate(`/customer/food/${cat.name.toLowerCase()}`)}
+              >
+                <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-1 shadow-xl">
+                  <div className="bg-white rounded-xl p-8 text-center group-hover:bg-amber-50 transition-colors duration-300 h-full flex flex-col items-center justify-center">
+                    <div className="w-20 h-20 bg-amber-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-amber-200 transition-colors">
+                      <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-amber-900 mb-3">{cat.name}</h3>
+                    <div className="px-6 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold group-hover:bg-amber-200 transition-colors">
+                      Browse Menu
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Food Details Popup */}
+      {popup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h2 className="text-2xl font-bold text-white">{popup.name}</h2>
+            </div>
+            
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              {popup.img && (
+                <img 
+                  src={popup.img} 
+                  alt={popup.name}
+                  className="w-full h-48 object-cover rounded-xl mb-6 border border-amber-200"
+                />
+              )}
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-amber-900">Price:</span>
+                  <span className="text-2xl font-bold text-orange-600">₱{popup.price ? popup.price.toFixed(2) : '0.00'}</span>
+                </div>
+                
+                {popup.category && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-amber-900">Category:</span>
+                    <span className="text-amber-700">{popup.category}</span>
+                  </div>
+                )}
+                
+                {popup.details && (
+                  <div>
+                    <span className="text-lg font-semibold text-amber-900 block mb-2">Description:</span>
+                    <p className="text-amber-700 leading-relaxed">{popup.details}</p>
+                  </div>
+                )}
+                
+                {/* Quantity Selector */}
+                <div className="flex items-center justify-between pt-4 border-t border-amber-200">
+                  <span className="text-lg font-semibold text-amber-900">Quantity:</span>
+                  <div className="flex items-center space-x-4">
+                    <button 
+                      onClick={() => {
+                        const currentQty = popup.quantity || 1;
+                        if (currentQty > 1) {
+                          setPopup({...popup, quantity: currentQty - 1});
+                        }
+                      }}
+                      className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[40px] text-center font-semibold text-amber-900 text-lg">
+                      {popup.quantity || 1}
+                    </span>
+                    <button 
+                      onClick={() => {
+                        const currentQty = popup.quantity || 1;
+                        setPopup({...popup, quantity: currentQty + 1});
+                      }}
+                      className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-amber-50 border-t border-amber-200">
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => addToCart(popup, popup.quantity || 1)}
+                  disabled={addingToCart}
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>{addingToCart ? 'Adding...' : 'Add to Cart'}</span>
+                </button>
+
+                <button
+                  onClick={closePopup}
+                  className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Popup */}
+      {showCart && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Your Cart
+              </h2>
+            </div>
+
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              {cart.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p className="text-lg">Your cart is empty</p>
+                  <p className="text-sm mt-2">Add some items from our menu</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item, idx) => {
+                    const itemTotal = (item.price || 0) * (item.quantity || 1);
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-200">
+                        <div className="flex items-center space-x-4 flex-1">
+                          <img src={item.img} alt={item.name} className="w-16 h-16 rounded-lg object-cover border border-amber-300" />
+                          <div className="flex-1">
+                            <div className="font-semibold text-amber-900">{item.name}</div>
+                            <div className="text-amber-700">₱{item.price ? item.price.toFixed(2) : '0.00'}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-3">
+                            <button 
+                              onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)} 
+                              className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                            >
+                              −
+                            </button>
+                            <span className="min-w-[40px] text-center font-semibold text-amber-900">
+                              {item.quantity || 1}
+                            </span>
+                            <button 
+                              onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)} 
+                              className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+                          
+                          <div className="text-right min-w-[100px]">
+                            <div className="font-bold text-amber-900">₱{itemTotal.toFixed(2)}</div>
+                          </div>
+                          
+                          <button 
+                            onClick={() => removeFromCart(idx)} 
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove item"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     );
                   })}
+                  
+                  <div className="border-t border-amber-200 pt-4 mt-6">
+                    <div className="flex justify-between items-center text-lg font-bold text-amber-900">
+                      <span>Total:</span>
+                      <span>₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          )}
+
+            <div className="p-6 bg-amber-50 border-t border-amber-200">
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={async () => {
+                    if (roomNumber && cart.length > 0) {
+                      try {
+                        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+                        setCart([]);
+                        alert('Checkout successful! Your order has been sent to the restaurant.');
+                        setShowCart(false);
+                      } catch {
+                        alert('Checkout failed. Please try again.');
+                      }
+                    }
+                  }}
+                  disabled={cart.length === 0}
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Checkout</span>
+                </button>
+
+                <button
+                  onClick={() => setShowCart(false)}
+                  className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Cart Popup - Using CustomerInterface version */}
-      {showCart && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0,
-          width: '100vw', height: '100vh',
-          background: 'rgba(75,46,6,0.10)',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'center', zIndex: 1200
-        }}>
-          <div style={{
-            background: '#fff', 
-            padding: '1.2rem',
-            borderRadius: '1rem', 
-            boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-            width: '90vw',
-            maxWidth: '600px',
-            maxHeight: '70vh',
-            textAlign: 'center', 
-            color: '#4B2E06', 
-            border: '2.5px solid #F7D774', 
-            overflow: 'auto'
-          }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>
-              Your Cart
-            </h2>
+      {/* Status Popup */}
+      {showStatus && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Order Status
+              </h2>
+            </div>
 
-            {cart.length === 0 ? (
-              <p style={{ color: '#4B2E06', fontSize: '1rem' }}>Your cart is empty.</p>
-            ) : (
-              <div style={{ maxHeight: '35vh', overflowY: 'auto', marginBottom: '1rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#4B2E06', fontSize: '0.8rem' }}>
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                    <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Price</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Qty</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Total</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.map((item, idx) => {
-                      const itemTotal = (item.price || 0) * (item.quantity || 1);
+            {/* Tabs */}
+            <div className="flex justify-center p-4 bg-amber-50 border-b border-amber-200">
+              <div className="flex space-x-2 bg-white p-1 rounded-xl border border-amber-200">
+                <button
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    tab === 'pending' 
+                      ? 'bg-amber-500 text-white shadow-md' 
+                      : 'text-amber-700 hover:bg-amber-100'
+                  }`}
+                  onClick={() => setTab('pending')}
+                >
+                  Pending Orders
+                </button>
+                <button
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    tab === 'delivered' 
+                      ? 'bg-amber-500 text-white shadow-md' 
+                      : 'text-amber-700 hover:bg-amber-100'
+                  }`}
+                  onClick={() => setTab('delivered')}
+                >
+                  Order History
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              {orders.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-lg">No orders yet</p>
+                  <p className="text-sm mt-2">Your order history will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orders
+                    .filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered')))
+                    .map((order, idx) => {
+                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
                       return (
-                        <tr key={idx}>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', textAlign: 'left' }}>
-                            <img src={item.img} alt={item.name} style={{
-                              width: '24px', height: '24px', borderRadius: '6px',
-                              marginRight: '0.4rem', verticalAlign: 'middle',
-                              border: '1.5px solid #F7D774', background: '#fff'
-                            }} />
-                            {item.name}
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            ₱{item.price ? item.price.toFixed(2) : '0.00'}
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem' }}>
-                              <button
-                                onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)}
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  borderRadius: '50%',
-                                  border: '1px solid #FFD700',
-                                  background: '#F7D774',
-                                  color: '#4B2E06',
-                                  fontWeight: 'bold',
-                                  cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                              >
-                                -
-                              </button>
-                              <span style={{ minWidth: '20px', textAlign: 'center' }}>
-                                {item.quantity || 1}
-                              </span>
-                              <button
-                                onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)}
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  borderRadius: '50%',
-                                  border: '1px solid #FFD700',
-                                  background: '#F7D774',
-                                  color: '#4B2E06',
-                                  fontWeight: 'bold',
-                                  cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                              >
-                                +
-                              </button>
+                        <div key={order._id || idx} className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <div className="font-semibold text-amber-900">Order #{order._id?.slice(-6) || 'N/A'}</div>
+                              <div className="text-sm text-amber-700">Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString()}</div>
                             </div>
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
-                            ₱{itemTotal.toFixed(2)}
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            <button
-                              onClick={() => removeFromCart(idx)}
-                                style={{
-                                  padding: '0.2rem 0.5rem', borderRadius: '0.4em',
-                                  border: '2px solid #FFD700', background: '#F7D774',
-                                  color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                                  boxShadow: '0 2px 8px #e5c16c44',
-                                  transition: 'background 0.2s, color 0.2s',
-                                  fontSize: '0.7rem'
-                                }}
-                              onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                              onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
+                            <div className="flex items-center space-x-3">
+                              <span className={getStatusBadgeClass(order.status)}>
+                                {order.status || 'pending'}
+                              </span>
+                              {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
+                                <button 
+                                  className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                                  onClick={() => cancelOrder(order)}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {order.items.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100">
+                                <div className="flex items-center space-x-3">
+                                  {item.img && (
+                                    <img src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-amber-200" />
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-amber-900">{item.name}</div>
+                                    <div className="text-sm text-amber-700">Quantity: {item.quantity || 1}</div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-amber-900">
+                                    ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="border-t border-amber-200 pt-3 mt-3 flex justify-between items-center">
+                            <div className="font-semibold text-amber-900">Order Total</div>
+                            <div className="text-xl font-bold text-amber-900">₱{totalPrice.toFixed(2)}</div>
+                          </div>
+                        </div>
                       );
                     })}
-                    <tr style={{ fontWeight: 500, background: '#F7D774', color: '#4B2E06' }}>
-                      <td colSpan={3} style={{ padding: '0.4rem', textAlign: 'right' }}>Total:</td>
-                      <td style={{ padding: '0.4rem' }}>
-                        ₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}
-                      </td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '1rem' }}>
-              <button
-                onClick={async () => {
-                  if (roomNumber && cart.length > 0) {
-                    try {
-                      await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-                      setCart([]);
-                      alert('Checkout successful! Your order has been sent to the restaurant.');
-                      setShowCart(false);
-                    } catch {
-                      alert('Checkout failed. Please try again.');
-                    }
-                  }
-                }}
-                style={{
-                  padding: '0.4rem 1rem',
-                  borderRadius: '0.4em', border: '2px solid #FFD700',
-                  background: '#F7D774', color: '#4B2E06',
-                  fontWeight: 500, cursor: 'pointer',
-                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-              >
-                Checkout
-              </button>
-
-              <button
-                onClick={() => setShowCart(false)}
-                style={{
-                  padding: '0.4rem 1rem',
-                  borderRadius: '0.4em', border: '2px solid #FFD700',
-                  background: '#fff', color: '#4B2E06',
-                  fontWeight: 500, cursor: 'pointer',
-                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
+            <div className="p-6 bg-amber-50 border-t border-amber-200 text-center">
+              <button 
+                className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                onClick={() => setShowStatus(false)}
               >
                 Close
               </button>
@@ -1282,432 +1443,7 @@ function FoodAndBeverages() {
         </div>
       )}
 
-      {/* Status Popup with tabs for Pending and Delivered - Using CustomerInterface version */}
-      {showStatus && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0,
-          width: '100vw', height: '100vh',
-          background: 'rgba(75,46,6,0.10)',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'center', zIndex: 1200
-        }}>
-          <div style={{
-            background: '#fff', 
-            padding: '1.2rem',
-            borderRadius: '1rem', 
-            boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-            width: '90vw',
-            maxWidth: '600px',
-            maxHeight: '70vh',
-            textAlign: 'center', 
-            color: '#4B2E06', 
-            border: '2.5px solid #F7D774', 
-            
-            overflow: 'auto'
-          }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
-            {/* Tabs */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', gap: '0.8rem' }}>
-              <button
-                style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onClick={() => setTab('pending')}
-                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                onMouseOut={e => { e.target.style.background = tab === 'pending' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
-              >Pending</button>
-              <button
-                style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onClick={() => setTab('delivered')}
-                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                onMouseOut={e => { e.target.style.background = tab === 'delivered' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
-              >Delivered</button>
-            </div>
-            {/* Orders Table, scrollable if too many items */}
-            {orders.length === 0 ? (
-              <p style={{ color: '#4B2E06', fontSize: '1rem' }}>No checked-out orders yet.</p>
-            ) : (
-              <div style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', color: '#4B2E06', fontSize: '0.8rem' }}>
-                  <thead>
-                    <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Items</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Total Price</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered'))).map((order, idx) => {
-                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                      return (
-                        <tr key={order._id || idx}>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                              {order.items.map((item, i) => (
-                                <li key={i} style={{ marginBottom: '0.4rem', display: 'flex', alignItems: 'center' }}>
-                                  {item.img && (
-                                    <img src={item.img} alt={item.name} style={{ width: '24px', height: '24px', borderRadius: '6px', marginRight: '0.4rem', verticalAlign: 'middle', border: '1.5px solid #F7D774', background: '#fff' }} />
-                                  )}
-                                  <span style={{ color: '#4B2E06', fontWeight: 500, fontSize: '0.8rem' }}>{item.name}</span> 
-                                  <span style={{ color: '#4B2E06', marginLeft: '0.4rem', fontSize: '0.8rem' }}>(x{item.quantity || 1})</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>₱{totalPrice.toFixed(2)}</td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
-                            {order.status || 'pending'}
-                            {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
-                              <button
-                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
-                                onClick={() => cancelOrder(order)}
-                                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                                onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                              >Cancel</button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <button
-              onClick={() => setShowStatus(false)}
-              style={{
-                marginTop: '1rem', padding: '0.4rem 1rem',
-                borderRadius: '0.4em', border: '2px solid #FFD700',
-                background: '#fff', color: '#4B2E06',
-                fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                fontSize: '0.8rem'
-              }}
-              onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-              onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Area - Fills remaining space (FoodAndBeverages specific content remains the same) */}
-      <div style={{ 
-        flex: 1, 
-        display: 'flex', 
-        flexDirection: 'column',
-        overflow: 'hidden',
-        padding: '0.5rem 0'
-      }}>
-        {/* Back Button and Title */}
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center',
-          marginBottom: '0.8rem',
-          flexShrink: 0
-        }}>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-start', padding: '0 1rem' }}>
-            <button className="facilities-back" onClick={() => navigate('/customer/interface')}>
-              <span className="facilities-back-arrow">&#8592;</span> Back
-            </button>
-          </div>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '0.35rem' }}>
-            <span style={{ 
-              background: '#F7D774', 
-              color: '#4B2E06', 
-              fontSize: '1.15rem', 
-              fontWeight: 500, 
-              padding: '0.25em 1.1em', 
-              borderRadius: '0.2em', 
-              boxShadow: '0 2px 8px #e5c16c44', 
-              textAlign: 'center' 
-            }}>
-              Food & Beverage
-            </span>
-          </div>
-        </div>
-      
-        {/* Search Bar */}
-        <div style={{ 
-          width: '100%', 
-          display: 'flex', 
-          justifyContent: 'center', 
-          marginBottom: '0.8rem',
-          flexShrink: 0
-        }}>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search food..."
-            style={{
-              padding: '0.5rem 1rem', 
-              borderRadius: '6px', 
-              border: '2px solid #FFD700', 
-              background: '#fff', 
-              color: '#4B2E06', 
-              fontWeight: 500, 
-              fontSize: '0.8rem', 
-              width: '250px', 
-              boxShadow: '0 2px 8px #FFD700', 
-              outline: 'none', 
-              textAlign: 'center', 
-              
-            }}
-          />
-        </div>
-
-        {/* Food Search Results Grid - Fixed 3 columns */}
-        {search.trim() && foodLoaded && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '1rem',
-            justifyItems: 'center',
-            padding: '0 1rem',
-            overflow: 'auto',
-            flex: 1
-          }}>
-            {foodItems.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).map((food) => (
-              <div key={food.name} style={{
-                width: '100%',
-                maxWidth: '180px',
-                height: '140px',
-                background: '#fff',
-                borderRadius: '0.8rem',
-                boxShadow: '0 4px 16px #e5c16c33, 0 2px 8px #FFD700',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.9rem',
-                color: '#222',
-                
-                fontWeight: 400,
-                letterSpacing: 1,
-                textAlign: 'center',
-                cursor: food.available === false ? 'not-allowed' : 'pointer',
-                border: '1.5px solid #f7e6b0',
-                transition: 'box-shadow 0.18s, border 0.18s, transform 0.18s',
-                margin: 0,
-                padding: '0.8rem 0.3rem',
-                opacity: food.available === false ? 0.5 : 1
-              }}
-                onClick={() => handleFoodClick(food)}
-                onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 32px #e5c16c99'; e.currentTarget.style.border = '2.5px solid #F7D774'; e.currentTarget.style.transform = 'translateY(-6px) scale(1.03)'; }}
-                onMouseOut={e => { e.currentTarget.style.boxShadow = '0 4px 16px #e5c16c33, 0 2px 8px #FFD700'; e.currentTarget.style.border = '1.5px solid #f7e6b0'; e.currentTarget.style.transform = 'none'; }}
-              >
-                {food.img && <img src={food.img} alt={food.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '0.5em', marginBottom: '6px', border: '1.5px solid #F7D774', background: '#fff' }} />}
-                <div style={{ fontWeight: 500, fontSize: '0.9rem', color: '#4B2E06', marginBottom: '2px' }}>{food.name}</div>
-                <div style={{ fontSize: '0.7rem', color: '#888', marginBottom: '2px' }}>{food.category}</div>
-                <div style={{ fontSize: '0.8rem', color: '#4B2E06', fontWeight: 500 }}>₱{food.price ? food.price.toFixed(2) : '0.00'}</div>
-                {food.available === false && (
-                  <div style={{ color: '#e74c3c', fontSize: '0.8rem', fontWeight: 500, marginTop: '4px' }}>Unavailable</div>
-                )}
-              </div>
-            ))}
-            {foodItems.filter(food => food.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
-              <div style={{ 
-                gridColumn: '1/-1', 
-                color: '#888', 
-                
-                fontSize: '1rem', 
-                textAlign: 'center', 
-                background: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%'
-              }}>
-                No food items found.
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Popup for Add to Cart with Quantity Selection */}
-        {popup && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0,
-            width: '100vw', height: '100vh',
-            background: 'rgba(0,0,0,0.18)',
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'center', zIndex: 1000
-          }}>
-              <div style={{
-              background: '#fff',
-              padding: '1rem',
-              borderRadius: '0.8rem',
-              boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-              width: '80vw',
-              maxWidth: '300px',
-              minHeight: '280px',
-              textAlign: 'center',
-              color: '#4B2E06',
-              border: '2.5px solid #F7D774',
-              maxHeight: '80vh',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-            }}>
-              {popup.img && (
-                <img src={popup.img} alt={popup.name} style={{ width: '100%', maxWidth: '180px', height: '110px', objectFit: 'cover', borderRadius: '0.8em', marginBottom: '8px', border: '1.5px solid #F7D774', background: '#fff', display: 'block' }} />
-              )}
-              <h3 style={{ color: '#4B2E06', fontWeight: 500, fontSize: '1rem', margin: 0, marginBottom: '0.4rem' }}>{popup.name}</h3>
-              <div style={{ fontSize: '0.9rem', color: '#4B2E06', fontWeight: 500, marginBottom: '0.4rem' }}>₱{popup.price ? popup.price.toFixed(2) : '0.00'}</div>
-              {popup.details && (
-                <p style={{ margin: 0, marginBottom: '0.6rem', color: '#4B2E06', fontWeight: 400, fontSize: '0.8rem' }}>{popup.details}</p>
-              )}
-              
-              {/* Quantity Selector */}
-              <div style={{ marginBottom: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>Quantity:</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <button
-                    onClick={() => {
-                      const currentQty = popup.quantity || 1;
-                      if (currentQty > 1) {
-                        setPopup({...popup, quantity: currentQty - 1});
-                      }
-                    }}
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      border: '2px solid #FFD700',
-                      background: '#F7D774',
-                      color: '#4B2E06',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    -
-                  </button>
-                  <span style={{ 
-                    minWidth: '30px', 
-                    textAlign: 'center', 
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                    
-                  }}>
-                    {popup.quantity || 1}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const currentQty = popup.quantity || 1;
-                      setPopup({...popup, quantity: currentQty + 1});
-                    }}
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      border: '2px solid #FFD700',
-                      background: '#F7D774',
-                      color: '#4B2E06',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '0.6rem', fontSize: '0.8rem' }}>Add this item to your cart?</div>
-              <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', width: '100%' }}>
-                <button
-                  onClick={() => addToCart(popup, popup.quantity || 1)}
-                  disabled={addingToCart}
-                  style={{
-                    padding: '0.4rem 1rem',
-                    borderRadius: '0.4em', border: '2px solid #FFD700',
-                    background: addingToCart ? '#e5c16c88' : '#F7D774', color: '#4B2E06',
-                    fontWeight: 500, cursor: addingToCart ? 'not-allowed' : 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                    fontSize: '0.8rem'
-                  }}
-                  onMouseOver={e => { if (!addingToCart) { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}}
-                  onMouseOut={e => { if (!addingToCart) { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}}
-                >
-                  {addingToCart ? 'Adding...' : 'Add to Cart'}
-                </button>
-                <button
-                  onClick={closePopup}
-                  style={{
-                    padding: '0.4rem 1rem',
-                    borderRadius: '0.4em', border: '2px solid #FFD700',
-                    background: '#fff', color: '#4B2E06',
-                    fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                    fontSize: '0.8rem'
-                  }}
-                  onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                  onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Food Category Grid - Fixed 3 columns */}
-        {!search.trim() && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '1rem',
-            justifyItems: 'center',
-            padding: '0 1rem',
-            overflow: 'auto',
-            flex: 1
-          }}>
-            {categories.map((cat) => (
-              <div key={cat.name} style={{
-                width: '100%',
-                maxWidth: '180px',
-                height: '140px',
-                background: '#fff',
-                borderRadius: '0.8rem',
-                boxShadow: '0 4px 16px #e5c16c33, 0 2px 8px #FFD700',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.1rem',
-                color: '#222',
-                
-                fontWeight: 400,
-                letterSpacing: 1,
-                textAlign: 'center',
-                cursor: 'pointer',
-                border: '1.5px solid #f7e6b0',
-                transition: 'box-shadow 0.18s, border 0.18s, transform 0.18s',
-                textTransform: 'uppercase',
-                margin: 0,
-              }}
-                onClick={() => navigate(`/customer/food/${cat.name.toLowerCase()}`)}
-                onMouseOver={e => { e.currentTarget.style.boxShadow = '0 8px 32px #e5c16c99'; e.currentTarget.style.border = '2.5px solid #F7D774'; e.currentTarget.style.transform = 'translateY(-6px) scale(1.03)'; }}
-                onMouseOut={e => { e.currentTarget.style.boxShadow = '0 4px 16px #e5c16c33, 0 2px 8px #FFD700'; e.currentTarget.style.border = '1.5px solid #f7e6b0'; e.currentTarget.style.transform = 'none'; }}
-              >
-                {cat.name}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Add CSS for slide-in animation */}
+      {/* Add CSS for animations */}
       <style>
         {`
           @keyframes slideInRight {
@@ -1719,6 +1455,9 @@ function FoodAndBeverages() {
               transform: translateX(0);
               opacity: 1;
             }
+          }
+          .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out;
           }
         `}
       </style>

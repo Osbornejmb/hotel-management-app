@@ -690,257 +690,125 @@ function ContactFrontDesk() {
     console.log(`Removed orders tracking: ${Object.keys(removedOrdersMap).length} in map`);
   }, [removedOrdersMap, seenOrderStatuses, toastNotifications]);
 
-  // Styles for notifications
-  const bellStyle = {
-    position: 'relative',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    marginLeft: '12px',
-    marginRight: '4px',
-    outline: 'none',
-    padding: 0,
-    display: 'flex',
-    alignItems: 'center',
-  };
-
-  const bellIconStyle = {
-    fontSize: 22,
-    color: '#F7D700',
-    transition: 'color 0.2s',
-  };
-
-  const bellCounterStyle = {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    background: '#e74c3c',
-    color: '#fff',
-    borderRadius: '50%',
-    fontSize: 11,
-    fontWeight: 700,
-    minWidth: 18,
-    height: 18,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 2px 8px #e74c3c44',
-    zIndex: 2,
-  };
-
-  const popupStyle = {
-    position: 'absolute',
-    top: 40,
-    right: 16,
-    background: '#fff',
-    borderRadius: '8px',
-    boxShadow: '0 4px 16px #0002',
-    padding: '0.8rem 1rem',
-    minWidth: '280px',
-    maxWidth: '320px',
-    zIndex: 999,
-  };
-
-  const removeBtnStyle = {
-    background: '#ff6b6b',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '50%',
-    width: '16px',
-    height: '16px',
-    fontSize: '10px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: '6px',
-    flexShrink: 0,
-  };
-
-  // Toast notification styles
-  const toastContainerStyle = {
-    position: 'fixed',
-    top: '60px',
-    right: '16px',
-    zIndex: 1000,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    maxWidth: '320px',
-  };
-
-  const toastStyle = {
-    background: '#fff',
-    border: '2px solid #F7D774',
-    borderRadius: '8px',
-    padding: '12px',
-    boxShadow: '0 4px 16px #0002',
-    minWidth: '280px',
-    animation: 'slideInRight 0.3s ease-out',
-  };
-
-  const toastHeaderStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  };
-
-  const toastTitleStyle = {
-    fontWeight: 600,
-    fontSize: '14px',
-    color: '#4B2E06',
-  };
-
-  const toastCloseStyle = {
-    background: '#ff6b6b',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '50%',
-    width: '20px',
-    height: '20px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  };
-
-  // Status badge styles
-  const statusBadgeStyle = (status) => {
-    const baseStyle = {
-      padding: '2px 6px',
-      borderRadius: '12px',
-      fontSize: '10px',
-      fontWeight: '600',
-      textTransform: 'capitalize',
-      marginLeft: '6px',
-    };
-
+  // Status badge styles with Tailwind classes
+  const getStatusBadgeClass = (status) => {
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-semibold capitalize ml-2 border";
     switch (status) {
       case 'pending':
-        return { ...baseStyle, background: '#fff3cd', color: '#856404', border: '1px solid #ffeaa7' };
+        return `${baseClasses} bg-yellow-50 text-yellow-800 border-yellow-200`;
       case 'acknowledged':
-        return { ...baseStyle, background: '#d1ecf1', color: '#0c5460', border: '1px solid #bee5eb' };
+        return `${baseClasses} bg-blue-50 text-blue-800 border-blue-200`;
       case 'preparing':
-        return { ...baseStyle, background: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' };
+        return `${baseClasses} bg-green-50 text-green-800 border-green-200`;
       case 'on the way':
-        return { ...baseStyle, background: '#cce7ff', color: '#004085', border: '1px solid #b3d7ff' };
+        return `${baseClasses} bg-indigo-50 text-indigo-800 border-indigo-200`;
       case 'delivered':
-        return { ...baseStyle, background: '#d1f7c4', color: '#0f5132', border: '1px solid #c3e6cb' };
+        return `${baseClasses} bg-emerald-50 text-emerald-800 border-emerald-200`;
       case 'cancelled':
-        return { ...baseStyle, background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' };
+        return `${baseClasses} bg-red-50 text-red-800 border-red-200`;
       default:
-        return { ...baseStyle, background: '#e2e3e5', color: '#383d41', border: '1px solid #d6d8db' };
+        return `${baseClasses} bg-gray-50 text-gray-800 border-gray-200`;
     }
   };
 
-  const headerButtonStyle = {
-    background: 'none',
-    border: 'none',
-    color: '#FFD700',
-    fontSize: '0.9rem',
-    
-    fontWeight: 500,
-    cursor: 'pointer',
-    padding: '0.3em 0.8em',
-    borderRadius: '0.35em',
-    transition: 'background 0.2s, color 0.2s',
-    outline: 'none',
+  const handleLogout = async () => {
+    const password = window.prompt('Enter hotel admin password to log out:');
+    if (!password) return;
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/users/verify-hoteladmin-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        // Clear all local storage on logout
+        localStorage.removeItem('removedOrdersMap');
+        localStorage.removeItem('seenOrderStatuses');
+        localStorage.removeItem('customerToastNotifications');
+        localStorage.removeItem('customerShowPopup');
+        localStorage.removeItem('playedNotifications');
+        localStorage.clear();
+        navigate('/customer/login', { replace: true });
+      } else {
+        alert('Invalid password. Logout cancelled.');
+      }
+    } catch (err) {
+      alert('Error verifying password. Please try again.');
+    }
+  };
+
+  // Back button: go back to customer interface
+  const handleBack = () => {
+    navigate('/customer/interface');
   };
 
   return (
-    <div style={{ 
-      textAlign: 'center', 
-      margin: 0, 
-      background: '#fff', 
-      height: '100vh', 
-      padding: '0',
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col overflow-hidden">
       {/* Toast Notifications Container */}
       {toastNotifications.length > 0 && (
-        <div style={toastContainerStyle}>
+        <div className="fixed top-20 right-4 z-50 flex flex-col gap-3 max-w-sm">
           {[...toastNotifications].reverse().map((order) => {
             const statusInfo = getStatusInfo(order.status);
             const isCancelled = order.status === 'cancelled';
             const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
             
             return (
-              <div key={order._id} style={{
-                ...toastStyle,
-                border: isCancelled ? '2px solid #f5c6cb' : '2px solid #F7D774',
-                background: isCancelled ? '#fff5f5' : '#fff'
-              }}>
-                <div style={toastHeaderStyle}>
-                  <div style={{...toastTitleStyle, color: isCancelled ? '#721c24' : '#4B2E06'}}>
+              <div 
+                key={order._id} 
+                className={`bg-white rounded-xl shadow-lg border-l-4 p-4 animate-slide-in-right ${
+                  isCancelled ? 'border-red-400 bg-red-50' : 'border-amber-400'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className={`font-semibold ${isCancelled ? 'text-red-800' : 'text-amber-800'}`}>
                     {statusInfo.emoji} {statusInfo.message}
                   </div>
                   <button 
-                    style={toastCloseStyle}
+                    className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
                     onClick={() => handleCloseToast(order._id)}
                     title="Close notification"
                   >
                     ×
                   </button>
                 </div>
-                <div style={{ fontSize: '12px', color: isCancelled ? '#a61e2a' : '#666' }}>
+                <div className={`text-sm ${isCancelled ? 'text-red-700' : 'text-gray-600'} mb-2 flex items-center`}>
                   Order #{order._id?.slice(-6) || 'N/A'} • 
-                  <span style={statusBadgeStyle(order.status)}>
+                  <span className={getStatusBadgeClass(order.status)}>
                     {order.status}
                   </span>
                 </div>
                 
                 {/* Cancellation Reason */}
                 {isCancelled && cancelledOrder?.cancellationReason && (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    padding: '8px',
-                    background: '#f8d7da',
-                    border: '1px solid #f5c6cb',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    color: '#721c24'
-                  }}>
+                  <div className="mt-2 p-2 bg-red-100 border border-red-200 rounded-lg text-xs text-red-800">
                     <strong>Cancellation Reason:</strong> {cancelledOrder.cancellationReason}
                   </div>
                 )}
                 
                 {order.items && order.items.length > 0 && (
-                  <div style={{ marginTop: '8px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '4px', color: isCancelled ? '#721c24' : '#666' }}>
+                  <div className="mt-3">
+                    <div className={`text-xs font-medium mb-1 ${isCancelled ? 'text-red-700' : 'text-gray-600'}`}>
                       Items:
                     </div>
-                    <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '11px' }}>
+                    <ul className="text-xs space-y-1 pl-2">
                       {order.items.slice(0, 3).map((item, i) => (
-                        <li key={item.name + i} style={{ marginBottom: '2px' }}>
-                          {item.name} (x{item.quantity || 1})
+                        <li key={item.name + i} className="flex justify-between">
+                          <span>{item.name} (x{item.quantity || 1})</span>
+                          <span className="font-medium ml-2">
+                            ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          </span>
                         </li>
                       ))}
                       {order.items.length > 3 && (
-                        <li style={{ fontStyle: 'italic' }}>
+                        <li className="italic text-gray-500">
                           and {order.items.length - 3} more items...
                         </li>
                       )}
                     </ul>
-                    <div style={{ 
-                      borderTop: '1px solid #e0e0e0', 
-                      paddingTop: '4px', 
-                      marginTop: '6px', 
-                      fontWeight: 600, 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      fontSize: '12px',
-                      color: isCancelled ? '#721c24' : '#4B2E06'
-                    }}>
-                      <span>Total:</span>
-                      <span>
+                    <div className="border-t border-gray-200 pt-2 mt-2 font-semibold flex justify-between text-sm">
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>Total:</span>
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>
                         ₱{order.items.reduce((total, item) => 
                           total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)
                         }
@@ -954,519 +822,499 @@ function ContactFrontDesk() {
         </div>
       )}
 
-      {/* Enhanced Header with Cart, Status, and Notification Bell */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: '#4B2E06',
-        padding: '0.3rem 0.8rem',
-        boxSizing: 'border-box',
-        boxShadow: '0 2px 8px #BFA06A',
-        flexShrink: 0,
-        height: '45px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/lumine_icon.png" alt="Lumine Logo" style={{ height: '28px', width: '28px', marginRight: '8px', objectFit: 'contain', background: 'transparent', borderRadius: 0, boxShadow: 'none' }} />
-          <span style={{ fontSize: '22px', letterSpacing: 1, color: '#fff', fontWeight: 400 }}>Lumine</span>
+      {/* Header */}
+      <header className="bg-gradient-to-r from-amber-900 to-amber-800 shadow-lg sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo and App Name */}
+            <div className="flex items-center space-x-3">
+              <img 
+                src='/lumine_icon.png' 
+                alt="Lumine Logo" 
+                className="h-8 w-8 object-contain" 
+              />
+              <span className="text-white text-xl font-light tracking-wider">
+                Lumine
+              </span>
+            </div>
+
+            {/* Navigation Controls */}
+            <div className="flex items-center space-x-4">
+              {/* Cart and Status buttons */}
+              <button 
+                onClick={() => setShowCart(true)} 
+                className="px-4 py-2 rounded-lg text-amber-100 hover:bg-amber-700 hover:text-white transition-all duration-200 font-medium flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span>Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})</span>
+              </button>
+              
+              <button 
+                onClick={() => setShowStatus(true)} 
+                className="px-4 py-2 rounded-lg text-amber-100 hover:bg-amber-700 hover:text-white transition-all duration-200 font-medium flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Status</span>
+              </button>
+
+              {/* Notification Bell */}
+              <button 
+                className="notification-bell relative p-1 rounded hover:bg-amber-700 transition-colors focus:outline-none"
+                onClick={handleBellClick} 
+                aria-label="Notifications"
+              >
+                <div className={`p-1 rounded ${showPopupNotification ? 'bg-amber-600' : ''}`}>
+                  <svg className="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                </div>
+                
+                {/* Notification Counter */}
+                {!showPopupNotification && counter > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold">
+                    {counter}
+                  </span>
+                )}
+              </button>
+
+              {/* Logout Button */}
+              <button 
+                className="ml-2 px-4 py-2 rounded-lg bg-amber-200 text-amber-900 hover:bg-amber-300 shadow-md transition-all duration-200 font-medium flex items-center space-x-2"
+                onClick={handleLogout}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
         </div>
+      </header>
 
-        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-          {/* Cart and Status buttons */}
-          <button 
-            onClick={() => setShowCart(true)} 
-            style={headerButtonStyle}
-            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
-            onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
-          >
-            Cart ({cart.reduce((total, item) => total + (item.quantity || 1), 0)})
-          </button>
-          <button 
-            onClick={() => setShowStatus(true)} 
-            style={headerButtonStyle}
-            onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
-            onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
-          >
-            Status
-          </button>
-
-          {/* Notification Bell */}
-          <button 
-            className="notification-bell"
-            style={{...bellStyle, ...(showPopupNotification ? { background: '#F7D700', borderRadius: '50%', padding: '2px' } : {})}} 
-            onClick={handleBellClick} 
-            aria-label="Notifications"
-          >
-            {/* Simple bell SVG */}
-            <span style={{...bellIconStyle, ...(showPopupNotification ? { color: '#4B2E06' } : {})}}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
+      {/* Notification Popup */}
+      {showPopupNotification && (
+        <div className="notification-popup absolute top-20 right-4 bg-white rounded-2xl shadow-2xl p-6 min-w-80 max-w-sm z-50 border border-amber-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-amber-900">Order Updates</h3>
+            <span className="text-sm text-gray-500 bg-amber-100 px-2 py-1 rounded-full">
+              {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
             </span>
-            {/* Show counter for new orders - only when popup is closed */}
-            {!showPopupNotification && counter > 0 && <span style={bellCounterStyle}>{counter}</span>}
-          </button>
-
-          {/* Notification Popup */}
-          {showPopupNotification && (
-            <div className="notification-popup" style={popupStyle}>
-              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Order Updates</span>
-                <span style={{ fontSize: 12, color: '#666', fontWeight: 400 }}>
-                  {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              {visibleOrders.length === 0 ? (
-                <div style={{ color: '#888', fontSize: 12 }}>No order updates.</div>
-              ) : (
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {visibleOrders.map((order) => {
-                    const statusInfo = getStatusInfo(order.status);
-                    const isCancelled = order.status === 'cancelled';
-                    const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
-                    const orderId = order._id || order.originalOrderId;
+          </div>
+          
+          {visibleOrders.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <svg className="w-12 h-12 mx-auto text-amber-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>No order updates</p>
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto space-y-3">
+              {visibleOrders.map((order) => {
+                const statusInfo = getStatusInfo(order.status);
+                const isCancelled = order.status === 'cancelled';
+                const cancelledOrder = isCancelled ? cancelledOrders.find(co => co.originalOrderId === order._id) : null;
+                const orderId = order._id || order.originalOrderId;
+                
+                return (
+                  <div 
+                    key={orderId} 
+                    className={`border rounded-xl p-4 transition-all duration-200 ${
+                      isCancelled 
+                        ? 'border-red-200 bg-red-50' 
+                        : 'border-amber-200 bg-amber-50 hover:bg-amber-100'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="font-medium text-sm text-amber-900">
+                        Order #{orderId?.slice(-6) || 'N/A'}
+                      </div>
+                      <button 
+                        className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                        onClick={() => handleRemoveNotification(orderId)}
+                        title="Remove notification"
+                      >
+                        ×
+                      </button>
+                    </div>
                     
-                    return (
-                      <div key={orderId} style={{ 
-                        border: '1px solid #f0f0f0', 
-                        borderRadius: '6px', 
-                        padding: '8px', 
-                        marginBottom: '6px',
-                        background: isCancelled ? '#fff5f5' : '#fff9e6'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                          <div style={{ fontWeight: 500, fontSize: '12px' }}>
-                            Order #{orderId?.slice(-6) || 'N/A'}
-                          </div>
-                          <button 
-                            style={removeBtnStyle}
-                            onClick={() => handleRemoveNotification(orderId)}
-                            title="Remove notification"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <div style={{ fontSize: '11px', marginBottom: '6px', display: 'flex', alignItems: 'center' }}>
-                          <span>{statusInfo.emoji} {statusInfo.message}</span>
-                          <span style={statusBadgeStyle(order.status)}>{order.status}</span>
-                        </div>
-                        
-                        {/* Cancellation Reason */}
-                        {isCancelled && cancelledOrder?.cancellationReason && (
-                          <div style={{ 
-                            marginBottom: '6px', 
-                            padding: '6px',
-                            background: '#f8d7da',
-                            border: '1px solid #f5c6cb',
-                            borderRadius: '4px',
-                            fontSize: '10px',
-                            color: '#721c24'
-                          }}>
-                            <strong>Reason:</strong> {cancelledOrder.cancellationReason}
-                          </div>
-                        )}
-                        
-                        <ul style={{ paddingLeft: 14, margin: 0, fontSize: '11px' }}>
-                          {order.items && order.items.length > 0 ? order.items.map((item, i) => (
-                            <li key={item.name + i} style={{ marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>
-                                {item.name} (x{item.quantity || 1})
-                              </span>
-                              <span style={{ fontWeight: 500, marginLeft: '0.5rem' }}>
-                                ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                              </span>
-                            </li>
-                          )) : (
-                            <li style={{ marginBottom: 4 }}>
-                              No items listed
-                            </li>
-                          )}
-                        </ul>
-                        <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: '4px', marginTop: '4px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                          <span>Order Total:</span>
-                          <span>
-                            ₱{order.items ? order.items.reduce((total, item) => 
-                              total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) : '0.00'
-                            }
+                    <div className="flex items-center mb-3">
+                      <span className="text-lg mr-2">{statusInfo.emoji}</span>
+                      <span className="text-sm font-medium">{statusInfo.message}</span>
+                      <span className={getStatusBadgeClass(order.status)}>
+                        {order.status}
+                      </span>
+                    </div>
+                    
+                    {/* Cancellation Reason */}
+                    {isCancelled && cancelledOrder?.cancellationReason && (
+                      <div className="mb-3 p-2 bg-red-100 border border-red-200 rounded-lg text-xs text-red-800">
+                        <strong>Reason:</strong> {cancelledOrder.cancellationReason}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      {order.items && order.items.length > 0 ? order.items.map((item, i) => (
+                        <div key={item.name + i} className="flex justify-between items-center text-sm">
+                          <span className="text-amber-800">
+                            {item.name} (x{item.quantity || 1})
+                          </span>
+                          <span className="font-semibold text-amber-900">
+                            ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                           </span>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      )) : (
+                        <div className="text-sm text-gray-500">No items listed</div>
+                      )}
+                    </div>
+                    
+                    <div className="border-t border-amber-200 pt-2 mt-3 flex justify-between font-semibold text-sm">
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>Order Total:</span>
+                      <span className={isCancelled ? 'text-red-800' : 'text-amber-800'}>
+                        ₱{order.items ? order.items.reduce((total, item) => 
+                          total + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2) : '0.00'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
+      )}
+
+      {/* Back Button and Title */}
+      <div className="container mx-auto px-4 mt-6">
+        <button 
+          onClick={handleBack} 
+          className="flex items-center space-x-2 text-amber-700 hover:text-amber-900 transition-colors mb-6"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back to Dashboard</span>
+        </button>
+
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-amber-900 mb-4">Contact Front Desk</h1>
+          <p className="text-xl text-amber-700 max-w-2xl mx-auto">
+            Get in touch with our front desk team for any assistance you may need during your stay
+          </p>
+        </div>
       </div>
 
-      {/* Main Content Area */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '0.5rem',
-        boxSizing: 'border-box',
-        overflow: 'hidden',
-        minHeight: 0
-      }}>
-        {/* Back Button */}
-        <div style={{ 
-          width: '100%', 
-          display: 'flex', 
-          justifyContent: 'flex-start', 
-          alignItems: 'center',
-          marginBottom: '0.35rem',
-          flexShrink: 0
-        }}>
-          <button className="facilities-back" onClick={() => navigate('/customer/interface')}>
-            <span className="facilities-back-arrow">&#8592;</span> Back
-          </button>
+      {/* Contact Form */}
+      <div className="container mx-auto px-4 pb-8 flex-1">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-1 shadow-xl">
+            <div className="bg-white rounded-xl p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2 text-lg">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 placeholder-amber-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                    placeholder="Enter your name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2 text-lg">
+                    Room Number
+                  </label>
+                  <input
+                    type="text"
+                    value={roomNumber}
+                    onChange={e => setRoomNumber(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 placeholder-amber-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                    placeholder="Enter your room number"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2 text-lg">
+                    Your Message
+                  </label>
+                  <textarea
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    required
+                    rows={6}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 placeholder-amber-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200 resize-none"
+                    placeholder="How can we assist you today?"
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:from-amber-600 hover:to-orange-600 transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  <span>Send Message</span>
+                </button>
+              </form>
+
+              {/* Status Message */}
+              {status && (
+                <div className={`mt-6 p-4 rounded-xl text-center font-semibold ${
+                  status.includes('success') 
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                    : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                  {status}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-
-        {/* Title */}
-        <h2 style={{ 
-          letterSpacing: '1px', 
-          fontSize: '1.15rem',
-          margin: '0 0 0.6rem 0',
-          color: '#000',
-          flexShrink: 0
-        }}>Contact Front Desk</h2>
-
-        {/* Contact Form Container */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: 0,
-          width: '100%',
-          maxHeight: 'calc(100vh - 120px)' // Account for browser chrome
-        }}>
-          <form onSubmit={handleSubmit} style={{
-              display: 'flex',
-              flexDirection: 'column',
-              textAlign: 'left',
-              width: 'min(420px, 95vw)',
-              background: '#fff',
-              padding: '1.1rem',
-              borderRadius: '12px',
-              boxShadow: '0 2px 16px #FFD700',
-              color: '#000',
-              border: '2px solid #BFA06A',
-              boxSizing: 'border-box',
-              maxHeight: '100%',
-              overflow: 'hidden'
-            }}
-          >
-            <div style={{ 
-              marginBottom: '0.8rem',
-              flexShrink: 0
-            }}>
-              <label style={{ 
-                color: '#000000ff', 
-                
-                fontSize: '12px',
-                display: 'block',
-                marginBottom: '0.3rem'
-              }}>Name:</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.3rem',
-                  borderRadius: '4px',
-                  border: '1px solid #BFA06A',
-                  background: '#fff',
-                  color: '#000',
-                  
-                  fontSize: '12px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-            
-            <div style={{ 
-              marginBottom: '0.8rem',
-              flexShrink: 0
-            }}>
-              <label style={{ 
-                color: '#000000ff', 
-                
-                fontSize: '12px',
-                display: 'block',
-                marginBottom: '0.3rem'
-              }}>Room Number:</label>
-              <input
-                type="text"
-                value={roomNumber}
-                onChange={e => setRoomNumber(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.3rem',
-                  borderRadius: '4px',
-                  border: '1px solid #BFA06A',
-                  background: '#fff',
-                  color: '#000',
-                  
-                  fontSize: '12px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-            
-            <div style={{ 
-              marginBottom: '0.8rem',
-              flex: 1,
-              minHeight: 0
-            }}>
-              <label style={{ 
-                color: '#000000ff', 
-                
-                fontSize: '12px',
-                display: 'block',
-                marginBottom: '0.3rem'
-              }}>Your Message:</label>
-              <textarea
-                value={message}
-                onChange={e => setMessage(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.3rem',
-                  borderRadius: '4px',
-                  border: '1px solid #FFD700',
-                  background: '#fff',
-                  color: '#000',
-                  
-                  fontSize: '12px',
-                  boxSizing: 'border-box',
-                  resize: 'none',
-                  height: '100%',
-                  minHeight: '60px'
-                }}
-              />
-            </div>
-            
-            <button
-              type="submit"
-              style={{
-                padding: '0.3rem 0.8rem',
-                borderRadius: '6px',
-                border: '2px solid #F7D774',
-                background: '#F7D774',
-                color: '#000',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px #F7D700',
-                transition: 'background 0.2s, color 0.2s',
-                
-                fontSize: '12px',
-                width: '100%',
-                flexShrink: 0
-              }}
-              onMouseOver={e => { e.target.style.background = '#5f4b0aff'; e.target.style.color = '#F7D774'; }}
-              onMouseOut={e => { e.target.style.background = '#e6be49ff'; e.target.style.color = '#000000ff'; }}
-            >Send</button>
-          </form>
-        </div>
-
-        {/* Status Message */}
-        {status && <p style={{ 
-          marginTop: '0.3rem', 
-          color: status.includes('success') ? '#4caf50' : '#f44336', 
-          textShadow: '0 1px 4px #000', 
-          
-          fontSize: '11px',
-          flexShrink: 0
-        }}>{status}</p>}
       </div>
 
       {/* Cart Popup */}
       {showCart && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0,
-          width: '100vw', height: '100vh',
-          background: 'rgba(75,46,6,0.10)',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'center', zIndex: 1200
-        }}>
-          <div style={{
-            background: '#fff', 
-            padding: '1.2rem',
-            borderRadius: '1rem', 
-            boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-            width: '90vw',
-            maxWidth: '600px',
-            maxHeight: '70vh',
-            textAlign: 'center', 
-            color: '#4B2E06', 
-            border: '2.5px solid #F7D774', 
-            
-            overflow: 'auto'
-          }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>
-              Your Cart
-            </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Your Cart
+              </h2>
+            </div>
 
-            {cart.length === 0 ? (
-              <p style={{ color: '#4B2E06', fontSize: '1rem' }}>Your cart is empty.</p>
-            ) : (
-              <div style={{ maxHeight: '35vh', overflowY: 'auto', marginBottom: '1rem' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#4B2E06', fontSize: '0.8rem' }}>
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                    <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Price</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Qty</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Total</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.map((item, idx) => {
-                      const itemTotal = (item.price || 0) * (item.quantity || 1);
-                      return (
-                        <tr key={idx}>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', textAlign: 'left' }}>
-                            <img src={item.img} alt={item.name} style={{
-                              width: '24px', height: '24px', borderRadius: '6px',
-                              marginRight: '0.4rem', verticalAlign: 'middle',
-                              border: '1.5px solid #F7D774', background: '#fff'
-                            }} />
-                            {item.name}
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            ₱{item.price ? item.price.toFixed(2) : '0.00'}
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem' }}>
-                              <button
-                                onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)}
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  borderRadius: '50%',
-                                  border: '1px solid #FFD700',
-                                  background: '#F7D774',
-                                  color: '#4B2E06',
-                                  fontWeight: 'bold',
-                                  cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                              >
-                                -
-                              </button>
-                              <span style={{ minWidth: '20px', textAlign: 'center' }}>
-                                {item.quantity || 1}
-                              </span>
-                              <button
-                                onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)}
-                                style={{
-                                  width: '20px',
-                                  height: '20px',
-                                  borderRadius: '50%',
-                                  border: '1px solid #FFD700',
-                                  background: '#F7D774',
-                                  color: '#4B2E06',
-                                  fontWeight: 'bold',
-                                  cursor: 'pointer',
-                                  fontSize: '0.7rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center'
-                                }}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
-                            ₱{itemTotal.toFixed(2)}
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            <button
-                              onClick={() => removeFromCart(idx)}
-                              style={{
-                                padding: '0.2rem 0.5rem', borderRadius: '0.4em',
-                                border: '2px solid #FFD700', background: '#F7D774',
-                                color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                                boxShadow: '0 2px 8px #e5c16c44',
-                                transition: 'background 0.2s, color 0.2s',
-                                fontSize: '0.7rem'
-                              }}
-                              onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                              onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              {cart.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p className="text-lg">Your cart is empty</p>
+                  <p className="text-sm mt-2">Add some items from our menu</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item, idx) => {
+                    const itemTotal = (item.price || 0) * (item.quantity || 1);
+                    return (
+                      <div key={idx} className="flex items-center justify-between p-4 bg-amber-50 rounded-xl border border-amber-200">
+                        <div className="flex items-center space-x-4 flex-1">
+                          <img src={item.img} alt={item.name} className="w-16 h-16 rounded-lg object-cover border border-amber-300" />
+                          <div className="flex-1">
+                            <div className="font-semibold text-amber-900">{item.name}</div>
+                            <div className="text-amber-700">₱{item.price ? item.price.toFixed(2) : '0.00'}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-6">
+                          <div className="flex items-center space-x-3">
+                            <button 
+                              onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)} 
+                              className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
                             >
-                              Remove
+                              −
                             </button>
-                          </td>
-                        </tr>
+                            <span className="min-w-[40px] text-center font-semibold text-amber-900">
+                              {item.quantity || 1}
+                            </span>
+                            <button 
+                              onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)} 
+                              className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+                          
+                          <div className="text-right min-w-[100px]">
+                            <div className="font-bold text-amber-900">₱{itemTotal.toFixed(2)}</div>
+                          </div>
+                          
+                          <button 
+                            onClick={() => removeFromCart(idx)} 
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove item"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  <div className="border-t border-amber-200 pt-4 mt-6">
+                    <div className="flex justify-between items-center text-lg font-bold text-amber-900">
+                      <span>Total:</span>
+                      <span>₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-amber-50 border-t border-amber-200">
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={async () => {
+                    if (roomNumber && cart.length > 0) {
+                      try {
+                        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+                        setCart([]);
+                        alert('Checkout successful! Your order has been sent to the restaurant.');
+                        setShowCart(false);
+                      } catch {
+                        alert('Checkout failed. Please try again.');
+                      }
+                    }
+                  }}
+                  disabled={cart.length === 0}
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Checkout</span>
+                </button>
+
+                <button
+                  onClick={() => setShowCart(false)}
+                  className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Popup */}
+      {showStatus && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Order Status
+              </h2>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex justify-center p-4 bg-amber-50 border-b border-amber-200">
+              <div className="flex space-x-2 bg-white p-1 rounded-xl border border-amber-200">
+                <button
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    tab === 'pending' 
+                      ? 'bg-amber-500 text-white shadow-md' 
+                      : 'text-amber-700 hover:bg-amber-100'
+                  }`}
+                  onClick={() => setTab('pending')}
+                >
+                  Pending Orders
+                </button>
+                <button
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    tab === 'delivered' 
+                      ? 'bg-amber-500 text-white shadow-md' 
+                      : 'text-amber-700 hover:bg-amber-100'
+                  }`}
+                  onClick={() => setTab('delivered')}
+                >
+                  Order History
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              {orders.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-lg">No orders yet</p>
+                  <p className="text-sm mt-2">Your order history will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orders
+                    .filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered')))
+                    .map((order, idx) => {
+                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+                      return (
+                        <div key={order._id || idx} className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <div className="font-semibold text-amber-900">Order #{order._id?.slice(-6) || 'N/A'}</div>
+                              <div className="text-sm text-amber-700">Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString()}</div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <span className={getStatusBadgeClass(order.status)}>
+                                {order.status || 'pending'}
+                              </span>
+                              {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
+                                <button 
+                                  className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                                  onClick={() => cancelOrder(order)}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {order.items.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100">
+                                <div className="flex items-center space-x-3">
+                                  {item.img && (
+                                    <img src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-amber-200" />
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-amber-900">{item.name}</div>
+                                    <div className="text-sm text-amber-700">Quantity: {item.quantity || 1}</div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-amber-900">
+                                    ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="border-t border-amber-200 pt-3 mt-3 flex justify-between items-center">
+                            <div className="font-semibold text-amber-900">Order Total</div>
+                            <div className="text-xl font-bold text-amber-900">₱{totalPrice.toFixed(2)}</div>
+                          </div>
+                        </div>
                       );
                     })}
-                    <tr style={{ fontWeight: 500, background: '#F7D774', color: '#4B2E06' }}>
-                      <td colSpan={3} style={{ padding: '0.4rem', textAlign: 'right' }}>Total:</td>
-                      <td style={{ padding: '0.4rem' }}>
-                        ₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}
-                      </td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '1rem' }}>
-              <button
-                onClick={async () => {
-                  if (roomNumber && cart.length > 0) {
-                    try {
-                      await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-                      setCart([]);
-                      alert('Checkout successful! Your order has been sent to the restaurant.');
-                      setShowCart(false);
-                    } catch {
-                      alert('Checkout failed. Please try again.');
-                    }
-                  }
-                }}
-                style={{
-                  padding: '0.4rem 1rem',
-                  borderRadius: '0.4em', border: '2px solid #FFD700',
-                  background: '#F7D774', color: '#4B2E06',
-                  fontWeight: 500, cursor: 'pointer',
-                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-              >
-                Checkout
-              </button>
-
-              <button
-                onClick={() => setShowCart(false)}
-                style={{
-                  padding: '0.4rem 1rem',
-                  borderRadius: '0.4em', border: '2px solid #FFD700',
-                  background: '#fff', color: '#4B2E06',
-                  fontWeight: 500, cursor: 'pointer',
-                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
+            <div className="p-6 bg-amber-50 border-t border-amber-200 text-center">
+              <button 
+                className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                onClick={() => setShowStatus(false)}
               >
                 Close
               </button>
@@ -1475,119 +1323,7 @@ function ContactFrontDesk() {
         </div>
       )}
 
-      {/* Status Popup with tabs for Pending and Delivered */}
-      {showStatus && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0,
-          width: '100vw', height: '100vh',
-          background: 'rgba(75,46,6,0.10)',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'center', zIndex: 1200
-        }}>
-          <div style={{
-            background: '#fff', 
-            padding: '1.2rem',
-            borderRadius: '1rem', 
-            boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-            width: '90vw',
-            maxWidth: '600px',
-            maxHeight: '70vh',
-            textAlign: 'center', 
-            color: '#4B2E06', 
-            border: '2.5px solid #F7D774', 
-            
-            overflow: 'auto'
-          }}>
-            <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
-            {/* Tabs */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', gap: '0.8rem' }}>
-              <button
-                style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onClick={() => setTab('pending')}
-                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                onMouseOut={e => { e.target.style.background = tab === 'pending' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
-              >Pending</button>
-              <button
-                style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-                onClick={() => setTab('delivered')}
-                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                onMouseOut={e => { e.target.style.background = tab === 'delivered' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
-              >Delivered</button>
-            </div>
-            {/* Orders Table, scrollable if too many items */}
-            {orders.length === 0 ? (
-              <p style={{ color: '#4B2E06', fontSize: '1rem' }}>No checked-out orders yet.</p>
-            ) : (
-              <div style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', color: '#4B2E06', fontSize: '0.8rem' }}>
-                  <thead>
-                    <tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Items</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Total Price</th>
-                      <th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered'))).map((order, idx) => {
-                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                      return (
-                        <tr key={order._id || idx}>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                              {order.items.map((item, i) => (
-                                <li key={i} style={{ marginBottom: '0.4rem', display: 'flex', alignItems: 'center' }}>
-                                  {item.img && (
-                                    <img src={item.img} alt={item.name} style={{ width: '24px', height: '24px', borderRadius: '6px', marginRight: '0.4rem', verticalAlign: 'middle', border: '1.5px solid #F7D774', background: '#fff' }} />
-                                  )}
-                                  <span style={{ color: '#4B2E06', fontWeight: 500, fontSize: '0.8rem' }}>{item.name}</span> 
-                                  <span style={{ color: '#4B2E06', marginLeft: '0.4rem', fontSize: '0.8rem' }}>(x{item.quantity || 1})</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>₱{totalPrice.toFixed(2)}</td>
-                          <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
-                            {order.status || 'pending'}
-                            {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
-                              <button
-                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
-                                onClick={() => cancelOrder(order)}
-                                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                                onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                              >Cancel</button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <button
-              onClick={() => setShowStatus(false)}
-              style={{
-                marginTop: '1rem', padding: '0.4rem 1rem',
-                borderRadius: '0.4em', border: '2px solid #FFD700',
-                background: '#fff', color: '#4B2E06',
-                fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                fontSize: '0.8rem'
-              }}
-              onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-              onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Add CSS for slide-in animation */}
+      {/* Add CSS for animations */}
       <style>
         {`
           @keyframes slideInRight {
@@ -1599,6 +1335,9 @@ function ContactFrontDesk() {
               transform: translateX(0);
               opacity: 1;
             }
+          }
+          .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out;
           }
         `}
       </style>

@@ -16,10 +16,25 @@ function ToastNotification({ message, type, onClose }) {
   }, [onClose, type]);
 
   return (
-    <div className={`toast-notification ${type}`}>
-      <div className="toast-content">
-        <span className="toast-message">{message}</span>
-        <button className="toast-close" onClick={onClose}>×</button>
+    <div className={`bg-white rounded-xl shadow-lg border-l-4 p-4 animate-slide-in-right ${
+      type === 'new-order' ? 'border-green-400 bg-green-50' : 
+      type === 'cancelled' ? 'border-red-400 bg-red-50' : 
+      'border-amber-400'
+    }`}>
+      <div className="flex justify-between items-start">
+        <div className={`font-semibold ${
+          type === 'new-order' ? 'text-green-800' : 
+          type === 'cancelled' ? 'text-red-800' : 
+          'text-amber-800'
+        }`}>
+          {message}
+        </div>
+        <button 
+          className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+          onClick={onClose}
+        >
+          ×
+        </button>
       </div>
     </div>
   );
@@ -49,6 +64,7 @@ function MenuManager() {
   const [message, setMessage] = React.useState('');
   const [addForm, setAddForm] = React.useState({ name: '', price: '', category: 'breakfast', img: '', details: '', available: true });
   const [showAddPopup, setShowAddPopup] = React.useState(false);
+  const [menuCategoryFilter, setMenuCategoryFilter] = React.useState('all');
 
   const fetchFood = React.useCallback(async () => {
     try {
@@ -151,94 +167,280 @@ function MenuManager() {
     fetchFood(); 
   }, [fetchFood]);
 
-  return (
-    <div className="menu-manager">
-      <h3 className="menu-manager-title">Manage Food Menu</h3>
-      <button className="btn btn-add" onClick={() => setShowAddPopup(true)}>Add Food Item</button>
-      <h4 className="food-items-title">Food Items</h4>
-      {message && <p className={`message ${message.includes('success') || message.includes('updated') || message.includes('deleted') ? 'success' : 'error'}`}>{message}</p>}
-      <table className="food-table">
-        <thead>
-          <tr>
-            <th>Name</th><th>Price</th><th>Category</th><th>Image</th><th>Details</th><th>Available</th><th>Edit</th><th>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {foodItems.map(item => (
-            <tr key={item._id}>
-              <td>{item.name}</td>
-              <td>₱{item.price}</td>
-              <td>{item.category}</td>
-              <td><img className="food-img" src={item.img} alt={item.name} /></td>
-              <td>{item.details}</td>
-              <td>
-                <button className={`btn btn-toggle ${item.available ? 'available' : 'unavailable'}`} onClick={() => handleToggleAvailability(item)}>
-                  {item.available ? 'Available' : 'Unavailable'}
-                </button>
-              </td>
-              <td><button className="btn btn-edit" onClick={() => startEdit(item)}>Edit</button></td>
-              <td><button className="btn btn-delete" onClick={() => handleDelete(item._id, item.category)}>Delete</button></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  const filteredFoodItems = React.useMemo(() => {
+    if (menuCategoryFilter === 'all') return foodItems;
+    return foodItems.filter(i => (i.category || '').toLowerCase() === menuCategoryFilter.toLowerCase());
+  }, [foodItems, menuCategoryFilter]);
 
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-8 border border-amber-200">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-amber-900">Manage Food Menu</h3>
+        <div className="flex items-center space-x-3">
+          <select
+            value={menuCategoryFilter}
+            onChange={(e) => setMenuCategoryFilter(e.target.value)}
+            className="px-4 py-3 rounded-xl border-2 border-amber-200 bg-white text-amber-900 font-semibold focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+          >
+            <option value="all">All Categories</option>
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="desserts">Desserts</option>
+            <option value="snack">Snack</option>
+            <option value="beverages">Beverages</option>
+          </select>
+
+          <button 
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 flex items-center space-x-2"
+            onClick={() => setShowAddPopup(true)}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Add Food Item</span>
+          </button>
+        </div>
+      </div>
+
+      {message && (
+        <div className={`mb-6 p-4 rounded-xl text-center font-semibold ${
+          message.includes('success') || message.includes('updated') || message.includes('deleted') 
+            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+            : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {message}
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+              <th className="px-4 py-3 text-left font-semibold">Name</th>
+              <th className="px-4 py-3 text-left font-semibold">Price</th>
+              <th className="px-4 py-3 text-left font-semibold">Category</th>
+              <th className="px-4 py-3 text-left font-semibold">Image</th>
+              <th className="px-4 py-3 text-left font-semibold">Details</th>
+              <th className="px-4 py-3 text-left font-semibold">Available</th>
+              <th className="px-4 py-3 text-left font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredFoodItems.map(item => (
+              <tr key={item._id} className="border-b border-amber-100 hover:bg-amber-50 transition-colors">
+                <td className="px-4 py-3 text-amber-900 font-medium">{item.name}</td>
+                <td className="px-4 py-3 text-amber-700">₱{item.price}</td>
+                <td className="px-4 py-3 text-amber-700 capitalize">{item.category}</td>
+                <td className="px-4 py-3">
+                  <img className="w-16 h-16 rounded-lg object-cover border border-amber-300" src={item.img} alt={item.name} />
+                </td>
+                <td className="px-4 py-3 text-amber-700 max-w-xs truncate">{item.details}</td>
+                <td className="px-4 py-3">
+                  <button 
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                      item.available 
+                        ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                        : 'bg-red-500 text-white hover:bg-red-600'
+                    }`}
+                    onClick={() => handleToggleAvailability(item)}
+                  >
+                    {item.available ? 'Available' : 'Unavailable'}
+                  </button>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex space-x-2">
+                    <button 
+                      className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors"
+                      onClick={() => startEdit(item)}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+                      onClick={() => handleDelete(item._id, item.category)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Edit Popup */}
       {showEditPopup && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <h3>Edit Food Item</h3>
-            <form className="popup-form" onSubmit={handleEdit}>
-              <label>Name:<input type="text" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} required /></label>
-              <label>Price:<input type="number" step="0.01" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} required /></label>
-              <label>Category:
-                <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} required>
-                  <option value="breakfast">Breakfast</option>
-                  <option value="lunch">Lunch</option>
-                  <option value="dinner">Dinner</option>
-                  <option value="desserts">Desserts</option>
-                  <option value="snack">Snack</option>
-                  <option value="beverages">Beverages</option>
-                </select>
-              </label>
-              <label>Image URL:<input type="text" value={editForm.img} onChange={e => setEditForm(f => ({ ...f, img: e.target.value }))} required /></label>
-              <label>Details:<textarea value={editForm.details} onChange={e => setEditForm(f => ({ ...f, details: e.target.value }))} /></label>
-              <div className="popup-actions">
-                <button type="submit" className="btn btn-save">Save Changes</button>
-                <button type="button" className="btn btn-cancel" onClick={() => { setEditId(null); setShowEditPopup(false); }}>Cancel</button>
-              </div>
-            </form>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h3 className="text-2xl font-bold text-white">Edit Food Item</h3>
+            </div>
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              <form className="space-y-4" onSubmit={handleEdit}>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Name</label>
+                  <input 
+                    type="text" 
+                    value={editForm.name} 
+                    onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Price</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={editForm.price} 
+                    onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Category</label>
+                  <select 
+                    value={editForm.category} 
+                    onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  >
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="desserts">Desserts</option>
+                    <option value="snack">Snack</option>
+                    <option value="beverages">Beverages</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Image URL</label>
+                  <input 
+                    type="text" 
+                    value={editForm.img} 
+                    onChange={e => setEditForm(f => ({ ...f, img: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Details</label>
+                  <textarea 
+                    value={editForm.details} 
+                    onChange={e => setEditForm(f => ({ ...f, details: e.target.value }))} 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200 resize-none"
+                    rows="3"
+                  />
+                </div>
+                <div className="flex justify-center space-x-4 pt-4">
+                  <button type="submit" className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200">
+                    Save Changes
+                  </button>
+                  <button 
+                    type="button" 
+                    className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                    onClick={() => { setEditId(null); setShowEditPopup(false); }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Add Popup */}
       {showAddPopup && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <h3>Add Food Item</h3>
-            <form className="popup-form" onSubmit={handleAdd}>
-              <label>Name:<input type="text" value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} required /></label>
-              <label>Price:<input type="number" step="0.01" value={addForm.price} onChange={e => setAddForm(f => ({ ...f, price: e.target.value }))} required /></label>
-              <label>Category:
-                <select value={addForm.category} onChange={e => setAddForm(f => ({ ...f, category: e.target.value }))} required>
-                  <option value="breakfast">Breakfast</option>
-                  <option value="lunch">Lunch</option>
-                  <option value="dinner">Dinner</option>
-                  <option value="desserts">Desserts</option>
-                  <option value="snack">Snack</option>
-                  <option value="beverages">Beverages</option>
-                </select>
-              </label>
-              <label>Image URL:<input type="text" value={addForm.img} onChange={e => setAddForm(f => ({ ...f, img: e.target.value }))} required /></label>
-              <label>Details:<textarea value={addForm.details} onChange={e => setAddForm(f => ({ ...f, details: e.target.value }))} /></label>
-              <label>
-                Available:
-                <input type="checkbox" checked={addForm.available} onChange={e => setAddForm(f => ({ ...f, available: e.target.checked }))} />
-              </label>
-              <div className="popup-actions">
-                <button type="submit" className="btn btn-save">Add Food Item</button>
-                <button type="button" className="btn btn-cancel" onClick={() => setShowAddPopup(false)}>Cancel</button>
-              </div>
-            </form>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h3 className="text-2xl font-bold text-white">Add Food Item</h3>
+            </div>
+            <div className="p-6 max-h-[50vh] overflow-y-auto">
+              <form className="space-y-4" onSubmit={handleAdd}>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Name</label>
+                  <input 
+                    type="text" 
+                    value={addForm.name} 
+                    onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Price</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={addForm.price} 
+                    onChange={e => setAddForm(f => ({ ...f, price: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Category</label>
+                  <select 
+                    value={addForm.category} 
+                    onChange={e => setAddForm(f => ({ ...f, category: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  >
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="desserts">Desserts</option>
+                    <option value="snack">Snack</option>
+                    <option value="beverages">Beverages</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Image URL</label>
+                  <input 
+                    type="text" 
+                    value={addForm.img} 
+                    onChange={e => setAddForm(f => ({ ...f, img: e.target.value }))} 
+                    required 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-amber-900 font-semibold mb-2">Details</label>
+                  <textarea 
+                    value={addForm.details} 
+                    onChange={e => setAddForm(f => ({ ...f, details: e.target.value }))} 
+                    className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200 resize-none"
+                    rows="3"
+                  />
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    checked={addForm.available} 
+                    onChange={e => setAddForm(f => ({ ...f, available: e.target.checked }))} 
+                    className="w-5 h-5 text-amber-500 rounded focus:ring-amber-200"
+                  />
+                  <label className="text-amber-900 font-semibold">Available</label>
+                </div>
+                <div className="flex justify-center space-x-4 pt-4">
+                  <button type="submit" className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200">
+                    Add Food Item
+                  </button>
+                  <button 
+                    type="button" 
+                    className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                    onClick={() => setShowAddPopup(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -498,65 +700,273 @@ function RestaurantAdminDashboard() {
   const onTheWayOrders = orders.filter(order => order.status === 'on the way');
   const deliveredOrders = orders.filter(order => order.status === 'delivered');
 
-  return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h2 className="dashboard-title">Restaurant Admin Dashboard</h2>
-        <div className="header-controls">
-          {/* Notification Bell */}
-          <button 
-            className={`notification-bell ${showNotificationPopup ? 'active' : ''}`}
-            onClick={handleBellClick}
-            aria-label="Notifications"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            {/* Show counter for new notifications */}
-            {!showNotificationPopup && notificationCount > 0 && (
-              <span className="bell-counter">{notificationCount > 99 ? '99+' : notificationCount}</span>
-            )}
-          </button>
-          <LogoutButton />
+  // Status badge styles with Tailwind classes
+  const getStatusBadgeClass = (status) => {
+    const baseClasses = "px-2 py-1 rounded-full text-xs font-semibold capitalize ml-2 border";
+    switch (status) {
+      case 'pending':
+        return `${baseClasses} bg-yellow-50 text-yellow-800 border-yellow-200`;
+      case 'acknowledged':
+        return `${baseClasses} bg-blue-50 text-blue-800 border-blue-200`;
+      case 'preparing':
+        return `${baseClasses} bg-green-50 text-green-800 border-green-200`;
+      case 'on the way':
+        return `${baseClasses} bg-indigo-50 text-indigo-800 border-indigo-200`;
+      case 'delivered':
+        return `${baseClasses} bg-emerald-50 text-emerald-800 border-emerald-200`;
+      case 'cancelled':
+        return `${baseClasses} bg-red-50 text-red-800 border-red-200`;
+      default:
+        return `${baseClasses} bg-gray-50 text-gray-800 border-gray-200`;
+    }
+  };
+
+  const renderOrdersTable = (ordersList, showActions = true, statusType = '') => {
+    if (ordersList.length === 0) {
+      return (
+        <div className="text-center py-12 text-gray-500">
+          <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-lg">No {statusType} orders</p>
         </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+              <th className="px-4 py-3 text-left font-semibold">Room Number</th>
+              <th className="px-4 py-3 text-left font-semibold">Items</th>
+              <th className="px-4 py-3 text-left font-semibold">Total Price</th>
+              <th className="px-4 py-3 text-left font-semibold">Status</th>
+              <th className="px-4 py-3 text-left font-semibold">Checked Out At</th>
+              {orderFilter === 'cancelled' && (
+                <>
+                  <th className="px-4 py-3 text-left font-semibold">Cancelled At</th>
+                  <th className="px-4 py-3 text-left font-semibold">Cancellation Reason</th>
+                </>
+              )}
+              {showActions && <th className="px-4 py-3 text-left font-semibold">Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {ordersList.map(order => {
+              const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+              return (
+                <tr key={order._id} className="border-b border-amber-100 hover:bg-amber-50 transition-colors">
+                  <td className="px-4 py-3 text-amber-900 font-medium">{order.roomNumber}</td>
+                  <td className="px-4 py-3">
+                    <div className="space-y-2">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} className="flex items-center space-x-3">
+                          <img className="w-12 h-12 rounded-lg object-cover border border-amber-200" src={item.img} alt={item.name} />
+                          <div>
+                            <div className="font-medium text-amber-900">{item.name}</div>
+                            <div className="text-sm text-amber-700">Quantity: {item.quantity || 1}</div>
+                            <div className="text-sm font-semibold text-amber-900">
+                              ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-amber-900 font-bold text-lg">₱{totalPrice.toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <span className={getStatusBadgeClass(order.status)}>
+                      {order.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-amber-700">
+                    {order.checkedOutAt ? new Date(order.checkedOutAt).toLocaleString() : 'N/A'}
+                  </td>
+                  {orderFilter === 'cancelled' && (
+                    <>
+                      <td className="px-4 py-3 text-amber-700">
+                        {order.cancelledAt ? new Date(order.cancelledAt).toLocaleString() : 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-amber-700">{order.cancellationReason}</td>
+                    </>
+                  )}
+                  {showActions && (
+                    <td className="px-4 py-3">
+                      <div className="flex space-x-2">
+                        {order.status === 'pending' && (
+                          <button 
+                            className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors"
+                            onClick={() => handleProgressStatus(order)}
+                          >
+                            Acknowledge
+                          </button>
+                        )}
+                        {order.status === 'acknowledged' && (
+                          <button 
+                            className="px-4 py-2 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition-colors"
+                            onClick={() => handleProgressStatus(order)}
+                          >
+                            Start Preparing
+                          </button>
+                        )}
+                        {order.status === 'preparing' && (
+                          <button 
+                            className="px-4 py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600 transition-colors"
+                            onClick={() => handleProgressStatus(order)}
+                          >
+                            Mark On The Way
+                          </button>
+                        )}
+                        {order.status === 'on the way' && (
+                          <button 
+                            className="px-4 py-2 rounded-lg bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition-colors"
+                            onClick={() => handleProgressStatus(order)}
+                          >
+                            Mark Delivered
+                          </button>
+                        )}
+                        {(order.status === 'pending' || order.status === 'acknowledged') && (
+                          <button 
+                            className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+                            onClick={() => openCancelPopup(order)}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {order.status === 'delivered' && (
+                          <button 
+                            className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+                            onClick={() => handleDeleteDelivered(order._id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                        {orderFilter === 'cancelled' && (
+                          <button 
+                            className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+                            onClick={() => handleDeleteCancelled(order._id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-      
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col overflow-hidden">
       {/* Toast Notifications Container */}
-      <div className="toast-container">
-          {notifications.filter(n => !n.dismissed).map(notification => (
-            <ToastNotification
-              key={notification.id}
-              message={notification.message}
-              type={notification.type}
-              onClose={() => dismissToast(notification.id)}
-            />
-          ))}
+      <div className="fixed top-20 right-4 z-50 flex flex-col gap-3 max-w-sm">
+        {notifications.filter(n => !n.dismissed).map(notification => (
+          <ToastNotification
+            key={notification.id}
+            message={notification.message}
+            type={notification.type}
+            onClose={() => dismissToast(notification.id)}
+          />
+        ))}
       </div>
+
+      {/* Header */}
+      <header className="bg-gradient-to-r from-amber-900 to-amber-800 shadow-lg sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo and App Name */}
+            <div className="flex items-center space-x-3">
+              <img 
+                src='/lumine_icon.png' 
+                alt="Lumine Logo" 
+                className="h-8 w-8 object-contain" 
+              />
+              <span className="text-white text-xl font-light tracking-wider">
+                Lumine Restaurant Admin
+              </span>
+            </div>
+
+            {/* Navigation Controls */}
+            <div className="flex items-center space-x-4">
+              {/* Notification Bell */}
+              <button 
+                className="notification-bell relative p-1 rounded hover:bg-amber-700 transition-colors focus:outline-none"
+                onClick={handleBellClick} 
+                aria-label="Notifications"
+              >
+                <div className={`p-1 rounded ${showNotificationPopup ? 'bg-amber-600' : ''}`}>
+                  <svg className="w-5 h-5 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                </div>
+                
+                {/* Notification Counter */}
+                {!showNotificationPopup && notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold">
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Logout Button */}
+              <LogoutButton />
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Notification Popup */}
       {showNotificationPopup && (
-        <div className="notification-popup">
-          <div className="notification-popup-header">
-            <h3>Recent Notifications</h3>
-            <span className="notification-count">
+        <div className="notification-popup absolute top-20 right-4 bg-white rounded-2xl shadow-2xl p-6 min-w-80 max-w-sm z-50 border border-amber-200">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-amber-900">Recent Notifications</h3>
+            <span className="text-sm text-gray-500 bg-amber-100 px-2 py-1 rounded-full">
               {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
             </span>
           </div>
+          
           {notifications.length === 0 ? (
-            <div className="no-notifications">No new notifications</div>
+            <div className="text-center py-8 text-gray-500">
+              <svg className="w-12 h-12 mx-auto text-amber-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>No new notifications</p>
+            </div>
           ) : (
-            <div className="notification-list">
+            <div className="max-h-96 overflow-y-auto space-y-3">
               {notifications.map((notification) => (
-                <div key={notification.id} className={`notification-item ${notification.type}`}>
-                  <div className="notification-message">{notification.message}</div>
-                  <button 
-                    className="notification-close"
-                    onClick={() => deleteNotification(notification.id)}
-                    title="Remove notification"
-                  >
-                    ×
-                  </button>
+                <div 
+                  key={notification.id} 
+                  className={`border rounded-xl p-4 transition-all duration-200 ${
+                    notification.type === 'new-order' 
+                      ? 'border-green-200 bg-green-50' 
+                      : notification.type === 'cancelled'
+                      ? 'border-red-200 bg-red-50'
+                      : 'border-amber-200 bg-amber-50 hover:bg-amber-100'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="font-medium text-sm text-amber-900">
+                      {notification.message}
+                    </div>
+                    <button 
+                      className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                      onClick={() => deleteNotification(notification.id)}
+                      title="Remove notification"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-500 capitalize">
+                    {notification.type.replace('-', ' ')}
+                  </div>
                 </div>
               ))}
             </div>
@@ -564,362 +974,146 @@ function RestaurantAdminDashboard() {
         </div>
       )}
 
-      <div className="tabs">
-        <button className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>Orders</button>
-        <button className={`tab-btn ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>Manage Menu</button>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8 flex-1">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-amber-900 mb-4">Restaurant Admin Dashboard</h1>
+          <p className="text-xl text-amber-700 max-w-2xl mx-auto">
+            Manage orders, update menu items, and track restaurant operations
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white p-1 rounded-xl border border-amber-200 shadow-lg">
+            <div className="flex space-x-1">
+              <button
+                className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
+                  activeTab === 'orders' 
+                    ? 'bg-amber-500 text-white shadow-md' 
+                    : 'text-amber-700 hover:bg-amber-100'
+                }`}
+                onClick={() => setActiveTab('orders')}
+              >
+                Orders Management
+              </button>
+              <button
+                className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
+                  activeTab === 'menu' 
+                    ? 'bg-amber-500 text-white shadow-md' 
+                    : 'text-amber-700 hover:bg-amber-100'
+                }`}
+                onClick={() => setActiveTab('menu')}
+              >
+                Menu Management
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Order Filter */}
         {activeTab === 'orders' && (
-          <select 
-            className="order-filter" 
-            value={orderFilter} 
-            onChange={(e) => {
-              setOrderFilter(e.target.value);
-              if (e.target.value === 'cancelled') {
-                fetchCancelledOrders();
-              }
-            }}
-          >
-            <option value="pending">Pending Orders</option>
-            <option value="acknowledged">Acknowledged Orders</option>
-            <option value="preparing">Preparing Orders</option>
-            <option value="on the way">Orders On The Way</option>
-            <option value="delivered">Delivered Orders</option>
-            <option value="cancelled">Cancelled Orders</option>
-          </select>
+          <div className="flex justify-center mb-8">
+            <select 
+              className="px-6 py-3 rounded-xl border-2 border-amber-200 bg-white text-amber-900 font-semibold focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
+              value={orderFilter} 
+              onChange={(e) => {
+                setOrderFilter(e.target.value);
+                if (e.target.value === 'cancelled') {
+                  fetchCancelledOrders();
+                }
+              }}
+            >
+              <option value="pending">Pending Orders</option>
+              <option value="acknowledged">Acknowledged Orders</option>
+              <option value="preparing">Preparing Orders</option>
+              <option value="on the way">Orders On The Way</option>
+              <option value="delivered">Delivered Orders</option>
+              <option value="cancelled">Cancelled Orders</option>
+            </select>
+          </div>
         )}
+
+        {/* Content Area */}
+        <div className="max-w-7xl mx-auto">
+          {activeTab === 'menu' ? (
+            <MenuManager />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-amber-200">
+              <h2 className="text-3xl font-bold text-amber-900 mb-8 text-center">
+                {orderFilter === 'pending' && 'Pending Orders'}
+                {orderFilter === 'acknowledged' && 'Acknowledged Orders'}
+                {orderFilter === 'preparing' && 'Preparing Orders'}
+                {orderFilter === 'on the way' && 'Orders On The Way'}
+                {orderFilter === 'delivered' && 'Delivered Orders'}
+                {orderFilter === 'cancelled' && 'Cancelled Orders'}
+              </h2>
+              
+              {orderFilter === 'pending' && renderOrdersTable(pendingOrders, true, 'pending')}
+              {orderFilter === 'acknowledged' && renderOrdersTable(acknowledgedOrders, true, 'acknowledged')}
+              {orderFilter === 'preparing' && renderOrdersTable(preparingOrders, true, 'preparing')}
+              {orderFilter === 'on the way' && renderOrdersTable(onTheWayOrders, true, 'on the way')}
+              {orderFilter === 'delivered' && renderOrdersTable(deliveredOrders, true, 'delivered')}
+              {orderFilter === 'cancelled' && renderOrdersTable(cancelledOrders, true, 'cancelled')}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Cancellation Popup */}
       {showCancelPopup && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <h3>Cancel Order</h3>
-            <p>Please provide a reason for cancellation:</p>
-            <textarea 
-              className="cancel-reason-input"
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Enter cancellation reason..."
-              rows="4"
-              required
-            />
-            <div className="popup-actions">
-              <button className="btn btn-confirm" onClick={handleCancelOrder}>
-                Confirm Cancellation
-              </button>
-              <button className="btn btn-cancel" onClick={() => setShowCancelPopup(false)}>
-                Go Back
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h3 className="text-2xl font-bold text-white">Cancel Order</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-amber-900 mb-4">Please provide a reason for cancellation:</p>
+              <textarea 
+                className="w-full px-4 py-3 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-900 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200 resize-none"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Enter cancellation reason..."
+                rows="4"
+                required
+              />
+              <div className="flex justify-center space-x-4 mt-6">
+                <button 
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200"
+                  onClick={handleCancelOrder}
+                >
+                  Confirm Cancellation
+                </button>
+                <button 
+                  className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                  onClick={() => setShowCancelPopup(false)}
+                >
+                  Go Back
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {activeTab === 'menu' ? (
-        <MenuManager />
-      ) : activeTab === 'orders' && orderFilter === 'pending' ? (
-        <>
-          <h3 className="orders-title">Pending Orders</h3>
-          {pendingOrders.length === 0 ? (
-            <p>No pending orders.</p>
-          ) : (
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Room Number</th>
-                  <th>Items</th>
-                  <th>Total Price</th>
-                  <th>Status</th>
-                  <th>Checked Out At</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                  return (
-                    <tr key={order._id}>
-                      <td>{order.roomNumber}</td>
-                      <td>
-                        <ul className="order-items">
-                          {order.items.map((item, idx) => (
-                            <li key={idx} className="order-item">
-                              <img className="order-img" src={item.img} alt={item.name} />
-                              <span className="order-name">{item.name}</span>
-                              <span className="order-qty">(x{item.quantity || 1})</span>
-                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
-                      <td className="bold">{order.status || 'pending'}</td>
-                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
-                      <td>
-                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
-                          Acknowledge
-                        </button>
-                        <button className="btn btn-cancel" onClick={() => openCancelPopup(order)}>
-                          Cancel
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </>
-      ) : activeTab === 'orders' && orderFilter === 'acknowledged' ? (
-        <>
-          <h3 className="orders-title">Acknowledged Orders</h3>
-          {acknowledgedOrders.length === 0 ? (
-            <p>No acknowledged orders.</p>
-          ) : (
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Room Number</th>
-                  <th>Items</th>
-                  <th>Total Price</th>
-                  <th>Status</th>
-                  <th>Checked Out At</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {acknowledgedOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                  return (
-                    <tr key={order._id}>
-                      <td>{order.roomNumber}</td>
-                      <td>
-                        <ul className="order-items">
-                          {order.items.map((item, idx) => (
-                            <li key={idx} className="order-item">
-                              <img className="order-img" src={item.img} alt={item.name} />
-                              <span className="order-name">{item.name}</span>
-                              <span className="order-qty">(x{item.quantity || 1})</span>
-                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
-                      <td className="bold">{order.status || 'acknowledged'}</td>
-                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
-                      <td>
-                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
-                          Start Preparing
-                        </button>
-                        <button className="btn btn-cancel" onClick={() => openCancelPopup(order)}>
-                          Cancel
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </>
-      ) : activeTab === 'orders' && orderFilter === 'preparing' ? (
-        <>
-          <h3 className="orders-title">Preparing Orders</h3>
-          {preparingOrders.length === 0 ? (
-            <p>No preparing orders.</p>
-          ) : (
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Room Number</th>
-                  <th>Items</th>
-                  <th>Total Price</th>
-                  <th>Status</th>
-                  <th>Checked Out At</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {preparingOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                  return (
-                    <tr key={order._id}>
-                      <td>{order.roomNumber}</td>
-                      <td>
-                        <ul className="order-items">
-                          {order.items.map((item, idx) => (
-                            <li key={idx} className="order-item">
-                              <img className="order-img" src={item.img} alt={item.name} />
-                              <span className="order-name">{item.name}</span>
-                              <span className="order-qty">(x{item.quantity || 1})</span>
-                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
-                      <td className="bold">{order.status || 'preparing'}</td>
-                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
-                      <td>
-                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
-                          Mark On The Way
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </>
-      ) : activeTab === 'orders' && orderFilter === 'on the way' ? (
-        <>
-          <h3 className="orders-title">Orders On The Way</h3>
-          {onTheWayOrders.length === 0 ? (
-            <p>No orders on the way.</p>
-          ) : (
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Room Number</th>
-                  <th>Items</th>
-                  <th>Total Price</th>
-                  <th>Status</th>
-                  <th>Checked Out At</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {onTheWayOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                  return (
-                    <tr key={order._id}>
-                      <td>{order.roomNumber}</td>
-                      <td>
-                        <ul className="order-items">
-                          {order.items.map((item, idx) => (
-                            <li key={idx} className="order-item">
-                              <img className="order-img" src={item.img} alt={item.name} />
-                              <span className="order-name">{item.name}</span>
-                              <span className="order-qty">(x{item.quantity || 1})</span>
-                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
-                      <td className="bold">{order.status || 'on the way'}</td>
-                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
-                      <td>
-                        <button className="btn btn-progress" onClick={() => handleProgressStatus(order)}>
-                          Mark Delivered
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </>
-      ) : activeTab === 'orders' && orderFilter === 'delivered' ? (
-        <>
-          <h3 className="orders-title">Delivered Orders</h3>
-          {deliveredOrders.length === 0 ? (
-            <p>No delivered orders.</p>
-          ) : (
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Room Number</th>
-                  <th>Items</th>
-                  <th>Total Price</th>
-                  <th>Status</th>
-                  <th>Checked Out At</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deliveredOrders.map(order => {
-                  const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-                  return (
-                    <tr key={order._id}>
-                      <td>{order.roomNumber}</td>
-                      <td>
-                        <ul className="order-items">
-                          {order.items.map((item, idx) => (
-                            <li key={idx} className="order-item">
-                              <img className="order-img" src={item.img} alt={item.name} />
-                              <span className="order-name">{item.name}</span>
-                              <span className="order-qty">(x{item.quantity || 1})</span>
-                              <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="bold">₱{totalPrice.toFixed(2)}</td>
-                      <td className="bold">{order.status || 'delivered'}</td>
-                      <td>{new Date(order.checkedOutAt).toLocaleString()}</td>
-                      <td>
-                        <button className="btn btn-delete" onClick={() => handleDeleteDelivered(order._id)}>Delete</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </>
-      ) : activeTab === 'orders' && orderFilter === 'cancelled' ? (
-        <>
-          <h3 className="orders-title">Cancelled Orders</h3>
-          {cancelledOrders.length === 0 ? (
-            <p>No cancelled orders.</p>
-          ) : (
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>Room Number</th>
-                  <th>Items</th>
-                  <th>Total Price</th>
-                  <th>Status When Cancelled</th>
-                  <th>Checked Out At</th>
-                  <th>Cancelled At</th>
-                  <th>Cancellation Reason</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cancelledOrders.map(order => (
-                  <tr key={order._id}>
-                    <td>{order.roomNumber}</td>
-                    <td>
-                      <ul className="order-items">
-                        {order.items.map((item, idx) => (
-                          <li key={idx} className="order-item">
-                            <img className="order-img" src={item.img} alt={item.name} />
-                            <span className="order-name">{item.name}</span>
-                            <span className="order-qty">(x{item.quantity || 1})</span>
-                            <span className="order-price">- ₱{item.price ? (item.price * (item.quantity || 1)).toFixed(2) : '0.00'}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                    <td className="bold">₱{order.totalPrice ? order.totalPrice.toFixed(2) : '0.00'}</td>
-                    <td>{order.statusAtCancellation}</td>
-                    <td>{order.checkedOutAt ? new Date(order.checkedOutAt).toLocaleString() : ''}</td>
-                    <td>{order.cancelledAt ? new Date(order.cancelledAt).toLocaleString() : ''}</td>
-                    <td>{order.cancellationReason}</td>
-                    <td>
-                      <button className="btn btn-delete" onClick={() => handleDeleteCancelled(order._id)}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
-      ) : null}
+      {/* Add CSS for animations */}
+      <style>
+        {`
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out;
+          }
+        `}
+      </style>
     </div>
   );
 }
