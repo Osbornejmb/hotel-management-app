@@ -116,7 +116,7 @@ router.post('/login', async (req, res) => {
               username: emp.username, 
               name: emp.name 
             }, 
-            process.env.JWT_SECRET || 'd9e5088a3b2d93d0385067af8abf3a7b', 
+            process.env.JWT_SECRET || 'secretkey', 
             { expiresIn: '7d' }
           );
 
