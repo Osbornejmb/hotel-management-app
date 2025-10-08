@@ -1,18 +1,18 @@
 /* General Dashboard Layout */
 .dashboard {
   padding: 20px;
-  background-color: #2e1f14;
-  color: #f5e6cc;
+  background-color: #ffffff;
+  color: #333333;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .dashboard-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: bold;
   margin-bottom: 20px;
   text-align: center;
-  color: #ffcc66;
+  color: #8B4513;
 }
 
 /* Tabs */
@@ -28,33 +28,51 @@
 .order-filter {
   padding: 8px 12px;
   border-radius: 8px;
-  border: 2px solid #4d3423;
-  background-color: #2e1f14;
-  color: #f5e6cc;
-  font-size: 14px;
-  cursor: pointer;
+  border: 2px solid #8B4513;
+  background-color: #ffffff;
+  color: #333333;
+  font-si.notification-bell:hover {
+  background-color: rgba(139, 69, 19, 0.1);
+}
+
+.notification-bell.active {
+  background-color: #ffffff;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(1px);
+}
+
+.notification-bell.active svg {
+  color: #8B4513;
+}
+
+.notification-bell svg {
+  width: 22px;
+  height: 22px;
+  color: #8B4513;
+  transition: transform 0.2s ease;
+}cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .order-filter:hover {
-  border-color: #66412a;
+  border-color: #A0522D;
 }
 
 .order-filter:focus {
   outline: none;
-  border-color: #ffcc66;
+  border-color: #8B4513;
 }
 
 .order-filter option {
-  background-color: #2e1f14;
-  color: #f5e6cc;
+  background-color: #ffffff;
+  color: #333333;
 }
 
 .tab-btn {
-  background-color: #4d3423;
-  color: #f5e6cc;
+  background-color: #f8f8f8;
+  color: #333333;
   padding: 10px 20px;
-  border: none;
+  border: 2px solid #8B4513;
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
@@ -62,12 +80,12 @@
 }
 
 .tab-btn:hover {
-  background-color: #66412a;
+  background-color: #f0f0f0;
 }
 
 .tab-btn.active {
-  background-color: #ffcc66;
-  color: #2e1f14;
+  background-color: #8B4513;
+  color: #ffffff;
   font-weight: bold;
 }
 
@@ -75,40 +93,44 @@
 .orders-title,
 .menu-manager-title,
 .food-items-title {
-  font-size: 22px;
-  margin: 15px 0;
-  color: #ffcc66;
+  font-size: 24px;
+  margin: 20px 0;
+  color: white;
+  font-weight: bold;
 }
 
 .orders-table,
 .food-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
-  background-color: #3b281d;
+  margin-top: 15px;
+  background-color: #ffffff;
   border-radius: 10px;
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .orders-table th,
 .food-table th {
-  background-color: #4d3423;
-  color: #ffcc66;
-  padding: 12px;
+  background-color: #f8f8f8;
+  color: #8B4513;
+  padding: 15px;
   text-align: left;
+  font-weight: bold;
+  border-bottom: 2px solid #8B4513;
 }
 
 .orders-table td,
 .food-table td {
   padding: 12px;
-  border-bottom: 1px solid #5a3d2a;
-  color: #f5e6cc;
+  border-bottom: 1px solid #e0e0e0;
+  color: #333333;
   vertical-align: middle;
 }
 
 .bold {
   font-weight: bold;
-  color: #ffcc66;
+  color: #8B4513;
 }
 
 /* Order Items List */
@@ -121,33 +143,35 @@
 .order-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .order-img,
 .food-img {
-  width: 40px;
-  height: 40px;
-  border-radius: 6px;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
   object-fit: cover;
-  border: 2px solid #ffcc66;
+  border: 2px solid #8B4513;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .order-name {
-  font-weight: 500;
+  font-weight: 600;
+  color: #333333;
 }
 
 .order-qty,
 .order-price {
   font-size: 13px;
-  color: #d9c8a2;
+  color: #666666;
 }
 
 /* Buttons */
 .btn {
   padding: 8px 16px;
-  border: none;
+  border: 2px solid transparent;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
@@ -158,40 +182,46 @@
 }
 
 .btn-add {
-  background-color: #ffcc66;
-  color: #2e1f14;
+  background-color: #8B4513;
+  color: white;
   font-weight: bold;
 }
 
 .btn-add:hover {
-  background-color: #e6b85c;
+  background-color: #A0522D;
 }
 
 .btn-edit {
-  background-color: #4caf50;
-  color: white;
+  background-color: #ffffff;
+  color: #8B4513;
+  border: 2px solid #8B4513;
 }
 
 .btn-edit:hover {
-  background-color: #449d48;
+  background-color: #8B4513;
+  color: white;
 }
 
 .btn-delete {
-  background-color: #e74c3c;
-  color: white;
+  background-color: #ffffff;
+  color: #dc3545;
+  border: 2px solid #dc3545;
 }
 
 .btn-delete:hover {
-  background-color: #d43d2e;
-}
-
-.btn-progress {
-  background-color: #3498db;
+  background-color: #dc3545;
   color: white;
 }
 
+.btn-progress {
+  background-color: #ffffff;
+  color: #0056b3;
+  border: 2px solid #0056b3;
+}
+
 .btn-progress:hover {
-  background-color: #2980b9;
+  background-color: #0056b3;
+  color: white;
 }
 
 .btn-mark {
@@ -599,6 +629,21 @@
   gap: 15px;
 }
 
+/* Restaurant Admin Specific Logout Button */
+.dashboard .header-controls button {
+  background-color: #8B4513;
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-weight: 1000;
+  transition: background-color 0.3s ease;
+}
+
+.dashboard .header-controls button:hover {
+  background-color: #A0522D;
+}
+
 /* Notification Bell */
 .notification-bell {
   position: relative;
@@ -624,7 +669,7 @@
 .notification-bell svg {
   width: 22px;
   height: 22px;
-  color: #F7D774;
+  color: white;
 }
 
 .bell-counter {
