@@ -345,9 +345,13 @@
   border: 1px solid #5a3d2a;
   border-radius: 6px;
   font-family: inherit;
+  box-sizing: border-box;
   resize: vertical;
+  min-height: 100px; /* make it reasonably tall by default */
+  max-height: 300px; /* avoid growing too large */
   background-color: #2e1f14;
   color: #f5e6cc;
+  font-size: 14px;
 }
 
 .cancel-reason-input:focus {

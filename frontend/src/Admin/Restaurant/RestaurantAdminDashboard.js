@@ -5,12 +5,15 @@ import './RestaurantAdminDashboard.css';
 // Toast Notification Component
 function ToastNotification({ message, type, onClose }) {
   React.useEffect(() => {
+    // persistent notifications (new-order, cancelled) should not auto-dismiss
+    const persistent = type === 'new-order' || type === 'cancelled';
+    if (persistent) return undefined;
     const timer = setTimeout(() => {
       onClose();
-    }, 5000);
+    }, 3000);
 
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, type]);
 
   return (
     <div className={`toast-notification ${type}`}>
@@ -298,12 +301,18 @@ function RestaurantAdminDashboard() {
   // Add a notification
   const addNotification = React.useCallback((message, type = 'info') => {
     const id = Date.now() + Math.random();
-    setNotifications(prev => [...prev, { id, message, type }]);
+    // include flags: read (if user has viewed/cleared in popup) and dismissed (if toast was closed)
+    setNotifications(prev => [...prev, { id, message, type, read: false, dismissed: false }]);
   }, []);
 
-  // Remove a notification
-  const removeNotification = React.useCallback((id) => {
+  // Permanently delete a notification (used in popup Remove button)
+  const deleteNotification = React.useCallback((id) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
+  }, []);
+
+  // Dismiss a toast only (hide toast UI) but keep notification in popup
+  const dismissToast = React.useCallback((id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, dismissed: true } : n));
   }, []);
 
   // Check for new orders and cancellations - FIXED VERSION
@@ -515,14 +524,14 @@ function RestaurantAdminDashboard() {
       
       {/* Toast Notifications Container */}
       <div className="toast-container">
-        {notifications.map(notification => (
-          <ToastNotification
-            key={notification.id}
-            message={notification.message}
-            type={notification.type}
-            onClose={() => removeNotification(notification.id)}
-          />
-        ))}
+          {notifications.filter(n => !n.dismissed).map(notification => (
+            <ToastNotification
+              key={notification.id}
+              message={notification.message}
+              type={notification.type}
+              onClose={() => dismissToast(notification.id)}
+            />
+          ))}
       </div>
 
       {/* Notification Popup */}
@@ -543,7 +552,7 @@ function RestaurantAdminDashboard() {
                   <div className="notification-message">{notification.message}</div>
                   <button 
                     className="notification-close"
-                    onClick={() => removeNotification(notification.id)}
+                    onClick={() => deleteNotification(notification.id)}
                     title="Remove notification"
                   >
                     ×
