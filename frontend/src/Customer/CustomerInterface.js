@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -36,7 +36,6 @@ const useNotificationSound = () => {
 
 export default function CustomerInterface() {
   const navigate = useNavigate();
-  const [hovered, setHovered] = useState([false, false, false]);
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -69,6 +68,8 @@ export default function CustomerInterface() {
   // Cart and Status states
   const [showCart, setShowCart] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
+  const cartCloseBtnRef = useRef(null);
+  const statusCloseBtnRef = useRef(null);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [tab, setTab] = useState('pending');
@@ -103,6 +104,7 @@ export default function CustomerInterface() {
     let interval;
     const fetchCartForCounter = async () => {
       if (!roomNumber) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       try {
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
@@ -110,7 +112,7 @@ export default function CustomerInterface() {
     };
 
     fetchCartForCounter();
-    interval = setInterval(fetchCartForCounter, 1000);
+  interval = setInterval(fetchCartForCounter, 3000);
 
     return () => {
       if (interval) clearInterval(interval);
@@ -326,6 +328,7 @@ export default function CustomerInterface() {
     let interval;
     
     const fetchOrders = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       try {
         const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
         if (!res.ok) return;
@@ -407,7 +410,7 @@ export default function CustomerInterface() {
     };
     
     fetchOrders();
-    interval = setInterval(fetchOrders, 1000);
+  interval = setInterval(fetchOrders, 3000);
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -418,11 +421,12 @@ export default function CustomerInterface() {
     let interval;
     
     const fetchData = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       await fetchCancelledOrders();
     };
     
     fetchData();
-    interval = setInterval(fetchData, 1000);
+  interval = setInterval(fetchData, 3000);
     
     return () => {
       if (interval) clearInterval(interval);
@@ -679,6 +683,42 @@ export default function CustomerInterface() {
     zIndex: 100,
   };
 
+  // --- Product carousel (ads) state and data ---
+  const carouselItems = [
+    { id: 'p1', title: 'Spa Relaxation Package', price: '₱1,200', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRJTL8auN0STxRsusN1WL2T3fb8WrXq5zdKA&s' },
+    { id: 'p2', title: 'Romantic Dinner for Two', price: '₱950', img: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=600&q=60' },
+    { id: 'p3', title: 'City Tour Package', price: '₱750', img: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=600&q=60' },
+    { id: 'p4', title: 'Breakfast Buffet Upgrade', price: '₱250', img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=60' }
+  ];
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const carouselPausedRef = useRef(false);
+  const carouselContainerRef = useRef(null);
+  const carouselNext = useCallback(() => setCarouselIndex(i => (i + 1) % carouselItems.length), [carouselItems.length]);
+  const carouselPrev = useCallback(() => setCarouselIndex(i => (i - 1 + carouselItems.length) % carouselItems.length), [carouselItems.length]);
+
+  // autoplay for carousel (non-intrusive)
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (carouselPausedRef.current) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      setCarouselIndex(i => (i + 1) % carouselItems.length);
+    }, 4500);
+    return () => clearInterval(t);
+  }, [carouselItems.length]);
+
+  // keyboard navigation for carousel (left/right) — ignore when typing in inputs
+  useEffect(() => {
+    const onKey = (e) => {
+      const active = document.activeElement;
+      const tag = active && active.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || active?.isContentEditable) return;
+      if (e.key === 'ArrowLeft') carouselPrev();
+      if (e.key === 'ArrowRight') carouselNext();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [carouselNext, carouselPrev]);
+
   // Button styles for Cart and Status
   const headerButtonStyle = {
     background: 'none',
@@ -912,8 +952,32 @@ export default function CustomerInterface() {
     }
   }, [removedOrdersMap, showPopup]);
 
+  useEffect(() => {
+    if (showCart && cartCloseBtnRef.current) {
+      cartCloseBtnRef.current.focus();
+    }
+  }, [showCart]);
+
+  useEffect(() => {
+    if (showStatus && statusCloseBtnRef.current) {
+      statusCloseBtnRef.current.focus();
+    }
+  }, [showStatus]);
+
+  // Escape key to close modals and focus management
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (showCart) setShowCart(false);
+        if (showStatus) setShowStatus(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showCart, showStatus]);
+
     return (
-    <div style={{ 
+    <div className="min-h-screen bg-gray-50" style={{ 
       background: '#fff', 
       height: '100vh', 
       padding: 0, 
@@ -924,7 +988,7 @@ export default function CustomerInterface() {
     }}>
       {/* Toast Notifications Container */}
       {toastNotifications.length > 0 && (
-        <div style={toastContainerStyle}>
+        <div className="fixed top-16 right-4 z-50 flex flex-col gap-2 max-w-xs" style={toastContainerStyle}>
           {[...toastNotifications].reverse().map((order) => {
             const statusInfo = getStatusInfo(order.status);
             const isCancelled = order.status === 'cancelled';
@@ -1013,15 +1077,16 @@ export default function CustomerInterface() {
       )}
 
       {/* Header with logo and app name */}
-      <div style={headerStyle}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div className="w-full bg-amber-900 flex items-center justify-between px-4 h-12 shadow-md sticky top-0 z-50" style={headerStyle}>
+        <div className="flex items-center space-x-3" style={{ display: 'flex', alignItems: 'center' }}>
           <img src='/lumine_icon.png' alt="Lumine Logo" style={logoStyle} />
-          <span style={appNameStyle}>Lumine</span>
+          <span className="text-white text-lg font-medium" style={appNameStyle}>Lumine</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+        <div className="flex items-center space-x-2" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
           {/* Cart and Status buttons */}
           <button 
             onClick={() => setShowCart(true)} 
+            className="px-3 py-1 rounded-md text-amber-200 hover:bg-amber-200 hover:text-amber-900 transition-colors"
             style={headerButtonStyle}
             onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
             onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
@@ -1030,6 +1095,7 @@ export default function CustomerInterface() {
           </button>
           <button 
             onClick={() => setShowStatus(true)} 
+            className="px-3 py-1 rounded-md text-amber-200 hover:bg-amber-200 hover:text-amber-900 transition-colors"
             style={headerButtonStyle}
             onMouseOver={e => { e.target.style.background = '#FFD700'; e.target.style.color = '#4B2E06'; }}
             onMouseOut={e => { e.target.style.background = 'none'; e.target.style.color = '#FFD700'; }}
@@ -1039,7 +1105,7 @@ export default function CustomerInterface() {
 
           {/* Notification Bell */}
           <button 
-            className="notification-bell"
+            className="notification-bell relative p-2 rounded-full hover:bg-amber-100 focus:outline-none"
             style={{...bellStyle, ...(showPopup ? { background: '#F7D700', borderRadius: '50%', padding: '2px' } : {})}} 
             onClick={handleBellClick} 
             aria-label="Notifications"
@@ -1054,22 +1120,22 @@ export default function CustomerInterface() {
             {/* Show counter for new orders - only when popup is closed */}
             {!showPopup && counter > 0 && <span style={bellCounterStyle}>{counter}</span>}
           </button>
-          <button style={logoutBtnStyle} onClick={handleLogout} onMouseOver={e => { e.target.style.background = '#ffe9a7'; }} onMouseOut={e => { e.target.style.background = '#F7D774'; }}>
+          <button className="ml-3 px-3 py-1 rounded-md bg-amber-200 text-amber-900 hover:bg-amber-100 shadow-sm" style={logoutBtnStyle} onClick={handleLogout} onMouseOver={e => { e.target.style.background = '#ffe9a7'; }} onMouseOut={e => { e.target.style.background = '#F7D774'; }}>
             Log Out
           </button>
           {/* Notification Popup */}
           {showPopup && (
-            <div className="notification-popup" style={popupStyle}>
+            <div className="notification-popup bg-white rounded-lg shadow-lg p-3" style={popupStyle}>
               <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Order Updates</span>
                 <span style={{ fontSize: 12, color: '#666', fontWeight: 400 }}>
                   {visibleOrders.length} notification{visibleOrders.length !== 1 ? 's' : ''}
                 </span>
               </div>
-              {visibleOrders.length === 0 ? (
-                <div style={{ color: '#888', fontSize: 12 }}>No order updates.</div>
+                {visibleOrders.length === 0 ? (
+                <div className="text-sm text-gray-500">No order updates.</div>
               ) : (
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <div className="max-h-52 overflow-y-auto">
                   {visibleOrders.map((order) => {
                     const statusInfo = getStatusInfo(order.status);
                     const isCancelled = order.status === 'cancelled';
@@ -1149,437 +1215,228 @@ export default function CustomerInterface() {
           )}
         </div>
       </div>
+
+      {/* Product Carousel (Ads) - placed directly below the header */}
+      <div className="mx-auto w-full max-w-4xl px-4 mt-3" style={{ pointerEvents: 'auto' }}>
+        <div ref={carouselContainerRef} onMouseEnter={() => { carouselPausedRef.current = true; }} onMouseLeave={() => { carouselPausedRef.current = false; }} className="relative bg-white rounded-lg shadow-sm overflow-hidden" style={{ border: '1px solid #fff3cd' }}>
+          <div className="flex items-center justify-between px-4 py-2 border-b" style={{ background: '#fff9e6' }}>
+            <div className="text-sm font-semibold text-amber-800">Recommended for you</div>
+            <div className="text-xs text-gray-600">Offers & hotel extras</div>
+          </div>
+          <div className="flex items-center gap-3 p-3">
+            <button aria-label="previous" onClick={carouselPrev} className="p-2 rounded-md hover:bg-amber-100 text-amber-800" style={{ background: 'transparent', border: 'none' }}>
+              ‹
+            </button>
+            <div className="flex-1 overflow-hidden">
+              <div className="flex transition-transform duration-500" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
+                {carouselItems.map(item => (
+                  <div key={item.id} className="flex-shrink-0 w-full" style={{ minWidth: '100%' }}>
+                    <div className="flex items-center gap-3 p-2">
+                      <img src={item.img} alt={item.title} className="w-32 h-20 object-cover rounded-md shadow-sm" />
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-amber-900">{item.title}</div>
+                        <div className="text-xs text-gray-600 mt-1">{item.price}</div>
+                        <div className="mt-2">
+                          <button onClick={() => alert(item.title + ' — More info coming soon')} className="px-3 py-1 rounded-md text-sm shadow-sm" style={{ background: '#F7D774', border: '2px solid #FFD700', color: '#4B2E06' }}>View</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Dots */}
+              <div className="flex items-center justify-center gap-2 mt-3">
+                {carouselItems.map((_, idx) => (
+                  <button key={idx} onClick={() => setCarouselIndex(idx)} aria-label={`Go to slide ${idx + 1}`} className={`w-2 h-2 rounded-full ${idx === carouselIndex ? 'bg-amber-900' : 'bg-amber-200'}`}></button>
+                ))}
+              </div>
+            </div>
+            <button aria-label="next" onClick={carouselNext} className="p-2 rounded-md hover:bg-amber-100 text-amber-800" style={{ background: 'transparent', border: 'none' }}>
+              ›
+            </button>
+          </div>
+        </div>
+      </div>
 	  
-			{/* Cart Popup */}
-			{showCart && (
-				<div style={{
-					position: 'fixed', top: 0, left: 0,
-					width: '100vw', height: '100vh',
-					background: 'rgba(75,46,6,0.10)',
-					display: 'flex', alignItems: 'center',
-					justifyContent: 'center', zIndex: 1200
-				}}>
-					<div style={{
-						background: '#fff', 
-						padding: '1.2rem',
-						borderRadius: '1rem', 
-						boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-                    width: '90vw',
-						maxWidth: '600px',
-						maxHeight: '70vh',
-						textAlign: 'center', 
-						color: '#4B2E06', 
-						border: '2.5px solid #F7D774', 
-						overflow: 'auto'
-					}}>
-          <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>
-							Your Cart
-						</h2>
+      {/* Cart Popup */}
+      {showCart && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 bg-amber-900/10 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-11/12 max-w-lg max-h-[70vh] overflow-auto border-2 border-amber-200" style={{ color: '#4B2E06' }}>
+            <h2 className="text-2xl font-medium text-amber-900 mb-4">Your Cart</h2>
 
-						{cart.length === 0 ? (
-							<p style={{ color: '#4B2E06', fontSize: '1rem' }}>Your cart is empty.</p>
-						) : (
-							<div style={{ maxHeight: '35vh', overflowY: 'auto', marginBottom: '1rem' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#4B2E06', fontSize: '0.8rem' }}>
-									<thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-										<tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Item</th>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Price</th>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Qty</th>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Total</th>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Remove</th>
-										</tr>
-									</thead>
-									<tbody>
-										{cart.map((item, idx) => {
-											const itemTotal = (item.price || 0) * (item.quantity || 1);
-											return (
-												<tr key={idx}>
-													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', textAlign: 'left' }}>
-														<img src={item.img} alt={item.name} style={{
-															width: '24px', height: '24px', borderRadius: '6px',
-															marginRight: '0.4rem', verticalAlign: 'middle',
-															border: '1.5px solid #F7D774', background: '#fff'
-														}} />
-														{item.name}
-													</td>
-													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-														₱{item.price ? item.price.toFixed(2) : '0.00'}
-													</td>
-													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-														<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem' }}>
-															<button
-																onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)}
-																style={{
-																	width: '20px',
-																	height: '20px',
-																	borderRadius: '50%',
-																	border: '1px solid #FFD700',
-																	background: '#F7D774',
-																	color: '#4B2E06',
-																	fontWeight: 'bold',
-																	cursor: 'pointer',
-																	fontSize: '0.7rem',
-																	display: 'flex',
-																	alignItems: 'center',
-																	justifyContent: 'center'
-																}}
-															>
-																-
-															</button>
-															<span style={{ minWidth: '20px', textAlign: 'center' }}>
-																{item.quantity || 1}
-															</span>
-															<button
-																onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)}
-																style={{
-																	width: '20px',
-																	height: '20px',
-																	borderRadius: '50%',
-																	border: '1px solid #FFD700',
-																	background: '#F7D774',
-																	color: '#4B2E06',
-																	fontWeight: 'bold',
-																	cursor: 'pointer',
-																	fontSize: '0.7rem',
-																	display: 'flex',
-																	alignItems: 'center',
-																	justifyContent: 'center'
-																}}
-															>
-																+
-															</button>
-														</div>
-													</td>
-													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
-														₱{itemTotal.toFixed(2)}
-													</td>
-													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-														<button
-															onClick={() => removeFromCart(idx)}
-															style={{
-																padding: '0.2rem 0.5rem', borderRadius: '0.4em',
-																border: '2px solid #FFD700', background: '#F7D774',
-																color: '#4B2E06', cursor: 'pointer', fontWeight: 500,
-                                                        boxShadow: '0 2px 8px #e5c16c44',
-																transition: 'background 0.2s, color 0.2s',
-																fontSize: '0.7rem'
-															}}
-															onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-															onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-														>
-															Remove
-														</button>
-													</td>
-												</tr>
-											);
-										})}
-										<tr style={{ fontWeight: 500, background: '#F7D774', color: '#4B2E06' }}>
-											<td colSpan={3} style={{ padding: '0.4rem', textAlign: 'right' }}>Total:</td>
-											<td style={{ padding: '0.4rem' }}>
-												₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}
-											</td>
-											<td></td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						)}
+            {cart.length === 0 ? (
+              <p className="text-amber-800">Your cart is empty.</p>
+            ) : (
+              <div className="max-h-[35vh] overflow-y-auto mb-4">
+                <table className="w-full text-sm text-amber-900">
+                  <thead className="sticky top-0 bg-amber-100">
+                    <tr>
+                      <th className="py-2 px-2 text-left">Item</th>
+                      <th className="py-2 px-2">Price</th>
+                      <th className="py-2 px-2">Qty</th>
+                      <th className="py-2 px-2">Total</th>
+                      <th className="py-2 px-2">Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map((item, idx) => {
+                      const itemTotal = (item.price || 0) * (item.quantity || 1);
+                      return (
+                        <tr key={idx} className="border-b border-amber-50">
+                          <td className="py-2 px-2 text-left flex items-center gap-2">
+                            <img src={item.img} alt={item.name} className="w-6 h-6 rounded-md border border-amber-200" />
+                            <span>{item.name}</span>
+                          </td>
+                          <td className="py-2 px-2">₱{item.price ? item.price.toFixed(2) : '0.00'}</td>
+                          <td className="py-2 px-2">
+                            <div className="flex items-center gap-2 justify-center">
+                              <button onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)} className="w-6 h-6 rounded-full border border-amber-200 bg-amber-100">-</button>
+                              <span className="min-w-[20px] text-center">{item.quantity || 1}</span>
+                              <button onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)} className="w-6 h-6 rounded-full border border-amber-200 bg-amber-100">+</button>
+                            </div>
+                          </td>
+                          <td className="py-2 px-2 font-semibold">₱{itemTotal.toFixed(2)}</td>
+                          <td className="py-2 px-2">
+                            <button onClick={() => removeFromCart(idx)} className="px-2 py-1 rounded bg-red-500 text-white text-xs">Remove</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="bg-amber-100 font-semibold">
+                      <td colSpan={3} className="py-2 px-2 text-right">Total:</td>
+                      <td className="py-2 px-2">₱{cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0).toFixed(2)}</td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem', marginTop: '1rem' }}>
-							<button
-								onClick={async () => {
-									if (roomNumber && cart.length > 0) {
-										try {
-											await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-											setCart([]);
-											alert('Checkout successful! Your order has been sent to the restaurant.');
-											setShowCart(false);
-										} catch {
-											alert('Checkout failed. Please try again.');
-										}
-									}
-								}}
-								style={{
-                  padding: '0.4rem 1rem',
-                  borderRadius: '0.4em', border: '2px solid #FFD700',
-                  background: '#F7D774', color: '#4B2E06',
-                  fontWeight: 500, cursor: 'pointer',
-                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-								}}
-								onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-								onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-							>
-								Checkout
-							</button>
-
-							<button
-								onClick={() => setShowCart(false)}
-                style={{
-                  padding: '0.4rem 1rem',
-                  borderRadius: '0.4em', border: '2px solid #FFD700',
-                  background: '#fff', color: '#4B2E06',
-                  fontWeight: 500, cursor: 'pointer',
-                  boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={async () => {
+                  if (roomNumber && cart.length > 0) {
+                    try {
+                      await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+                      setCart([]);
+                      alert('Checkout successful! Your order has been sent to the restaurant.');
+                      setShowCart(false);
+                    } catch {
+                      alert('Checkout failed. Please try again.');
+                    }
+                  }
                 }}
-								onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-								onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}
-							>
-								Close
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+                className="px-4 py-2 rounded-md bg-amber-200 border-2 border-amber-300 text-amber-900 font-medium shadow-sm"
+              >
+                Checkout
+              </button>
 
-			{/* Status Popup with tabs for Pending and Delivered */}
-			{showStatus && (
-				<div style={{
-					position: 'fixed', top: 0, left: 0,
-					width: '100vw', height: '100vh',
-					background: 'rgba(75,46,6,0.10)',
-					display: 'flex', alignItems: 'center',
-					justifyContent: 'center', zIndex: 1200
-				}}>
-          <div style={{
-						background: '#fff', 
-						padding: '1.2rem',
-						borderRadius: '1rem', 
-						boxShadow: '0 4px 32px #e5c16c99, 0 2px 8px #FFD700',
-                        width: '90vw',
-						maxWidth: '600px',
-						maxHeight: '70vh',
-						textAlign: 'center', 
-						color: '#4B2E06', 
-						border: '2.5px solid #F7D774', 
-						overflow: 'auto'
-					}}>
-                        <h2 style={{ color: '#4B2E06', fontWeight: 400, fontSize: '1.5rem', marginBottom: '1rem' }}>Order Status</h2>
-						{/* Tabs */}
-						<div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', gap: '0.8rem' }}>
-							<button
-								style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'pending' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-									fontSize: '0.8rem'
-								}}
-								onClick={() => setTab('pending')}
-								onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-								onMouseOut={e => { e.target.style.background = tab === 'pending' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
-							>Pending</button>
-							<button
-                style={{
-                  padding: '0.4rem 1rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: tab === 'delivered' ? '#F7D774' : '#fff', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-                  fontSize: '0.8rem'
-                }}
-								onClick={() => setTab('delivered')}
-								onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-								onMouseOut={e => { e.target.style.background = tab === 'delivered' ? '#F7D774' : '#fff'; e.target.style.color = '#4B2E06'; }}
-							>Delivered</button>
-						</div>
-						{/* Orders Table, scrollable if too many items */}
-						{orders.length === 0 ? (
-							<p style={{ color: '#4B2E06', fontSize: '1rem' }}>No checked-out orders yet.</p>
-						) : (
-							<div style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem', color: '#4B2E06', fontSize: '0.8rem' }}>
-									<thead>
-										<tr style={{ background: '#F7D774', color: '#4B2E06' }}>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Items</th>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Total Price</th>
-											<th style={{ padding: '0.4rem', borderBottom: '1.5px solid #FFD700', fontWeight: 500 }}>Status</th>
-										</tr>
-									</thead>
-									<tbody>
-										{orders.filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered'))).map((order, idx) => {
-											const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-											return (
-												<tr key={order._id || idx}>
-													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0' }}>
-														<ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-															{order.items.map((item, i) => (
-																<li key={i} style={{ marginBottom: '0.4rem', display: 'flex', alignItems: 'center' }}>
-																	{item.img && (
-																		<img src={item.img} alt={item.name} style={{ width: '24px', height: '24px', borderRadius: '6px', marginRight: '0.4rem', verticalAlign: 'middle', border: '1.5px solid #F7D774', background: '#fff' }} />
-																	)}
-																	<span style={{ color: '#4B2E06', fontWeight: 500, fontSize: '0.8rem' }}>{item.name}</span> 
-																	<span style={{ color: '#4B2E06', marginLeft: '0.4rem', fontSize: '0.8rem' }}>(x{item.quantity || 1})</span>
-																</li>
-															))}
-														</ul>
-													</td>
-													<td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>₱{totalPrice.toFixed(2)}</td>
-                              <td style={{ padding: '0.4rem', borderBottom: '1px solid #f7e6b0', fontWeight: 500 }}>
-                            {order.status || 'pending'}
+              <button
+                ref={cartCloseBtnRef}
+                onClick={() => setShowCart(false)}
+                className="px-4 py-2 rounded-md border-2 border-amber-200 bg-white text-amber-900 font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Popup with tabs for Pending and Delivered */}
+      {showStatus && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 bg-amber-900/10 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-11/12 max-w-lg max-h-[70vh] overflow-auto border-2 border-amber-200">
+            <h2 className="text-2xl font-medium text-amber-900 mb-4">Order Status</h2>
+            {/* Tabs */}
+            <div className="flex justify-center mb-4 gap-3">
+              <button
+                className={`px-4 py-2 rounded-md font-medium ${tab === 'pending' ? 'bg-amber-200 border-2 border-amber-300 text-amber-900' : 'bg-white border-2 border-amber-200 text-amber-800'}`}
+                onClick={() => setTab('pending')}
+              >Pending</button>
+              <button
+                className={`px-4 py-2 rounded-md font-medium ${tab === 'delivered' ? 'bg-amber-200 border-2 border-amber-300 text-amber-900' : 'bg-white border-2 border-amber-200 text-amber-800'}`}
+                onClick={() => setTab('delivered')}
+              >Delivered</button>
+            </div>
+            {/* Orders Table, scrollable if too many items */}
+            {orders.length === 0 ? (
+              <p className="text-amber-800">No checked-out orders yet.</p>
+            ) : (
+              <div className="max-h-[35vh] overflow-y-auto">
+                <table className="w-full text-sm text-amber-900">
+                  <thead className="bg-amber-100 sticky top-0">
+                    <tr>
+                      <th className="py-2 px-2 text-left">Items</th>
+                      <th className="py-2 px-2">Total Price</th>
+                      <th className="py-2 px-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered'))).map((order, idx) => {
+                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+                      return (
+                        <tr key={order._id || idx} className="border-b border-amber-50">
+                          <td className="py-2 px-2">
+                            <ul className="list-none p-0 m-0">
+                              {order.items.map((item, i) => (
+                                <li key={i} className="flex items-center mb-2">
+                                  {item.img && (
+                                    <img src={item.img} alt={item.name} className="w-6 h-6 rounded-md mr-2 border border-amber-200" />
+                                  )}
+                                  <span className="font-medium">{item.name}</span>
+                                  <span className="ml-2 text-sm text-amber-800">(x{item.quantity || 1})</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                          <td className="py-2 px-2 font-semibold">₱{totalPrice.toFixed(2)}</td>
+                          <td className="py-2 px-2">
+                            <span className="capitalize">{order.status || 'pending'}</span>
                             {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
-                              <button
-                                style={{ marginLeft: '0.4rem', padding: '0.2rem 0.6rem', borderRadius: '0.4em', border: '2px solid #FFD700', background: '#F7D774', color: '#4B2E06', fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s', fontSize: '0.7rem' }}
-                                onClick={() => cancelOrder(order)}
-                                onMouseOver={e => { e.target.style.background = '#4B2E06'; e.target.style.color = '#FFD700'; }}
-                                onMouseOut={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-                              >Cancel</button>
+                              <button className="ml-2 px-2 py-1 rounded bg-amber-200 border-2 border-amber-300" onClick={() => cancelOrder(order)}>Cancel</button>
                             )}
                           </td>
-												</tr>
-											);
-										})}
-									</tbody>
-								</table>
-							</div>
-						)}
-						<button
-							onClick={() => setShowStatus(false)}
-							style={{
-								marginTop: '1rem', padding: '0.4rem 1rem',
-								borderRadius: '0.4em', border: '2px solid #FFD700',
-								background: '#fff', color: '#4B2E06',
-                            fontWeight: 500, cursor: 'pointer', boxShadow: '0 2px 8px #e5c16c44', transition: 'background 0.2s, color 0.2s',
-								fontSize: '0.8rem'
-							}}
-							onMouseOver={e => { e.target.style.background = '#F7D774'; e.target.style.color = '#4B2E06'; }}
-							onMouseOut={e => { e.target.style.background = '#fff'; e.target.style.color = '#4B2E06'; }}>
-							Close
-						</button>
-					</div>
-				</div>
-			)}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="mt-4 text-center">
+              <button ref={statusCloseBtnRef} className="px-4 py-2 rounded-md border-2 border-amber-200 bg-white text-amber-900" onClick={() => setShowStatus(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
-			{/* Main Content Area */}
-			<div style={{
-				flex: 1,
-				display: 'flex',
-				flexDirection: 'column',
-				justifyContent: 'center',
-				alignItems: 'center',
-				padding: '0.5rem',
-				boxSizing: 'border-box',
-				overflow: 'hidden',
-				minHeight: 0
-			}}>
-				<div style={{ 
-					display: 'flex', 
-					gap: '16px', 
-					justifyContent: 'center', 
-					alignItems: 'center',
-					flexWrap: 'wrap'
-				}}>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col items-center p-4 overflow-hidden">
+        <div className="flex flex-wrap justify-center items-center gap-6">
 					{/* Facilities Card */}
-					<div
-						style={{
-							background: '#ffdc85',
-							borderRadius: '0.8rem',
-							boxShadow: hovered[0] ? '0 8px 16px #e5c16c99' : '0 4px 8px #e5c16c55',
-							width: 240,
-							height: 240,
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							cursor: 'pointer',
-							border: 'none',
-							position: 'relative',
-							transform: hovered[0] ? 'translateY(-4px) scale(1.02)' : 'none',
-							transition: 'box-shadow 0.2s, transform 0.2s',
-							flexShrink: 0
-						}}
-						onClick={() => handleNavigate('/customer/facilities')}
-						onMouseEnter={() => setHovered([true, false, false])}
-						onMouseLeave={() => setHovered([false, false, false])}
-					>
-						<div style={{
-							background: '#fff',
-							borderRadius: '1.2rem',
-							boxShadow: '0 2px 6px #bbb',
-							width: 180,
-							height: 180,
-							display: 'flex',
-							flexDirection: 'column',
-							alignItems: 'center',
-							justifyContent: 'center',
-							position: 'relative',
-						}}>
-							<img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Facilities" style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: '0.3rem', marginBottom: 12 }} />
-                            <div style={{ fontSize: 20, color: '#222', fontWeight: 400, marginTop: 8 }}>Facilities</div>
-						</div>
-					</div>
+          <div onClick={() => handleNavigate('/customer/facilities')} onMouseEnter={() => {}} onMouseLeave={() => {}} className="w-60 h-60 rounded-2xl bg-amber-100 shadow-md hover:shadow-xl transform transition-transform duration-200 flex items-center justify-center cursor-pointer">
+            <div className="bg-white rounded-xl shadow-inner w-44 h-44 flex flex-col items-center justify-center">
+              <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Facilities" className="w-24 h-16 object-cover rounded-md mb-3" />
+              <div className="text-lg text-amber-900">Facilities</div>
+            </div>
+          </div>
 
 					{/* Food & Beverage Card */}
-					<div
-						style={{
-							background: '#ffdc85',
-							borderRadius: '0.8rem',
-							boxShadow: hovered[1] ? '0 8px 16px #e5c16c99' : '0 4px 8px #e5c16c55',
-							width: 240,
-							height: 240,
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							cursor: 'pointer',
-							border: 'none',
-							position: 'relative',
-							transform: hovered[1] ? 'translateY(-4px) scale(1.02)' : 'none',
-							transition: 'box-shadow 0.2s, transform 0.2s',
-							flexShrink: 0
-						}}
-						onClick={() => handleNavigate('/customer/food')}
-						onMouseEnter={() => setHovered([false, true, false])}
-						onMouseLeave={() => setHovered([false, false, false])}
-					>
-						<div style={{
-							background: '#fff',
-							borderRadius: '1.2rem',
-							boxShadow: '0 2px 6px #bbb',
-							width: 180,
-							height: 180,
-							display: 'flex',
-							flexDirection: 'column',
-							alignItems: 'center',
-							justifyContent: 'center',
-							position: 'relative',
-						}}>
-							<img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80" alt="Food and Beverages" style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: '0.3rem', marginBottom: 12 }} />
-                            <div style={{ fontSize: 18, color: '#222', fontWeight: 400, marginTop: 8, textAlign: 'center' }}>Food & Beverage</div>
-						</div>
-					</div>
+          <div onClick={() => handleNavigate('/customer/food')} onMouseEnter={() => {}} onMouseLeave={() => {}} className="w-60 h-60 rounded-2xl bg-amber-100 shadow-md hover:shadow-xl transform transition-transform duration-200 flex items-center justify-center cursor-pointer">
+            <div className="bg-white rounded-xl shadow-inner w-44 h-44 flex flex-col items-center justify-center">
+              <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80" alt="Food and Beverages" className="w-24 h-16 object-cover rounded-md mb-3" />
+              <div className="text-lg text-amber-900 text-center">Food & Beverage</div>
+            </div>
+          </div>
 
 					{/* Contact Front Desk Card */}
-					<div
-						style={{
-							background: '#ffdc85',
-							borderRadius: '0.8rem',
-							boxShadow: hovered[2] ? '0 8px 16px #cfc6b099' : '0 4px 8px #cfc6b055',
-							width: 240,
-							height: 240,
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							cursor: 'pointer',
-							border: 'none',
-							position: 'relative',
-							transform: hovered[2] ? 'translateY(-4px) scale(1.02)' : 'none',
-							transition: 'box-shadow 0.2s, transform 0.2s',
-							flexShrink: 0
-						}}
-						onClick={() => handleNavigate('/customer/contact')}
-						onMouseEnter={() => setHovered([false, false, true])}
-						onMouseLeave={() => setHovered([false, false, false])}
-					>
-						<div style={{
-							background: '#fff',
-							borderRadius: '1.2rem',
-							boxShadow: '0 2px 6px #bbb',
-							width: 180,
-							height: 180,
-							display: 'flex',
-							flexDirection: 'column',
-							alignItems: 'center',
-							justifyContent: 'center',
-							position: 'relative',
-						}}>
-							<img src="https://img.icons8.com/ios-filled/100/000000/contacts.png" alt="Contact Front Desk" style={{ width: 70, height: 70, objectFit: 'contain', marginBottom: 12 }} />
-                            <div style={{ fontSize: 18, color: '#222', fontWeight: 400, marginTop: 8, textAlign: 'center' }}>Contact Frontdesk</div>
-						</div>
-					</div>
+          <div onClick={() => handleNavigate('/customer/contact')} onMouseEnter={() => {}} onMouseLeave={() => {}} className="w-60 h-60 rounded-2xl bg-amber-100 shadow-md hover:shadow-xl transform transition-transform duration-200 flex items-center justify-center cursor-pointer">
+            <div className="bg-white rounded-xl shadow-inner w-44 h-44 flex flex-col items-center justify-center">
+              <img src="https://img.icons8.com/ios-filled/100/000000/contacts.png" alt="Contact Front Desk" className="w-16 h-16 mb-3" />
+              <div className="text-lg text-amber-900 text-center">Contact Frontdesk</div>
+            </div>
+          </div>
 				</div>
 			</div>
 
