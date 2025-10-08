@@ -58,8 +58,8 @@ export default function HotelAdminRooms() {
           <div className="hotel-admin-rooms-error">{error}</div>
         ) : (
           <div style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '0.8rem' }}>
-              <label htmlFor="floor-select" style={{ fontWeight: 700, color: '#444', marginRight: 12 }}>Floor</label>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '0.8rem', gap: '8px' }}>
+              <label htmlFor="floor-select" style={{ fontWeight: 700, color: '#444' }}>Floor</label>
               <select
                 id="floor-select"
                 className="floor-select"
@@ -70,6 +70,22 @@ export default function HotelAdminRooms() {
                   <option key={f} value={idx}>{`Floor ${f}`}</option>
                 ))}
               </select>
+              <button
+                className="rooms-nav-btn"
+                onClick={() => setCurrentFloorIndex(i => Math.max(0, i - 1))}
+                disabled={currentFloorIndex <= 0}
+                aria-label="Previous Floor"
+              >
+                ‹
+              </button>
+              <button
+                className="rooms-nav-btn"
+                onClick={() => setCurrentFloorIndex(i => Math.min(floors.length - 1, i + 1))}
+                disabled={currentFloorIndex >= floors.length - 1}
+                aria-label="Next Floor"
+              >
+                ›
+              </button>
             </div>
 
             <div className="rooms-scroll-wrapper">
@@ -109,7 +125,7 @@ export default function HotelAdminRooms() {
                 <div className="room-card-v2-amenities">
                   <b>Amenities:</b>
                   {room.amenities && room.amenities.length > 0 ? (
-                    <ul className="room-card-v2-list">
+                    <ul className="room-card-v2-list room-card-v2-list-scrollable">
                       {room.amenities.map((a, i) => <li key={i}>{a}</li>)}
                     </ul>
                   ) : (
@@ -122,25 +138,7 @@ export default function HotelAdminRooms() {
               </div> {/* close hotel-admin-rooms-grid */}
             </div> {/* close rooms-scroll-wrapper */}
 
-            {/* footer with Prev/Next buttons */}
-            <div className="rooms-footer">
-              <button
-                className="rooms-scroll-btn rooms-scroll-btn-left"
-                onClick={() => setCurrentFloorIndex(i => Math.max(0, i - 1))}
-                disabled={currentFloorIndex <= 0}
-                aria-label="Previous Floor"
-              >
-                ‹
-              </button>
-              <button
-                className="rooms-scroll-btn rooms-scroll-btn-right"
-                onClick={() => setCurrentFloorIndex(i => Math.min(floors.length - 1, i + 1))}
-                disabled={currentFloorIndex >= floors.length - 1}
-                aria-label="Next Floor"
-              >
-                ›
-              </button>
-            </div>
+
 
           </div>
         )}

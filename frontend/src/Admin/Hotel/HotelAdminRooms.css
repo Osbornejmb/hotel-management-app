@@ -212,6 +212,38 @@
 	margin-bottom: 0.1em;
 	padding-left: 0;
 }
+
+/* Limit amenities list height to show ~3 items and allow vertical scrolling when there are more */
+.room-card-v2-list-scrollable {
+    max-height: calc(1.6em * 3 + 0.4em); /* approx 3 lines of content + small padding */
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: block;
+    padding-right: 6px; /* room for scrollbar */
+}
+
+/* Make sure list items keep normal spacing inside the scroll container */
+.room-card-v2-list-scrollable li {
+    margin: 0.25em 0;
+}
+
+/* Thin custom scrollbar for WebKit browsers */
+.room-card-v2-list-scrollable::-webkit-scrollbar {
+    width: 8px;
+}
+.room-card-v2-list-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.12);
+    border-radius: 6px;
+}
+.room-card-v2-list-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.18);
+}
+
+/* Firefox scrollbar fallback */
+.room-card-v2-list-scrollable {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.12) transparent;
+}
 .room-card-v2-type-desc {
 	font-size: 0.8em;
 	color: #555;
@@ -421,4 +453,14 @@
     height: 64px;
     font-size: 1.8rem;
     border-radius: 12px;
+}
+
+.rooms-nav-btn {
+    background-color: white;
+    color: black;
+    padding: 5px 15px;
+    border: 1px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
 }
