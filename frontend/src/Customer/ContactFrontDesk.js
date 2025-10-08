@@ -1203,7 +1203,7 @@ function ContactFrontDesk() {
         </div>
       )}
 
-      {/* Status Popup */}
+            {/* Status Popup */}
       {showStatus && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden border border-amber-200">
@@ -1231,11 +1231,11 @@ function ContactFrontDesk() {
                 </button>
                 <button
                   className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-                    tab === 'delivered' 
+                    tab === 'history' 
                       ? 'bg-amber-500 text-white shadow-md' 
                       : 'text-amber-700 hover:bg-amber-100'
                   }`}
-                  onClick={() => setTab('delivered')}
+                  onClick={() => setTab('history')}
                 >
                   Order History
                 </button>
@@ -1243,32 +1243,53 @@ function ContactFrontDesk() {
             </div>
 
             <div className="p-6 max-h-[50vh] overflow-y-auto">
-              {orders.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-lg">No orders yet</p>
-                  <p className="text-sm mt-2">Your order history will appear here</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders
-                    .filter(order => (tab === 'pending' ? (order.status !== 'delivered') : (order.status === 'delivered')))
-                    .map((order, idx) => {
-                      const totalPrice = order.items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+              {/* Get filtered orders based on current tab */}
+              {(() => {
+                const filteredOrders = orders.filter(order => {
+                  if (tab === 'pending') {
+                    return order.status !== 'delivered' && order.status !== 'cancelled';
+                  } else {
+                    return order.status === 'delivered' || order.status === 'cancelled';
+                  }
+                });
+
+                return filteredOrders.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <svg className="w-16 h-16 mx-auto text-amber-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-lg">
+                      {tab === 'pending' ? 'No pending orders' : 'No order history'}
+                    </p>
+                    <p className="text-sm mt-2">
+                      {tab === 'pending' 
+                        ? 'Your pending orders will appear here' 
+                        : 'Your completed and cancelled orders will appear here'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredOrders.map((order, idx) => {
+                      const totalPrice = order.items ? order.items.reduce((sum, item) => 
+                        sum + ((item.price || 0) * (item.quantity || 1)), 0) : 0;
+                      
                       return (
                         <div key={order._id || idx} className="p-4 bg-amber-50 rounded-xl border border-amber-200">
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <div className="font-semibold text-amber-900">Order #{order._id?.slice(-6) || 'N/A'}</div>
-                              <div className="text-sm text-amber-700">Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString()}</div>
+                              <div className="font-semibold text-amber-900">
+                                Order #{order._id ? order._id.slice(-6) : 'N/A'}
+                              </div>
+                              <div className="text-sm text-amber-700">
+                                Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString()}
+                              </div>
                             </div>
                             <div className="flex items-center space-x-3">
                               <span className={getStatusBadgeClass(order.status)}>
                                 {order.status || 'pending'}
                               </span>
-                              {tab === 'pending' && ['pending','acknowledged'].includes(order.status) && (
+                              {tab === 'pending' && ['pending', 'acknowledged'].includes(order.status) && (
                                 <button 
                                   className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
                                   onClick={() => cancelOrder(order)}
@@ -1280,24 +1301,30 @@ function ContactFrontDesk() {
                           </div>
                           
                           <div className="space-y-3">
-                            {order.items.map((item, i) => (
-                              <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100">
-                                <div className="flex items-center space-x-3">
-                                  {item.img && (
-                                    <img src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-amber-200" />
-                                  )}
-                                  <div>
-                                    <div className="font-medium text-amber-900">{item.name}</div>
-                                    <div className="text-sm text-amber-700">Quantity: {item.quantity || 1}</div>
+                            {order.items && order.items.length > 0 ? (
+                              order.items.map((item, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-100">
+                                  <div className="flex items-center space-x-3">
+                                    {item.img && (
+                                      <img src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-amber-200" />
+                                    )}
+                                    <div>
+                                      <div className="font-medium text-amber-900">{item.name}</div>
+                                      <div className="text-sm text-amber-700">Quantity: {item.quantity || 1}</div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="font-semibold text-amber-900">
+                                      ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="font-semibold text-amber-900">
-                                    ₱{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                                  </div>
-                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-4 text-amber-600">
+                                No items in this order
                               </div>
-                            ))}
+                            )}
                           </div>
                           
                           <div className="border-t border-amber-200 pt-3 mt-3 flex justify-between items-center">
@@ -1307,8 +1334,9 @@ function ContactFrontDesk() {
                         </div>
                       );
                     })}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="p-6 bg-amber-50 border-t border-amber-200 text-center">
