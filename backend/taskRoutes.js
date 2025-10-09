@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('./task');
-const User = require('./User');
+const Employee = require('./Employee');  // <-- use Employee instead of User
 
 // Helper: Generate next task ID
 async function getNextTaskId() {
@@ -20,13 +20,12 @@ router.post('/', async (req, res) => {
 
     console.log('Creating task with data:', req.body);
 
-    // Validate required fields
     if (!assignedTo || !room || !type || !priority) {
       return res.status(400).json({ error: 'Missing required fields: assignedTo, room, type, priority' });
     }
 
     // Find the assigned employee by name
-    const employee = await User.findOne({
+    const employee = await Employee.findOne({
       name: assignedTo,
       role: 'employee'
     });
@@ -44,8 +43,10 @@ router.post('/', async (req, res) => {
     // Create task
     const task = new Task({
       taskId,
-      assignedTo: employee._id,
-      employeeId: employee.employeeId ? String(employee.employeeId).padStart(4, '0') : 'N/A',
+      assignedTo: employee._id,  // ObjectId reference to Employee
+      employeeId: employee.employeeId
+        ? String(employee.employeeId).padStart(4, '0')
+        : 'N/A',
       room,
       type: type.toUpperCase(),
       status: 'NOT_STARTED',
@@ -57,25 +58,21 @@ router.post('/', async (req, res) => {
     await task.save();
     console.log('Task saved successfully');
 
-    // Return task with employee info
-    const taskWithEmployee = {
-      id: task.taskId,
-      assigned: employee.name,
-      employeeId: task.employeeId,
-      room: task.room,
-      type: task.type,
-      status: task.status,
-      priority: task.priority,
-      description: task.description,
-      jobTitle: employee.jobTitle || 'Staff',
-      createdAt: task.createdAt
-    };
-
     res.status(201).json({
       message: 'Task created successfully',
-      task: taskWithEmployee
+      task: {
+        id: task.taskId,
+        assigned: employee.name,
+        employeeId: task.employeeId,
+        room: task.room,
+        type: task.type,
+        status: task.status,
+        priority: task.priority,
+        description: task.description,
+        jobTitle: employee.jobTitle || 'Staff',
+        createdAt: task.createdAt
+      }
     });
-
   } catch (error) {
     console.error('Create task error:', error);
     
