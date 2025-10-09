@@ -8,6 +8,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
     attendance: '📅',
     payroll: '💳',
     tasks: '🧾',
+    'task-requests': '📋', // Added task requests icon
     room: '🛏️',
     profile: '👤'
   };
@@ -18,6 +19,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
     { key: 'attendance', label: 'Attendance' },
     { key: 'payroll', label: 'Payroll' },
     { key: 'tasks', label: 'Tasks' },
+    { key: 'task-requests', label: 'Task Requests' }, // Added task requests section
 //    { key: 'room', label: 'Room Assignment' },
   ];
 
@@ -103,37 +105,37 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
       </nav>
 
       {/* logout button */}
-    <div style={{ marginTop: '280px', marginRight: '30px', width: '100%' }}>
-      <LogoutButton
-        style={{
-          width: '100%',
-          background: 'linear-gradient(90deg, #f2d49b, #dabf84)',
-          color: '#4b3a2b',
-          border: 'none',
-          borderRadius: '8px',
-          textAlign: 'left',
-          padding: '10px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          cursor: 'pointer',
-          fontWeight: '600',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = 'linear-gradient(90deg, #dabf84, #f2d49b)';
-          e.currentTarget.style.transform = 'scale(1.02)';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = 'linear-gradient(90deg, #f2d49b, #dabf84)';
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-      >
-        <span style={{ fontSize: '18px' }}>🔒</span>
-        Logout
-      </LogoutButton>
-    </div>
+      <div style={{ marginTop: 'auto', marginRight: '30px', width: '100%' }}>
+        <LogoutButton
+          style={{
+            width: '100%',
+            background: 'linear-gradient(90deg, #f2d49b, #dabf84)',
+            color: '#4b3a2b',
+            border: 'none',
+            borderRadius: '8px',
+            textAlign: 'left',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'linear-gradient(90deg, #dabf84, #f2d49b)';
+            e.currentTarget.style.transform = 'scale(1.02)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'linear-gradient(90deg, #f2d49b, #dabf84)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>🔒</span>
+          Logout
+        </LogoutButton>
+      </div>
     </aside>
   );
 };

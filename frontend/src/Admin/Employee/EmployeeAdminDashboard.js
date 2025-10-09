@@ -5,9 +5,8 @@ import EmployeeManagementSection from './Dashboard/employeeManagementSection';
 import AttendanceSection from './Dashboard/attendanceSection';
 import PayrollSection from './Dashboard/payrollSection';
 import TasksSection from './Dashboard/taskSection';
-//import RoomAssignmentSection from './Dashboard/roomAssignmentSection';
 import ProfileSection from './Dashboard/profileSection';
-
+import TaskRequests from './Dashboard/taskRequest'; // Add this import
 
 function EmployeeAdminDashboard() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -19,10 +18,10 @@ function EmployeeAdminDashboard() {
       case 'attendance': return <AttendanceSection />;
       case 'payroll': return <PayrollSection />;
       case 'tasks': return <TasksSection />;
-      //case 'room': return <RoomAssignmentSection />;
+      case 'task-requests': return <TaskRequests/>; // Add this case
       case 'profile': return <ProfileSection />;
       default: return <DashboardSection />;
-}
+    }
   };
 
   return (

@@ -59,13 +59,6 @@ const CreateTaskModal = ({ isOpen, onClose, employees, tasks, onTaskCreate, task
     // First filter by task type
     let typeFilteredEmployees;
     switch (formData.type) {
-      case 'INSPECTION':
-        typeFilteredEmployees = employees.filter(emp => 
-          emp.jobTitle?.toLowerCase().includes('staff') || 
-          emp.jobTitle?.toLowerCase().includes('inspector') ||
-          !emp.jobTitle
-        );
-        break;
       case 'CLEANING':
         typeFilteredEmployees = employees.filter(emp => 
           emp.jobTitle?.toLowerCase().includes('cleaner') || 
@@ -148,8 +141,6 @@ const CreateTaskModal = ({ isOpen, onClose, employees, tasks, onTaskCreate, task
 
   const getJobTitleRequirements = () => {
     switch (formData.type) {
-      case 'INSPECTION':
-        return 'Available for Inspection: Staff, Inspectors';
       case 'CLEANING':
         return 'Available for Cleaning: Cleaners, Housekeeping';
       case 'MAINTENANCE':
@@ -163,10 +154,6 @@ const CreateTaskModal = ({ isOpen, onClose, employees, tasks, onTaskCreate, task
   const availableEmployeesCount = filteredEmployees.length;
   const totalEmployees = employees.filter(emp => {
     switch (formData.type) {
-      case 'INSPECTION':
-        return emp.jobTitle?.toLowerCase().includes('staff') || 
-               emp.jobTitle?.toLowerCase().includes('inspector') ||
-               !emp.jobTitle;
       case 'CLEANING':
         return emp.jobTitle?.toLowerCase().includes('cleaner') || 
                emp.jobTitle?.toLowerCase().includes('housekeeping') ||
@@ -299,23 +286,6 @@ const CreateTaskModal = ({ isOpen, onClose, employees, tasks, onTaskCreate, task
                 }}
               >
                 Maintenance
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTypeChange('INSPECTION')}
-                style={{
-                  padding: '8px 16px',
-                  background: formData.type === 'INSPECTION' ? '#9b59b6' : '#f8f9fa',
-                  color: formData.type === 'INSPECTION' ? 'white' : '#7f8c8d',
-                  border: 'none',
-                  borderRadius: '20px',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontSize: '0.85rem'
-                }}
-              >
-                Inspection
               </button>
             </div>
             <div style={{ 
