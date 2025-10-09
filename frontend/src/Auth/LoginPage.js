@@ -16,7 +16,9 @@ function LoginPage() {
 
     // Helper to attempt a login endpoint and return res.data or throw
     const attemptLogin = async (url) => {
-      const res = await axios.post(url, payload);
+      const res = await axios.post(url, payload, {
+        withCredentials: true // ⚠️ CRITICAL: This sends cookies/session
+      });
       return res.data;
     };
 
@@ -40,7 +42,22 @@ function LoginPage() {
         }
       }
 
-      // Normalize response and store session info
+      console.log('✅ Login response:', data);
+
+      // For employee login, handle both session and JWT
+      if (data.success && data.employee) {
+        // Store employee data in localStorage
+        localStorage.setItem('employee', JSON.stringify(data.employee));
+        if (data.token) {
+          localStorage.setItem('employee_token', data.token);
+        }
+        
+        // Redirect to employee dashboard
+        navigate('/user/employeeMainDashboard');
+        return;
+      }
+
+      // For other user types (existing logic)
       const { token, role, username, name } = data;
       if (token) localStorage.setItem('token', token);
       if (role) localStorage.setItem('role', role);
@@ -60,6 +77,7 @@ function LoginPage() {
         setError('Unknown role');
       }
     } catch (err) {
+      console.error('❌ Login error:', err);
       setError(err.response?.data?.error || err.message || 'Login failed');
     }
   };
@@ -75,7 +93,7 @@ function LoginPage() {
         <form onSubmit={handleSubmit} className="login-form">
           <input
             type="email"
-            placeholder="Username"
+            placeholder="Email or Username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

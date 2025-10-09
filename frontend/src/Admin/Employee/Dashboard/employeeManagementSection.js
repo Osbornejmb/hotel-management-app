@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-// Helper function for parsing responses
-//const parseResponse = async (res) => {
-//  const text = await res.text();
-//  if (!text) return null;
-//  try {
-//    return JSON.parse(text);
-//  } catch {
-//    return text;
-//  }
-//};
-
 const EmployeeManagementSection = () => {
   const [employees, setEmployees] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -23,7 +12,6 @@ const EmployeeManagementSection = () => {
     status: 'ACTIVE', 
     username: '', 
     email: '', 
-    password: '', 
     role: 'employee' 
   });
   const [loading, setLoading] = useState(false);
@@ -38,6 +26,17 @@ const EmployeeManagementSection = () => {
   const handleChange = e => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Generate random password
+  const generatePassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
   };
 
   // Filter employees based on search
@@ -55,71 +54,112 @@ const EmployeeManagementSection = () => {
     setFilteredEmployees(filtered);
   }, [searchEmployee, employees]);
 
+  // Generate employee ID in format: MMDDYYYY-XXX
+  const generateEmployeeId = async () => {
+    try {
+      // Get current date components
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0'); // MM
+      const day = String(now.getDate()).padStart(2, '0'); // DD
+      const year = now.getFullYear(); // YYYY
+      const datePart = `${month}${day}${year}`;
+      
+      // Fetch existing employees to determine the next sequential number
+      const res = await fetch('/api/employee');
+      const data = await parseResponse(res);
+      const existingEmployees = Array.isArray(data) ? data : [];
+      
+      // Find the highest sequence number for today's date
+      let maxSequence = 0;
+      existingEmployees.forEach(emp => {
+        const empCode = emp.employeeCode || emp.id || '';
+        if (empCode.startsWith(datePart)) {
+          const sequencePart = empCode.split('-')[1];
+          if (sequencePart) {
+            const sequenceNum = parseInt(sequencePart, 10);
+            if (!isNaN(sequenceNum) && sequenceNum > maxSequence) {
+              maxSequence = sequenceNum;
+            }
+          }
+        }
+      });
+      
+      // Generate next sequence number
+      const nextSequence = String(maxSequence + 1).padStart(3, '0');
+      return `${datePart}-${nextSequence}`;
+      
+    } catch (err) {
+      console.error('Error generating employee ID:', err);
+      // Fallback: use timestamp if API call fails
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const year = now.getFullYear();
+      const timestamp = Date.now().toString().slice(-3);
+      return `${month}${day}${year}-${timestamp}`;
+    }
+  };
+
   const handleAddClick = async () => {
     setMessage(null);
     setShowAdd(true);
     try {
-      const res = await fetch('/api/employee/next-employee-id');
-      const data = await parseResponse(res);
-      const result = (typeof data === 'string') ? { padded: data } : data;
-      if (result && result.padded) {
-        setForm(prev => ({ ...prev, id: result.padded }));
-      }
+      const newEmployeeId = await generateEmployeeId();
+      setForm(prev => ({ ...prev, id: newEmployeeId }));
     } catch (err) {
-      console.error('next-employee-id fetch failed', err);
-      setMessage({ type: 'error', text: err.message || 'Failed to fetch next id' });
+      console.error('Employee ID generation failed', err);
+      setMessage({ type: 'error', text: err.message || 'Failed to generate employee ID' });
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage(null);
-    // attempt to extract numeric employeeId from form.id when possible
-    const digits = (form.id || '').replace(/\D/g, '');
-    const employeeIdNum = digits ? parseInt(digits, 10) : undefined;
-    const payload = {
-      username: form.username || form.name || form.id,
-      name: form.name || form.username || form.id,
-      email: form.email || `${form.username || form.name || form.id}@example.com`,
-      contactNumber: form.contactNumber || '',
-      password: form.password || 'defaultPass123',
-      jobTitle: form.jobTitle || 'Staff',
-      status: (form.status || 'ACTIVE').toLowerCase(),
-      // include numeric id and display code when available
-      ...(employeeIdNum ? { employeeId: employeeIdNum } : {}),
-      ...(form.id ? { employeeCode: form.id } : {}),
-      dateHired: form.dateHired || undefined,
-      shift: form.shift || '',
-      notes: form.notes || ''
-    };
-
-    try {
-      const res = await fetch('/api/employee', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await parseResponse(res);
-      const result = (typeof data === 'string') ? { message: data } : data;
-      await fetchEmployees();
-      setShowAdd(false);
-      setForm({ 
-        id: '', 
-        name: '', 
-        job: '', 
-        jobTitle: 'Staff', 
-        contactNumber: '', 
-        status: 'ACTIVE', 
-        username: '', 
-        email: '', 
-        password: '', 
-        role: 'employee' 
-      });
-      setMessage({ type: 'success', text: result.message || 'Employee added successfully' });
-    } catch (err) {
-      setMessage({ type: 'error', text: err.message });
-    }
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setMessage(null);
+  
+  const employeeId = form.id;
+  const autoGeneratedPassword = generatePassword();
+  
+  const payload = {
+    username: form.username || form.name || form.id,
+    name: form.name || form.username || form.id,
+    email: form.email || `${form.username || form.name || form.id}@example.com`,
+    contactNumber: form.contactNumber || '',
+    password: autoGeneratedPassword,
+    jobTitle: form.jobTitle || 'Staff',
+    status: (form.status || 'ACTIVE').toLowerCase(),
+    employeeCode: employeeId,
   };
+
+  try {
+    const res = await fetch('/api/employee', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await parseResponse(res);
+    
+    await fetchEmployees();
+    setShowAdd(false);
+    setForm({ 
+      id: '', name: '', jobTitle: 'Staff', contactNumber: '', 
+      status: 'ACTIVE', username: '', email: '', role: 'employee' 
+    });
+
+    // Enhanced success message
+    let successMessage = `Employee ${form.name} added successfully! `;
+    if (data.emailSent) {
+      successMessage += `✅ Credentials sent to ${form.email}`;
+    } else {
+      successMessage += `📧 Email failed: ${data.emailError}. Manual password: ${autoGeneratedPassword}`;
+    }
+    
+    setMessage({ type: 'success', text: successMessage });
+    
+  } catch (err) {
+    setMessage({ type: 'error', text: err.message });
+  }
+};
 
   // Small helper to avoid "Unexpected token '<'" when server returns HTML error pages.
   const parseResponse = React.useCallback(async (res) => {
@@ -159,11 +199,11 @@ const EmployeeManagementSection = () => {
       const res = await fetch('/api/employee');
       const data = await parseResponse(res); // expect array of Employee documents
       const mapped = (Array.isArray(data) ? data : []).map(u => {
-        const empIdNum = typeof u.employeeId === 'number' ? u.employeeId : (typeof u.employeeId === 'string' && /^\d+$/.test(u.employeeId) ? parseInt(u.employeeId,10) : null);
-        const formattedId = empIdNum ? String(empIdNum).padStart(4,'0') : (u.employeeCode || u._id || u.username);
+        // Use employeeCode as the primary ID if available, otherwise fall back
+        const formattedId = u.employeeCode || u._id || u.username;
         return {
           id: u._id || u.id || u.employeeCode || u.username,
-          employeeId: empIdNum,
+          employeeId: u.employeeId,
           formattedId,
           name: u.name || u.fullName || u.username,
           email: u.email || '',
@@ -440,18 +480,32 @@ const EmployeeManagementSection = () => {
           {/* Add Employee */}
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
-              <input 
-                name="id" 
-                value={form.id} 
-                onChange={handleChange} 
-                placeholder="Employee ID" 
-                style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
-              />
+              <div>
+                <input 
+                  name="id" 
+                  value={form.id} 
+                  onChange={handleChange} 
+                  placeholder="Employee ID" 
+                  style={{ 
+                    padding: '10px 12px', 
+                    borderRadius: 6, 
+                    border: "1px solid #d1d5db", 
+                    fontSize: '14px',
+                    width: '100%',
+                    backgroundColor: '#f9fafb'
+                  }} 
+                  readOnly
+                />
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                  Auto-generated ID
+                </div>
+              </div>
               <input 
                 name="name" 
                 value={form.name} 
                 onChange={handleChange} 
                 placeholder="Full Name" 
+                required
                 style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
               />
               <input 
@@ -478,14 +532,16 @@ const EmployeeManagementSection = () => {
                 placeholder="Email Address" 
                 style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
               />
-              <input 
-                name="password" 
-                type="password" 
-                value={form.password} 
-                onChange={handleChange} 
-                placeholder="Password" 
-                style={{ padding: '10px 12px', borderRadius: 6, border: "1px solid #d1d5db", fontSize: '14px' }} 
-              />
+              <div style={{ 
+                padding: '10px 12px', 
+                borderRadius: 6, 
+                border: "1px solid #d1d5db", 
+                fontSize: '14px',
+                backgroundColor: '#f9fafb',
+                color: '#6b7280'
+              }}>
+                Password will be auto-generated
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
@@ -523,6 +579,25 @@ const EmployeeManagementSection = () => {
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="INACTIVE">INACTIVE</option>
               </select>
+            </div>
+
+            <div style={{ 
+              backgroundColor: '#f0f9ff', 
+              padding: '12px 16px', 
+              borderRadius: '6px', 
+              marginBottom: '16px',
+              border: '1px solid #e0f2fe'
+            }}>
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#0369a1', 
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                ℹ️ Password will be auto-generated and shown after saving
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: 12 }}>
