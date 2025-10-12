@@ -28,9 +28,6 @@ app.use("/api/food", foodRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use('/api/employee', employeeRoutes);
 app.use("/api/requests", requestRoutes);
-// Routes
-app.use("/api/users", userRoutes);
-app.use("/api/rooms", roomRoutes);
 app.use("/api/tasks", taskRoutes); // Task routes
 
 mongoose.connect(process.env.MONGO_URI)
@@ -42,5 +39,4 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));

@@ -1,13 +1,42 @@
 const nodemailer = require('nodemailer');
 
-// FIX: Changed createTransporter to createTransport
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// Check for required environment variables
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+  console.warn('⚠️ EMAIL_USER or EMAIL_PASSWORD environment variables are missing.');
+  // Log which are missing for diagnostics (do not log actual values)
+  if (!process.env.EMAIL_USER) console.warn('EMAIL_USER is missing.');
+  if (!process.env.EMAIL_PASSWORD) console.warn('EMAIL_PASSWORD is missing.');
+}
+
+let transporter;
+try {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+  console.log('✅ Nodemailer transporter created.');
+} catch (err) {
+  console.error('❌ Failed to create transporter:', err && err.message ? err.message : err);
+}
+
+// Verify transporter before sending emails
+const verifyTransporter = async () => {
+  if (!transporter) {
+    console.error('❌ Transporter is not defined.');
+    return false;
+  }
+  try {
+    await transporter.verify();
+    console.log('✅ Transporter verified and ready.');
+    return true;
+  } catch (err) {
+    console.error('❌ Transporter verification failed:', err && err.message ? err.message : err);
+    return false;
+  }
+};
 
 // Email template for employee credentials
 const sendEmployeeCredentials = async (employeeData) => {
@@ -16,6 +45,12 @@ const sendEmployeeCredentials = async (employeeData) => {
   // Validate required fields
   if (!email || !name) {
     return { success: false, error: 'Email and name are required' };
+  }
+
+  // Check transporter before sending
+  const isTransporterReady = await verifyTransporter();
+  if (!isTransporterReady) {
+    return { success: false, error: 'Email transporter is not ready. Check your email configuration and credentials.' };
   }
 
   const mailOptions = {
@@ -81,8 +116,8 @@ const sendEmployeeCredentials = async (employeeData) => {
     console.log(`✅ Credentials email sent to ${email}`);
     return { success: true };
   } catch (error) {
-    console.error('❌ Error sending email:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Error sending email:', error && error.message ? error.message : error);
+    return { success: false, error: error && error.message ? error.message : 'Unknown error occurred while sending email.' };
   }
 };
 
