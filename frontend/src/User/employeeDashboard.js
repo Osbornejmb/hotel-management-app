@@ -59,13 +59,14 @@ const EmployeeDashboard = () => {
 
         const tasksData = await response.json();
         
-        // Filter tasks to show only those assigned to the current employee
+        // Filter tasks to show only those assigned to the current employee AND not completed
         const myTasks = tasksData.filter(task => {
           const matchesName = task.assigned && 
                              task.assigned.toLowerCase() === employee.name.toLowerCase();
           const matchesId = task.employeeId && 
                            task.employeeId.toString() === employee.employeeId?.toString();
-          return matchesName || matchesId;
+          const isNotCompleted = task.status !== 'COMPLETED';
+          return (matchesName || matchesId) && isNotCompleted;
         });
 
         console.log('Filtered tasks for dashboard:', {
@@ -138,11 +139,12 @@ const EmployeeDashboard = () => {
       }
     ];
     
-    // Filter demo tasks by current employee
+    // Filter demo tasks by current employee AND not completed
     const filteredTasks = demoTasks.filter(task => {
       const matchesName = task.assigned.toLowerCase() === employee.name?.toLowerCase();
       const matchesId = task.employeeId === employee.employeeId?.toString();
-      return matchesName || matchesId;
+      const isNotCompleted = task.status !== 'COMPLETED';
+      return (matchesName || matchesId) && isNotCompleted;
     });
 
     setTasks(filteredTasks);
@@ -173,10 +175,11 @@ const EmployeeDashboard = () => {
     setSelectedTask(null);
   };
 
-  const handleMarkAsDone = async () => {
+  const handleStartTask = async () => {
     if (selectedTask) {
       try {
         const token = localStorage.getItem('token');
+        const newStatus = selectedTask.status === 'NOT_STARTED' ? 'IN_PROGRESS' : 'COMPLETED';
         
         // Update via API
         if (token) {
@@ -186,7 +189,7 @@ const EmployeeDashboard = () => {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ status: 'COMPLETED' })
+            body: JSON.stringify({ status: newStatus })
           });
 
           if (response.ok) {
@@ -194,17 +197,26 @@ const EmployeeDashboard = () => {
           }
         }
 
-        // Update local state
-        setTasks(prevTasks => 
-          prevTasks.map(task => 
-            task.id === selectedTask.id 
-              ? { ...task, status: 'COMPLETED' }
-              : task
-          )
-        );
+        // Update local state - if task is completed, remove it from the list
+        if (newStatus === 'COMPLETED') {
+          setTasks(prevTasks => prevTasks.filter(task => task.id !== selectedTask.id));
+        } else {
+          // If just starting the task, update the status
+          setTasks(prevTasks => 
+            prevTasks.map(task => 
+              task.id === selectedTask.id 
+                ? { ...task, status: newStatus }
+                : task
+            )
+          );
+        }
 
-        console.log(`Marking task "${selectedTask.title}" as done`);
-        alert(`Task "${selectedTask.title}" marked as completed!`);
+        const actionMessage = selectedTask.status === 'NOT_STARTED' 
+          ? `Task "${selectedTask.title}" started!` 
+          : `Task "${selectedTask.title}" marked as completed!`;
+        
+        console.log(actionMessage);
+        alert(actionMessage);
         handleCloseModal();
       } catch (error) {
         console.error('Error updating task:', error);
@@ -263,6 +275,26 @@ const EmployeeDashboard = () => {
       default:
         return priority;
     }
+  };
+
+  // Get button text based on task status
+  const getActionButtonText = (task) => {
+    if (task.status === 'NOT_STARTED') {
+      return 'Start Task';
+    } else if (task.status === 'IN_PROGRESS') {
+      return 'Mark as Done';
+    }
+    return 'Mark as Done'; // Fallback
+  };
+
+  // Get button color based on task status
+  const getActionButtonColor = (task) => {
+    if (task.status === 'NOT_STARTED') {
+      return 'bg-blue-600 hover:bg-blue-700';
+    } else if (task.status === 'IN_PROGRESS') {
+      return 'bg-green-600 hover:bg-green-700';
+    }
+    return 'bg-green-600 hover:bg-green-700'; // Fallback
   };
 
   if (loading) {
@@ -460,10 +492,10 @@ const EmployeeDashboard = () => {
                 </button>
                 {selectedTask.status !== 'COMPLETED' && (
                   <button
-                    onClick={handleMarkAsDone}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 transition-colors"
+                    onClick={handleStartTask}
+                    className={`flex-1 px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md transition-colors ${getActionButtonColor(selectedTask)}`}
                   >
-                    Mark as Done
+                    {getActionButtonText(selectedTask)}
                   </button>
                 )}
               </div>
@@ -471,14 +503,6 @@ const EmployeeDashboard = () => {
           </div>
         </div>
       )}
-
-      {/* Debug Info */}
-      <div className="mt-4 p-3 bg-blue-50 rounded text-xs">
-        <div className="font-medium text-blue-800">Dashboard Debug Info:</div>
-        <div>Employee: {employeeInfo.name || 'Not detected'}</div>
-        <div>Employee ID: {employeeInfo.employeeId || 'Not detected'}</div>
-        <div>Tasks loaded: {tasks.length}</div>
-      </div>
     </div>
   );
 };
