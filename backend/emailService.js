@@ -3,7 +3,6 @@ const nodemailer = require('nodemailer');
 // Check for required environment variables
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
   console.warn('⚠️ EMAIL_USER or EMAIL_PASSWORD environment variables are missing.');
-  // Log which are missing for diagnostics (do not log actual values)
   if (!process.env.EMAIL_USER) console.warn('EMAIL_USER is missing.');
   if (!process.env.EMAIL_PASSWORD) console.warn('EMAIL_PASSWORD is missing.');
 }
@@ -22,7 +21,7 @@ try {
   console.error('❌ Failed to create transporter:', err && err.message ? err.message : err);
 }
 
-// Verify transporter before sending emails
+// Verify transporter before sending emails   
 const verifyTransporter = async () => {
   if (!transporter) {
     console.error('❌ Transporter is not defined.');
@@ -38,6 +37,41 @@ const verifyTransporter = async () => {
   }
 };
 
+// Test email function
+const testEmail = async () => {
+  console.log('🧪 Testing email configuration...');
+  console.log('EMAIL_USER exists:', !!process.env.EMAIL_USER);
+  
+  if (!transporter) {
+    console.log('❌ Transporter not created');
+    return false;
+  }
+  
+  try {
+    await transporter.verify();
+    console.log('✅ Transporter verification passed');
+    
+    // Try sending a test email to yourself
+    const testMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: 'Test Email from Hotel System',
+      text: 'This is a test email from your hotel management system.',
+      html: '<p>This is a <strong>test email</strong> from your hotel management system.</p>'
+    };
+    
+    const info = await transporter.sendMail(testMailOptions);
+    console.log('✅ Test email sent successfully!');
+    console.log(`📧 Message ID: ${info.messageId}`);
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Email test failed:', error.message);
+    console.error('Error details:', error);
+    return false;
+  }
+};
+
 // Email template for employee credentials
 const sendEmployeeCredentials = async (employeeData) => {
   const { email, name, username, password, employeeId } = employeeData;
@@ -47,6 +81,15 @@ const sendEmployeeCredentials = async (employeeData) => {
     return { success: false, error: 'Email and name are required' };
   }
 
+  // Check if environment variables are set
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    console.error('❌ Email credentials not configured');
+    return { 
+      success: false, 
+      error: 'Email service not configured. Please check environment variables.' 
+    };
+  }
+
   // Check transporter before sending
   const isTransporterReady = await verifyTransporter();
   if (!isTransporterReady) {
@@ -54,7 +97,7 @@ const sendEmployeeCredentials = async (employeeData) => {
   }
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: `"Hotel Management System" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Your Employee Account Credentials',
     html: `
@@ -112,15 +155,34 @@ const sendEmployeeCredentials = async (employeeData) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
     console.log(`✅ Credentials email sent to ${email}`);
-    return { success: true };
+    console.log(`📧 Message ID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('❌ Error sending email:', error && error.message ? error.message : error);
-    return { success: false, error: error && error.message ? error.message : 'Unknown error occurred while sending email.' };
+    
+    // More specific error messages
+    let userFriendlyError = 'Failed to send email. Please try again.';
+    
+    if (error.code === 'EAUTH') {
+      userFriendlyError = 'Email authentication failed. Please check email credentials (use App Password, not regular password).';
+    } else if (error.code === 'EENVELOPE') {
+      userFriendlyError = 'Invalid email address. Please check the recipient email.';
+    } else if (error.code === 'ECONNECTION') {
+      userFriendlyError = 'Cannot connect to email service. Please check your internet connection.';
+    }
+    
+    return { 
+      success: false, 
+      error: userFriendlyError,
+      technicalError: error.message 
+    };
   }
 };
 
 module.exports = {
   sendEmployeeCredentials,
+  testEmail,
+  verifyTransporter
 };

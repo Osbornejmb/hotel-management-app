@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('./task');
-const Employee = require('./Employee');  // <-- use Employee instead of User
+const Employee = require('./Employee');
 
 // Helper: Generate next task ID
 async function getNextTaskId() {
@@ -13,7 +13,126 @@ async function getNextTaskId() {
   return `T${lastNumber + 1}`;
 }
 
-// Create a new task
+// GET /api/tasks - get all tasks
+router.get('/', async (req, res) => {
+  try {
+    const tasks = await Task.find()
+      .populate('assignedTo', 'name employeeId jobTitle')
+      .sort({ createdAt: -1 });
+
+    const formattedTasks = tasks.map(task => ({
+      id: task.taskId,
+      assigned: task.assignedTo?.name || 'Unknown',
+      employeeId: task.employeeId,
+      room: task.room,
+      type: task.type,
+      status: task.status,
+      priority: task.priority,
+      description: task.description,
+      jobTitle: task.assignedTo?.jobTitle || 'Staff',
+      createdAt: task.createdAt,
+      dueDate: task.dueDate
+    }));
+
+    res.json(formattedTasks);
+  } catch (error) {
+    console.error('Get tasks error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch tasks' });
+  }
+});
+
+// GET /api/tasks/:taskId - get single task by ID
+router.get('/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    const task = await Task.findOne({ taskId })
+      .populate('assignedTo', 'name employeeId jobTitle');
+
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const formattedTask = {
+      id: task.taskId,
+      assigned: task.assignedTo?.name || 'Unknown',
+      employeeId: task.employeeId,
+      room: task.room,
+      type: task.type,
+      status: task.status,
+      priority: task.priority,
+      description: task.description,
+      jobTitle: task.assignedTo?.jobTitle || 'Staff',
+      createdAt: task.createdAt,
+      dueDate: task.dueDate
+    };
+
+    res.json(formattedTask);
+  } catch (error) {
+    console.error('Get task error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch task' });
+  }
+});
+
+// In your routes/tasks.js - PATCH endpoint
+router.patch('/:taskId/status', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { status } = req.body;
+
+    console.log('Updating task status:', { taskId, status });
+
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    // Match the schema enum values exactly
+    const validStatuses = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be: NOT_STARTED, IN_PROGRESS, or COMPLETED' });
+    }
+
+    // Find task by taskId (not MongoDB _id)
+    const task = await Task.findOne({ taskId });
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    task.status = status;
+    await task.save();
+
+    console.log('Task status updated successfully:', task.taskId, task.status);
+
+    // Populate the assignedTo field for the response
+    await task.populate('assignedTo', 'name employeeId jobTitle');
+
+    res.json({ 
+      message: 'Task status updated successfully',
+      task: {
+        id: task.taskId,
+        assigned: task.assignedTo?.name || 'Unknown',
+        employeeId: task.employeeId,
+        room: task.room,
+        type: task.type,
+        status: task.status,
+        priority: task.priority,
+        description: task.description,
+        jobTitle: task.assignedTo?.jobTitle || 'Cleaner'
+      }
+    });
+  } catch (error) {
+    console.error('Update task status error:', error);
+    
+    // Handle MongoDB validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+    
+    res.status(500).json({ error: error.message || 'Failed to update task status' });
+  }
+});
+
+// POST /api/tasks - create a new task
 router.post('/', async (req, res) => {
   try {
     const { assignedTo, room, type, priority, description } = req.body;
@@ -58,18 +177,21 @@ router.post('/', async (req, res) => {
     await task.save();
     console.log('Task saved successfully');
 
+    // Populate the assignedTo field for the response
+    await task.populate('assignedTo', 'name employeeId jobTitle');
+
     res.status(201).json({
       message: 'Task created successfully',
       task: {
         id: task.taskId,
-        assigned: employee.name,
+        assigned: task.assignedTo?.name || 'Unknown',
         employeeId: task.employeeId,
         room: task.room,
         type: task.type,
         status: task.status,
         priority: task.priority,
         description: task.description,
-        jobTitle: employee.jobTitle || 'Staff',
+        jobTitle: task.assignedTo?.jobTitle || 'Staff',
         createdAt: task.createdAt
       }
     });
@@ -85,31 +207,21 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Get all tasks
-router.get('/', async (req, res) => {
+// DELETE /api/tasks/:taskId - delete a task
+router.delete('/:taskId', async (req, res) => {
   try {
-    const tasks = await Task.find()
-      .populate('assignedTo', 'name employeeId jobTitle')
-      .sort({ createdAt: -1 });
+    const { taskId } = req.params;
+    
+    const task = await Task.findOneAndDelete({ taskId });
+    
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
 
-    const formattedTasks = tasks.map(task => ({
-      id: task.taskId,
-      assigned: task.assignedTo?.name || 'Unknown',
-      employeeId: task.employeeId,
-      room: task.room,
-      type: task.type,
-      status: task.status,
-      priority: task.priority,
-      description: task.description,
-      jobTitle: task.assignedTo?.jobTitle || 'Staff',
-      createdAt: task.createdAt,
-      dueDate: task.dueDate
-    }));
-
-    res.json(formattedTasks);
+    res.json({ message: 'Task deleted successfully' });
   } catch (error) {
-    console.error('Get tasks error:', error);
-    res.status(500).json({ error: error.message || 'Failed to fetch tasks' });
+    console.error('Delete task error:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete task' });
   }
 });
 

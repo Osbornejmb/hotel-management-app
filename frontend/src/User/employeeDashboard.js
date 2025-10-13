@@ -5,28 +5,80 @@ const EmployeeDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [employeeInfo, setEmployeeInfo] = useState({ name: '', employeeId: '' });
 
-  // This would typically come from your authentication context or user session
-  const currentUser = "Vivian Tabassamy";
+  // Use your backend URL
+  const API_BASE_URL = 'http://localhost:5000';
 
-  const stats = [
-    { value: "5.30", unit: "Hrs", label: "Total Hours", color: "text-orange-500" },
-    { value: "5", label: "Tasks Completed", color: "text-green-500" },
-    { value: "5", label: "Pending Tasks", color: "text-red-500" }
-  ];
+  // Get employee info from JWT token
+  const getEmployeeFromToken = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Employee from token:', payload);
+        return {
+          name: payload.name || '',
+          employeeId: payload.employeeId || '',
+          id: payload.id || ''
+        };
+      }
+    } catch (error) {
+      console.error('Error decoding token:', error);
+    }
+    return { name: '', employeeId: '', id: '' };
+  };
 
-  // Fetch tasks from API or database
+  // Fetch tasks from API
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         setLoading(true);
         
-       const response = await fetch('/api/tasks');
-const tasksData = await response.json();
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No token found');
+          setLoading(false);
+          return;
+        }
 
-        setTasks(tasksData);
+        // Get employee info from token
+        const employee = getEmployeeFromToken();
+        setEmployeeInfo(employee);
+
+        const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch tasks');
+        }
+
+        const tasksData = await response.json();
+        
+        // Filter tasks to show only those assigned to the current employee
+        const myTasks = tasksData.filter(task => {
+          const matchesName = task.assigned && 
+                             task.assigned.toLowerCase() === employee.name.toLowerCase();
+          const matchesId = task.employeeId && 
+                           task.employeeId.toString() === employee.employeeId?.toString();
+          return matchesName || matchesId;
+        });
+
+        console.log('Filtered tasks for dashboard:', {
+          employeeName: employee.name,
+          totalTasks: tasksData.length,
+          myTasks: myTasks.length
+        });
+
+        setTasks(myTasks);
       } catch (error) {
         console.error('Error fetching tasks:', error);
+        // Fallback to demo data
+        showDemoTasks();
       } finally {
         setLoading(false);
       }
@@ -35,16 +87,75 @@ const tasksData = await response.json();
     fetchTasks();
   }, []);
 
-  // Filter tasks to show only those assigned to the current user
-  const myTasks = tasks.filter(task => task.assignee === currentUser);
+  // Demo data fallback
+  const showDemoTasks = () => {
+    const employee = getEmployeeFromToken();
+    const demoTasks = [
+      { 
+        id: 'T1001', 
+        title: 'Clean Lobby Area',
+        assigned: 'Christian Malong', 
+        employeeId: '0001',
+        room: 'Lobby', 
+        type: 'CLEANING', 
+        status: 'NOT_STARTED', 
+        priority: 'HIGH', 
+        description: 'Deep cleaning of main lobby area',
+        jobTitle: 'Cleaner',
+        assignedDate: '2025-01-15',
+        assignedTime: '09:00 AM',
+        createdAt: new Date().toISOString()
+      },
+      { 
+        id: 'T1002', 
+        title: 'Fix AC Unit',
+        assigned: 'Maria Santos', 
+        employeeId: '0002',
+        room: '302', 
+        type: 'MAINTENANCE', 
+        status: 'IN_PROGRESS', 
+        priority: 'MEDIUM', 
+        description: 'Fix AC unit in room 302',
+        jobTitle: 'Maintenance',
+        assignedDate: '2025-01-12',
+        assignedTime: '10:30 AM',
+        createdAt: new Date().toISOString()
+      },
+      { 
+        id: 'T1004', 
+        title: 'Clean Swimming Pool',
+        assigned: 'Christian Malong', 
+        employeeId: '0001',
+        room: 'Pool', 
+        type: 'CLEANING', 
+        status: 'IN_PROGRESS', 
+        priority: 'MEDIUM', 
+        description: 'Clean swimming pool area',
+        jobTitle: 'Cleaner',
+        assignedDate: '2025-01-14',
+        assignedTime: '02:00 PM',
+        createdAt: new Date().toISOString()
+      }
+    ];
+    
+    // Filter demo tasks by current employee
+    const filteredTasks = demoTasks.filter(task => {
+      const matchesName = task.assigned.toLowerCase() === employee.name?.toLowerCase();
+      const matchesId = task.employeeId === employee.employeeId?.toString();
+      return matchesName || matchesId;
+    });
+
+    setTasks(filteredTasks);
+  };
 
   // Calculate stats based on filtered tasks
   const calculateStats = () => {
-    const completedTasks = myTasks.filter(task => task.status === 'Completed').length;
-    const pendingTasks = myTasks.filter(task => task.status === 'Pending' || task.status === 'In Progress').length;
+    const completedTasks = tasks.filter(task => task.status === 'COMPLETED').length;
+    const pendingTasks = tasks.filter(task => task.status === 'NOT_STARTED' || task.status === 'IN_PROGRESS').length;
+    const totalHours = "5.30"; // This could be calculated from task time estimates
     
     return [
-      { value: "5.30", unit: "Hrs", label: "Total Hours", color: "text-orange-500" },
+      { value: totalHours, unit: "Hrs", label: "Total Hours", color: "text-orange-500" },
       { value: completedTasks.toString(), label: "Tasks Completed", color: "text-green-500" },
       { value: pendingTasks.toString(), label: "Pending Tasks", color: "text-red-500" }
     ];
@@ -65,23 +176,29 @@ const tasksData = await response.json();
   const handleMarkAsDone = async () => {
     if (selectedTask) {
       try {
-        // Simulating API call to update task status
-        // await fetch(`/api/tasks/${selectedTask.id}`, {
-        //   method: 'PUT',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     ...selectedTask,
-        //     status: 'Completed'
-        //   })
-        // });
+        const token = localStorage.getItem('token');
+        
+        // Update via API
+        if (token) {
+          const response = await fetch(`${API_BASE_URL}/api/tasks/${selectedTask.id}/status`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'COMPLETED' })
+          });
+
+          if (response.ok) {
+            console.log('Task status updated via API');
+          }
+        }
 
         // Update local state
         setTasks(prevTasks => 
           prevTasks.map(task => 
             task.id === selectedTask.id 
-              ? { ...task, status: 'Completed' }
+              ? { ...task, status: 'COMPLETED' }
               : task
           )
         );
@@ -98,34 +215,60 @@ const tasksData = await response.json();
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'In Progress':
+      case 'IN_PROGRESS':
         return 'bg-blue-500';
-      case 'Completed':
+      case 'COMPLETED':
         return 'bg-green-500';
-      case 'Pending':
+      case 'NOT_STARTED':
         return 'bg-yellow-500';
       default:
         return 'bg-gray-500';
     }
   };
 
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      case 'COMPLETED':
+        return 'Completed';
+      case 'NOT_STARTED':
+        return 'Not Started';
+      default:
+        return status;
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'High':
+      case 'HIGH':
         return 'bg-red-100 text-red-800';
-      case 'Medium':
+      case 'MEDIUM':
         return 'bg-yellow-100 text-yellow-800';
-      case 'Low':
+      case 'LOW':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const getPriorityText = (priority) => {
+    switch (priority) {
+      case 'HIGH':
+        return 'High';
+      case 'MEDIUM':
+        return 'Medium';
+      case 'LOW':
+        return 'Low';
+      default:
+        return priority;
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 flex justify-center items-center h-64">
-        <div className="text-gray-500">Loading tasks...</div>
+        <div className="text-gray-500">Loading your tasks...</div>
       </div>
     );
   }
@@ -151,20 +294,24 @@ const tasksData = await response.json();
 
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900">
-          My Tasks ({myTasks.length})
+          My Tasks ({tasks.length})
         </h3>
         <p className="text-sm text-gray-600">
-          Tasks assigned to: <span className="font-medium">{currentUser}</span>
+          Tasks assigned to: <span className="font-medium">{employeeInfo.name || 'Loading...'}</span>
+          {employeeInfo.employeeId && (
+            <span className="ml-2">(ID: {employeeInfo.employeeId})</span>
+          )}
         </p>
       </div>
 
       <div>
-        {myTasks.length === 0 ? (
+        {tasks.length === 0 ? (
           <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
             <p className="text-gray-500">No tasks assigned to you.</p>
+            <p className="text-gray-400 text-sm mt-1">Employee: {employeeInfo.name}</p>
           </div>
         ) : (
-          myTasks.map((task) => (
+          tasks.map((task) => (
             <div 
               key={task.id} 
               className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-3 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-gray-300"
@@ -172,24 +319,24 @@ const tasksData = await response.json();
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 text-base mb-1">{task.title}</h3>
+                  <h3 className="font-semibold text-gray-900 text-base mb-1">{task.description || task.title}</h3>
                   <div className="text-xs text-gray-500 mb-1">
-                    <span>Assigned: {task.assignedDate} {task.assignedTime}</span>
+                    <span>Room: {task.room}</span>
                   </div>
                   <div className="text-xs text-gray-500">
-                    <span>Assigned to: {task.assignee}</span>
+                    <span>Type: {task.type}</span>
                   </div>
                 </div>
                 <span className={`${getStatusColor(task.status)} text-white px-3 py-1 rounded-full text-xs font-medium ml-4 whitespace-nowrap`}>
-                  {task.status}
+                  {getStatusText(task.status)}
                 </span>
               </div>
               {task.type && (
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-medium text-gray-600">{task.type}</div>
+                  <div className="text-xs font-medium text-gray-600">Task ID: {task.id}</div>
                   {task.priority && (
                     <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(task.priority)}`}>
-                      {task.priority}
+                      {getPriorityText(task.priority)}
                     </span>
                   )}
                 </div>
@@ -227,7 +374,7 @@ const tasksData = await response.json();
                     Name of Employee:
                   </label>
                   <div className="text-lg font-semibold text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                    {selectedTask.assignee}
+                    {selectedTask.assigned}
                   </div>
                 </div>
 
@@ -238,11 +385,11 @@ const tasksData = await response.json();
                   </label>
                   <div className="space-y-2">
                     <div className="text-lg font-semibold text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                      {selectedTask.title}
+                      {selectedTask.description || selectedTask.title}
                     </div>
-                    {selectedTask.description && (
+                    {selectedTask.jobTitle && (
                       <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded border">
-                        {selectedTask.description}
+                        Role: {selectedTask.jobTitle}
                       </div>
                     )}
                   </div>
@@ -263,15 +410,15 @@ const tasksData = await response.json();
                       Priority
                     </label>
                     <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(selectedTask.priority)}`}>
-                      {selectedTask.priority}
+                      {getPriorityText(selectedTask.priority)}
                     </span>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      Assigned Date
+                      Room/Location
                     </label>
                     <div className="text-sm text-gray-900">
-                      {selectedTask.assignedDate} {selectedTask.assignedTime}
+                      {selectedTask.room}
                     </div>
                   </div>
                   <div>
@@ -279,8 +426,24 @@ const tasksData = await response.json();
                       Status
                     </label>
                     <span className={`text-xs px-2 py-1 rounded-full text-white ${getStatusColor(selectedTask.status)}`}>
-                      {selectedTask.status}
+                      {getStatusText(selectedTask.status)}
                     </span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      Task ID
+                    </label>
+                    <div className="text-sm text-gray-900">
+                      {selectedTask.id}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      Employee ID
+                    </label>
+                    <div className="text-sm text-gray-900">
+                      {selectedTask.employeeId}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -295,7 +458,7 @@ const tasksData = await response.json();
                 >
                   Close
                 </button>
-                {selectedTask.status !== 'Completed' && (
+                {selectedTask.status !== 'COMPLETED' && (
                   <button
                     onClick={handleMarkAsDone}
                     className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 transition-colors"
@@ -308,6 +471,14 @@ const tasksData = await response.json();
           </div>
         </div>
       )}
+
+      {/* Debug Info */}
+      <div className="mt-4 p-3 bg-blue-50 rounded text-xs">
+        <div className="font-medium text-blue-800">Dashboard Debug Info:</div>
+        <div>Employee: {employeeInfo.name || 'Not detected'}</div>
+        <div>Employee ID: {employeeInfo.employeeId || 'Not detected'}</div>
+        <div>Tasks loaded: {tasks.length}</div>
+      </div>
     </div>
   );
 };
