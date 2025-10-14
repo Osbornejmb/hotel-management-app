@@ -3,6 +3,57 @@ const router = express.Router();
 const Task = require('./task');
 const Employee = require('./Employee');
 
+// Notification helper function - UPDATED
+const sendTaskNotification = async (task, action, io) => {
+  try {
+    const Notification = require('./notification'); 
+    
+    // Determine notification title and message based on action
+    let title, message;
+    switch (action) {
+      case 'created':
+        title = 'New Task Assigned';
+        message = `New ${task.type} task for room ${task.room}`;
+        break;
+      case 'status_updated':
+        title = 'Task Status Updated';
+        message = `Task ${task.taskId} is now ${task.status}`;
+        break;
+      case 'deleted':
+        title = 'Task Deleted';
+        message = `Task ${task.taskId} has been deleted`;
+        break;
+      default:
+        title = 'Task Notification';
+        message = `Update for task ${task.taskId}`;
+    }
+
+    // Create notification for assigned employee
+    if (task.assignedTo) {
+      const notification = new Notification({
+        userId: task.assignedTo,
+        userModel: 'Employee',
+        type: 'task_update',
+        title: title,
+        message: message,
+        relatedId: task._id,
+        relatedModel: 'Task',
+        priority: (task.priority || 'medium').toLowerCase() // FIX: Convert to lowercase
+      });
+
+      await notification.save();
+
+      // Send real-time notification via socket.io
+      if (io) {
+        io.to(task.assignedTo.toString()).emit('new-notification', notification);
+      }
+    }
+
+  } catch (error) {
+    console.error('Error sending task notification:', error);
+  }
+};
+
 // Helper: Generate next task ID
 async function getNextTaskId() {
   const latestTask = await Task.findOne().sort({ taskId: -1 });
@@ -74,7 +125,7 @@ router.get('/:taskId', async (req, res) => {
   }
 });
 
-// In your routes/tasks.js - PATCH endpoint
+// PATCH /api/tasks/:taskId/status - update task status
 router.patch('/:taskId/status', async (req, res) => {
   try {
     const { taskId } = req.params;
@@ -102,6 +153,12 @@ router.patch('/:taskId/status', async (req, res) => {
     await task.save();
 
     console.log('Task status updated successfully:', task.taskId, task.status);
+
+    // Send notification after status update
+    const io = req.app.get('io');
+    if (io) {
+      await sendTaskNotification(task, 'status_updated', io);
+    }
 
     // Populate the assignedTo field for the response
     await task.populate('assignedTo', 'name employeeId jobTitle');
@@ -177,6 +234,12 @@ router.post('/', async (req, res) => {
     await task.save();
     console.log('Task saved successfully');
 
+    // Send notification after task creation
+    const io = req.app.get('io');
+    if (io) {
+      await sendTaskNotification(task, 'created', io);
+    }
+
     // Populate the assignedTo field for the response
     await task.populate('assignedTo', 'name employeeId jobTitle');
 
@@ -216,6 +279,12 @@ router.delete('/:taskId', async (req, res) => {
     
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Send notification after task deletion
+    const io = req.app.get('io');
+    if (io) {
+      await sendTaskNotification(task, 'deleted', io);
     }
 
     res.json({ message: 'Task deleted successfully' });

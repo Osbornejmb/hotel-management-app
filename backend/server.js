@@ -2,6 +2,8 @@ require("dotenv").config({ path: __dirname + "/.env" });
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const http = require('http'); // Add this
+const socketIo = require('socket.io'); // Add this
 const userRoutes = require("./userRoutes");
 const roomRoutes = require("./roomRoutes");
 const cartRoutes = require("./cartRoutes");
@@ -12,7 +14,8 @@ const foodRoutes = require("./foodRoutes");
 const employeeRoutes = require("./employeeRoutes");
 const requestRoutes = require("./requestRoutes");
 const taskRoutes = require('./taskRoutes'); 
-const { sendEmployeeCredentials, testEmail } = require("./emailService"); // Fixed import
+const { sendEmployeeCredentials, testEmail } = require("./emailService"); 
+const notificationRoutes = require('./notificationRoutes');
 
 const app = express();
 
@@ -20,6 +23,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.io
+const io = socketIo(server, {
+  cors: {
+    origin: "http://localhost:3000", // Your frontend URL
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Join user to their room for personalized notifications
+  socket.on('join-user', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Make io accessible to other routes
+app.set('io', io);
+
+// Routes
 app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/cart", cartRoutes);
@@ -30,6 +63,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use('/api/employee', employeeRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Test email endpoint
 app.get("/api/test-email", async (req, res) => {
@@ -55,8 +89,10 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
+// Use server.listen instead of app.listen
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📧 Email User: ${process.env.EMAIL_USER ? 'Set' : 'Missing'}`);
   console.log(`🔑 Email Password: ${process.env.EMAIL_PASSWORD ? 'Set' : 'Missing'}`);
+  console.log(`🔔 Socket.io server initialized`);
 });

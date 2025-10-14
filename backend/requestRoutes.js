@@ -2,6 +2,67 @@ const express = require('express');
 const router = express.Router();
 const Request = require('./Request');
 
+// Notification helper function - UPDATED
+const sendRequestNotification = async (request, action, io) => {
+  try {
+    const Notification = require('./notification'); 
+    
+    // Determine notification title and message based on action
+    let title, message;
+    switch (action) {
+      case 'created':
+        title = 'New Request Created';
+        message = `New ${request.taskType} request for room ${request.room}`;
+        break;
+      case 'updated':
+        title = 'Request Updated';
+        message = `Request for room ${request.room} has been updated`;
+        break;
+      case 'assigned':
+        title = 'Request Assigned';
+        message = `You have been assigned to a ${request.taskType} request`;
+        break;
+      case 'status_changed':
+        title = 'Request Status Updated';
+        message = `Request for room ${request.room} is now ${request.status}`;
+        break;
+      default:
+        title = 'Request Notification';
+        message = `Update for request ${request.room}`;
+    }
+
+    // Create notification for assigned employee if exists
+    if (request.assignedTo) {
+      const notification = new Notification({
+        userId: request.assignedTo,
+        userModel: 'Employee',
+        type: 'task_request',
+        title: title,
+        message: message,
+        relatedId: request._id,
+        relatedModel: 'Request',
+        priority: (request.priority || 'medium').toLowerCase() // FIX: Convert to lowercase
+      });
+
+      await notification.save();
+
+      // Send real-time notification via socket.io
+      if (io) {
+        io.to(request.assignedTo.toString()).emit('new-notification', notification);
+      }
+    }
+
+    // Also notify admins or other relevant users about new requests
+    if (action === 'created') {
+      // You can add logic here to notify admin users
+      // For example, find all admin users and send them notifications
+    }
+
+  } catch (error) {
+    console.error('Error sending request notification:', error);
+  }
+};
+
 // Create a new request
 router.post('/', async (req, res) => {
   try {
@@ -30,6 +91,13 @@ router.post('/', async (req, res) => {
     });
 
     await request.save();
+    
+    // Send notification after successful creation
+    const io = req.app.get('io');
+    if (io) {
+      await sendRequestNotification(request, 'created', io);
+    }
+    
     res.status(201).json(request);
   } catch (err) {
     console.error('Error creating request:', err);
@@ -104,6 +172,12 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Request not found' });
     }
 
+    // Send notification after successful update
+    const io = req.app.get('io');
+    if (io) {
+      await sendRequestNotification(request, 'updated', io);
+    }
+
     res.json(request);
   } catch (err) {
     console.error('Error updating request:', err);
@@ -131,6 +205,12 @@ router.patch('/:id/assign', async (req, res) => {
 
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
+    }
+
+    // Send notification after assignment
+    const io = req.app.get('io');
+    if (io) {
+      await sendRequestNotification(request, 'assigned', io);
     }
 
     res.json(request);
@@ -164,6 +244,12 @@ router.patch('/:id/status', async (req, res) => {
 
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
+    }
+
+    // Send notification after status change
+    const io = req.app.get('io');
+    if (io) {
+      await sendRequestNotification(request, 'status_changed', io);
     }
 
     res.json(request);
