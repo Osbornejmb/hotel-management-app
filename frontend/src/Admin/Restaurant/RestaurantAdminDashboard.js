@@ -480,7 +480,13 @@ function RestaurantAdminDashboard() {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
       const data = await res.json();
-      setOrders(data);
+      // Ensure FIFO: sort orders by createdAt (or checkedOutAt as fallback) ascending so oldest appear first
+      const sorted = (data || []).slice().sort((a, b) => {
+        const aTime = new Date(a.createdAt || a.checkedOutAt || 0).getTime();
+        const bTime = new Date(b.createdAt || b.checkedOutAt || 0).getTime();
+        return aTime - bTime; // oldest first
+      });
+      setOrders(sorted);
       return data;
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -492,7 +498,13 @@ function RestaurantAdminDashboard() {
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancelled`);
       const data = await res.json();
-      setCancelledOrders(data);
+      // Ensure FIFO for cancelled orders as well (oldest cancelled order first)
+      const sortedCancelled = (data || []).slice().sort((a, b) => {
+        const aTime = new Date(a.cancelledAt || a.createdAt || 0).getTime();
+        const bTime = new Date(b.cancelledAt || b.createdAt || 0).getTime();
+        return aTime - bTime;
+      });
+      setCancelledOrders(sortedCancelled);
       return data;
     } catch (error) {
       console.error('Error fetching cancelled orders:', error);
@@ -555,9 +567,9 @@ function RestaurantAdminDashboard() {
       }
     }
 
-    // Update previous state
-    previousOrdersRef.current = currentOrders;
-    previousCancelledOrdersRef.current = currentCancelledOrders;
+    // Update previous state with the sorted arrays returned from fetch helpers
+    previousOrdersRef.current = Array.isArray(currentOrders) ? currentOrders : [];
+    previousCancelledOrdersRef.current = Array.isArray(currentCancelledOrders) ? currentCancelledOrders : [];
   }, [fetchOrders, fetchCancelledOrders, addNotification, playNotificationSound, showNotificationPopup]);
 
   React.useEffect(() => {
@@ -565,9 +577,9 @@ function RestaurantAdminDashboard() {
     const initializeData = async () => {
       const initialOrders = await fetchOrders();
       const initialCancelledOrders = await fetchCancelledOrders();
-      
-      previousOrdersRef.current = initialOrders;
-      previousCancelledOrdersRef.current = initialCancelledOrders;
+
+      previousOrdersRef.current = Array.isArray(initialOrders) ? initialOrders : [];
+      previousCancelledOrdersRef.current = Array.isArray(initialCancelledOrders) ? initialCancelledOrders : [];
     };
 
     initializeData();
