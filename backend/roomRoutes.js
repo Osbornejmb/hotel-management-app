@@ -2,46 +2,53 @@ const express = require('express');
 const router = express.Router();
 const Room = require('./Room');
 const Customer = require('./Customer');
+const ActivityLog = require('./ActivityLog');
 console.log('roomRoutes loaded');
 
 // Book a room: update status to 'booked' and save guest info
+
 router.put('/:id/book', async (req, res) => {
 	try {
-				let { guestName, guestContact, checkoutDate } = req.body;
-				// Patch: Always save checkoutDate as 'YYYY-MM-DDT12:00:00' to avoid timezone regression
-				if (checkoutDate && checkoutDate.length === 10) {
-					checkoutDate = checkoutDate + 'T12:00:00';
-				}
-				console.log('Booking request:', { guestName, guestContact, checkoutDate });
+		let { guestName, guestContact, checkoutDate } = req.body;
+		if (checkoutDate && checkoutDate.length === 10) {
+			checkoutDate = checkoutDate + 'T12:00:00';
+		}
 		const room = await Room.findById(req.params.id);
 		if (!room) {
 			return res.status(404).json({ error: 'Room not found' });
 		}
-			room.status = 'booked';
-			room.guestName = guestName;
-			room.guestContact = guestContact;
-			await room.save();
+		room.status = 'booked';
+		room.guestName = guestName;
+		room.guestContact = guestContact;
+		await room.save();
 
-						// Save customer info in Customers collection
-						const checkinDate = new Date();
-						const checkinTime = checkinDate.toLocaleTimeString();
-								const customer = new Customer({
-									name: guestName,
-									contactNumber: guestContact,
-									roomNumber: room.roomNumber,
-									checkinDate,
-									checkinTime,
-									checkoutDate,
-									status: 'checked in'
-								});
-								try {
-									await customer.save();
-									console.log('Customer saved:', customer);
-								} catch (err) {
-									console.error('Error saving customer:', err);
-								}
+		// Save customer info in Customers collection
+		const checkinDate = new Date();
+		const checkinTime = checkinDate.toLocaleTimeString();
+		const customer = new Customer({
+			name: guestName,
+			contactNumber: guestContact,
+			roomNumber: room.roomNumber,
+			checkinDate,
+			checkinTime,
+			checkoutDate,
+			status: 'checked in'
+		});
+		try {
+			await customer.save();
+		} catch (err) {
+			console.error('Error saving customer:', err);
+		}
 
-				res.json({ message: 'Room booked successfully', room, customer });
+		// Log activity
+		await ActivityLog.create({
+			actionType: 'book',
+			collection: 'rooms',
+			documentId: room._id,
+			details: { guestName, guestContact, checkoutDate, roomNumber: room.roomNumber },
+		});
+
+		res.json({ message: 'Room booked successfully', room, customer });
 	} catch (err) {
 		console.error('Booking error:', err);
 		res.status(400).json({ error: err.message || 'Booking failed' });
@@ -50,9 +57,12 @@ router.put('/:id/book', async (req, res) => {
 
 
 // Update room status (book room)
+
+
 router.patch('/:id', async (req, res) => {
 	try {
 		const { status } = req.body;
+		const oldRoom = await Room.findById(req.params.id);
 		const room = await Room.findByIdAndUpdate(
 			req.params.id,
 			{ status },
@@ -61,6 +71,34 @@ router.patch('/:id', async (req, res) => {
 		if (!room) {
 			return res.status(404).json({ error: 'Room not found' });
 		}
+			// Log activity with 'change' field
+			try {
+				console.log('[ActivityLog] Attempting to log room update:', {
+					actionType: 'update',
+					collection: 'rooms',
+					documentId: room._id,
+					details: { status, roomNumber: room.roomNumber },
+					change: {
+						field: 'status',
+						oldValue: oldRoom ? oldRoom.status : undefined,
+						newValue: status
+					}
+				});
+				await ActivityLog.create({
+					actionType: 'update',
+					collection: 'rooms',
+					documentId: room._id,
+					details: { status, roomNumber: room.roomNumber },
+					change: {
+						field: 'status',
+						oldValue: oldRoom ? oldRoom.status : undefined,
+						newValue: status
+					}
+				});
+				console.log('[ActivityLog] Successfully logged room update.');
+			} catch (logErr) {
+				console.error('[ActivityLog] Failed to log room update:', logErr);
+			}
 		res.json({ message: 'Room status updated', room });
 	} catch (err) {
 		console.error('Room update error:', err);
@@ -79,35 +117,39 @@ router.get('/', async (req, res) => {
 });
 
 // Register a new room
+
 router.post('/', async (req, res) => {
 	try {
-			const { roomNumber, roomType, status, description, price, facilities } = req.body;
-			// Validate required fields
-			if (!roomNumber || !roomType || !status) {
-				return res.status(400).json({ error: 'All fields (roomNumber, roomType, status) are required.' });
-			}
-			// Check for duplicate room number
-			const existingRoom = await Room.findOne({ roomNumber });
-			if (existingRoom) {
-				return res.status(400).json({ error: 'A room with that number already exists.' });
-			}
-			const newRoom = new Room({
-				roomNumber,
-				roomType,
-				status,
-				description: description || '',
-				price: typeof price === 'number' ? price : (price ? Number(price) : 0),
-				facilities: Array.isArray(facilities) ? facilities : (facilities ? facilities.split(',').map(a => a.trim()) : [])
-			});
-			await newRoom.save();
-			res.status(201).json({ message: 'Room added successfully' });
+		const { roomNumber, roomType, status, description, price, facilities } = req.body;
+		if (!roomNumber || !roomType || !status) {
+			return res.status(400).json({ error: 'All fields (roomNumber, roomType, status) are required.' });
+		}
+		const existingRoom = await Room.findOne({ roomNumber });
+		if (existingRoom) {
+			return res.status(400).json({ error: 'A room with that number already exists.' });
+		}
+		const newRoom = new Room({
+			roomNumber,
+			roomType,
+			status,
+			description: description || '',
+			price: typeof price === 'number' ? price : (price ? Number(price) : 0),
+			facilities: Array.isArray(facilities) ? facilities : (facilities ? facilities.split(',').map(a => a.trim()) : [])
+		});
+		await newRoom.save();
+		// Log activity
+		await ActivityLog.create({
+			actionType: 'create',
+			collection: 'rooms',
+			documentId: newRoom._id,
+			details: { roomNumber, roomType, status },
+		});
+		res.status(201).json({ message: 'Room added successfully' });
 	} catch (err) {
-		// Validation errors
 		if (err.name === 'ValidationError') {
 			const messages = Object.values(err.errors).map(e => e.message);
 			return res.status(400).json({ error: messages.join(' ') });
 		}
-		// Log error for debugging
 		console.error('Room registration error:', err);
 		res.status(400).json({ error: err.message || 'Room registration failed' });
 	}

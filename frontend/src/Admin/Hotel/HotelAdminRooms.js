@@ -12,6 +12,8 @@ export default function HotelAdminRooms() {
   const [error, setError] = useState('');
   const [modalRoom, setModalRoom] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, jobType: '', room: null });
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
   // Note: removed floor/type selection to show all rooms in a single scrollable view
   
 
@@ -48,6 +50,23 @@ export default function HotelAdminRooms() {
   const [currentFloorIndex, setCurrentFloorIndex] = useState(0);
   const currentFloor = floors[currentFloorIndex];
   const roomsForCurrentFloor = roomsSorted.filter(r => Math.floor(Number(r.roomNumber) / 100) === currentFloor);
+
+  // Fetch activity logs for the selected room
+  useEffect(() => {
+    if (!modalRoom) return;
+    setLogsLoading(true);
+    fetch(`${process.env.REACT_APP_API_URL}/api/activitylogs`)
+      .then(res => res.json())
+      .then(data => {
+        // Filter logs for this room only
+        const logs = Array.isArray(data)
+          ? data.filter(log => log.collection === 'rooms' && log.details && (log.details.roomNumber === modalRoom.roomNumber || log.documentId === modalRoom._id))
+          : [];
+        setActivityLogs(logs);
+      })
+      .catch(() => setActivityLogs([]))
+      .finally(() => setLogsLoading(false));
+  }, [modalRoom]);
 
   return (
     <HotelAdminDashboard>
@@ -181,10 +200,24 @@ export default function HotelAdminRooms() {
 
               <div className="room-modal-log expanded">
                 <h4>Activity Log</h4>
-                <ul>
-                  <li>PLACEHOLDER</li>
-                  <li>PLACEHOLDER</li>
-                </ul>
+                {logsLoading ? (
+                  <div>Loading activity logs...</div>
+                ) : activityLogs.length === 0 ? (
+                  <div>No activity found for this room.</div>
+                ) : (
+                  <ul>
+                    {activityLogs.map(log => (
+                      <li key={log._id}>
+                        <b>{log.actionType.charAt(0).toUpperCase() + log.actionType.slice(1)}</b> —
+                        {log.details && log.details.roomNumber ? ` Room ${log.details.roomNumber}` : ''}
+                        {log.details && log.details.status ? `, Status: ${log.details.status}` : ''}
+                        <span style={{ color: '#888', marginLeft: 8 }}>
+                          {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
