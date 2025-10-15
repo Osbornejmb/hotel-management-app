@@ -1,6 +1,6 @@
 .sidebar {
   width: 220px;
-  background: #4b2b17; /* sidebar bg */
+  background: #4b2b17; 
   padding: 24px;
   display: flex;
   flex-direction: column;

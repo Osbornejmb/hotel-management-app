@@ -38,7 +38,7 @@ const sendTaskNotification = async (task, action, io) => {
         message: message,
         relatedId: task._id,
         relatedModel: 'Task',
-        priority: (task.priority || 'medium').toLowerCase() // FIX: Convert to lowercase
+        priority: (task.priority || 'medium').toLowerCase()
       });
 
       await notification.save();
@@ -64,7 +64,7 @@ async function getNextTaskId() {
   return `T${lastNumber + 1}`;
 }
 
-// GET /api/tasks - get all tasks
+// GET /api/tasks - get all tasks with employee population
 router.get('/', async (req, res) => {
   try {
     const tasks = await Task.find()
@@ -291,6 +291,20 @@ router.delete('/:taskId', async (req, res) => {
   } catch (error) {
     console.error('Delete task error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete task' });
+  }
+});
+
+// GET /api/tasks/employees - get all employees for task assignment
+router.get('/employees/list', async (req, res) => {
+  try {
+    const employees = await Employee.find({ role: 'employee' })
+      .select('name employeeId jobTitle department')
+      .sort({ name: 1 });
+
+    res.json(employees);
+  } catch (error) {
+    console.error('Get employees error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch employees' });
   }
 });
 

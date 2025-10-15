@@ -8,6 +8,7 @@ import TasksSection from './Dashboard/taskSection';
 import ProfileSection from './Dashboard/profileSection';
 import TaskRequests from './Dashboard/taskRequest';
 import NotificationBell from './components/NotificationBell';
+import NotificationBar from './components/notificationbar';
 
 function EmployeeAdminDashboard() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -39,8 +40,18 @@ function EmployeeAdminDashboard() {
           <NotificationBell />
         </div>
         
-        {/* Main content with top padding to avoid overlap */}
-        <div style={{ paddingTop: 60 }}>
+        {/* Notification Bar in main content area */}
+        <div style={{ 
+          marginBottom: 30,
+          borderRadius: '8px',
+          overflow: 'hidden',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <NotificationBar />
+        </div>
+        
+        {/* Main content */}
+        <div>
           {renderSection()}
         </div>
       </main>

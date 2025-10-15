@@ -7,8 +7,6 @@ router.get('/', async (req, res) => {
   try {
     console.log('Fetching notifications...');
     
-    // For now, return all notifications or use a default user ID
-    // You'll need to implement proper user authentication later
     const notifications = await Notification.find()
       .sort({ createdAt: -1 })
       .limit(50);
@@ -18,6 +16,23 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching notifications:', error);
     res.status(500).json({ message: 'Error fetching notifications' });
+  }
+});
+
+// Get unread notifications - ADD THIS ROUTE
+router.get('/unread', async (req, res) => {
+  try {
+    console.log('Fetching unread notifications...');
+    
+    const notifications = await Notification.find({ isRead: false })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    console.log(`Found ${notifications.length} unread notifications`);
+    res.json(notifications);
+  } catch (error) {
+    console.error('Error fetching unread notifications:', error);
+    res.status(500).json({ message: 'Error fetching unread notifications' });
   }
 });
 

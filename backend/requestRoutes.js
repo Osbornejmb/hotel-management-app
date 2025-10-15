@@ -1,12 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const Request = require('./Request');
+const Employee = require('./Employee');
 
-// Notification helper function - UPDATED
+// Notification helper function - UPDATED with better error handling
 const sendRequestNotification = async (request, action, io) => {
   try {
     const Notification = require('./notification'); 
     
+    // Check if assignedTo exists before creating notification
+    if (request.assignedTo && Employee) {
+      try {
+        const employeeExists = await Employee.findById(request.assignedTo);
+        if (!employeeExists) {
+          console.warn(`Employee with ID ${request.assignedTo} not found, skipping notification`);
+          return; // Exit early if employee doesn't exist
+        }
+      } catch (employeeError) {
+        console.warn('Error checking employee existence, skipping notification:', employeeError.message);
+        return;
+      }
+    }
+
     // Determine notification title and message based on action
     let title, message;
     switch (action) {
@@ -33,37 +48,42 @@ const sendRequestNotification = async (request, action, io) => {
 
     // Create notification for assigned employee if exists
     if (request.assignedTo) {
-      const notification = new Notification({
-        userId: request.assignedTo,
-        userModel: 'Employee',
-        type: 'task_request',
-        title: title,
-        message: message,
-        relatedId: request._id,
-        relatedModel: 'Request',
-        priority: (request.priority || 'medium').toLowerCase() // FIX: Convert to lowercase
-      });
+      try {
+        const notification = new Notification({
+          userId: request.assignedTo,
+          userModel: 'Employee',
+          type: 'task_request',
+          title: title,
+          message: message,
+          relatedId: request._id,
+          relatedModel: 'Request',
+          priority: (request.priority || 'medium').toLowerCase()
+        });
 
-      await notification.save();
+        await notification.save();
 
-      // Send real-time notification via socket.io
-      if (io) {
-        io.to(request.assignedTo.toString()).emit('new-notification', notification);
+        // Send real-time notification via socket.io
+        if (io) {
+          io.to(request.assignedTo.toString()).emit('new-notification', notification);
+        }
+      } catch (notificationError) {
+        console.error('Error creating notification:', notificationError);
+        // Continue without notification
       }
     }
 
     // Also notify admins or other relevant users about new requests
     if (action === 'created') {
       // You can add logic here to notify admin users
-      // For example, find all admin users and send them notifications
     }
 
   } catch (error) {
-    console.error('Error sending request notification:', error);
+    console.error('Error in sendRequestNotification:', error);
+    // Don't throw the error to prevent breaking the main request flow
   }
 };
 
-// Create a new request
+// Create a new request - UPDATED with safe validation
 router.post('/', async (req, res) => {
   try {
     const { 
@@ -77,6 +97,19 @@ router.post('/', async (req, res) => {
       notes,
       date 
     } = req.body;
+
+    // Validate assignedTo if provided and Employee model is available
+    if (assignedTo && Employee) {
+      try {
+        const employeeExists = await Employee.findById(assignedTo);
+        if (!employeeExists) {
+          return res.status(400).json({ error: 'Assigned employee not found' });
+        }
+      } catch (employeeError) {
+        console.warn('Error validating employee, continuing without validation:', employeeError.message);
+        // Continue without validation if there's an error
+      }
+    }
 
     const request = new Request({ 
       room, 
@@ -92,10 +125,15 @@ router.post('/', async (req, res) => {
 
     await request.save();
     
-    // Send notification after successful creation
-    const io = req.app.get('io');
-    if (io) {
-      await sendRequestNotification(request, 'created', io);
+    // Send notification after successful creation (with error handling)
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        await sendRequestNotification(request, 'created', io);
+      }
+    } catch (notificationError) {
+      console.error('Notification failed but request was created:', notificationError);
+      // Continue with response even if notification fails
     }
     
     res.status(201).json(request);
@@ -130,7 +168,10 @@ router.get('/', async (req, res) => {
     const sortOrder = order === 'asc' ? 1 : -1;
     const sort = { [sortBy]: sortOrder };
 
-    const requests = await Request.find(filter).sort(sort);
+    const requests = await Request.find(filter)
+      .populate('assignedTo', 'name employeeId jobTitle')
+      .sort(sort);
+    
     res.json(requests);
   } catch (err) {
     console.error('Error fetching requests:', err);
@@ -141,7 +182,9 @@ router.get('/', async (req, res) => {
 // Get a single request by ID
 router.get('/:id', async (req, res) => {
   try {
-    const request = await Request.findById(req.params.id);
+    const request = await Request.findById(req.params.id)
+      .populate('assignedTo', 'name employeeId jobTitle');
+    
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
@@ -152,10 +195,23 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Update a request
+// Update a request - UPDATED with safe validation
 router.put('/:id', async (req, res) => {
   try {
     const updates = req.body;
+
+    // Validate assignedTo if being updated and Employee model is available
+    if (updates.assignedTo && Employee) {
+      try {
+        const employeeExists = await Employee.findById(updates.assignedTo);
+        if (!employeeExists) {
+          return res.status(400).json({ error: 'Assigned employee not found' });
+        }
+      } catch (employeeError) {
+        console.warn('Error validating employee, continuing without validation:', employeeError.message);
+        // Continue without validation if there's an error
+      }
+    }
 
     // If status is being changed to 'completed', set completedAt
     if (updates.status === 'completed' && !updates.completedAt) {
@@ -166,16 +222,21 @@ router.put('/:id', async (req, res) => {
       req.params.id,
       updates,
       { new: true, runValidators: true }
-    );
+    ).populate('assignedTo', 'name employeeId jobTitle');
 
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Send notification after successful update
-    const io = req.app.get('io');
-    if (io) {
-      await sendRequestNotification(request, 'updated', io);
+    // Send notification after successful update (with error handling)
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        await sendRequestNotification(request, 'updated', io);
+      }
+    } catch (notificationError) {
+      console.error('Notification failed but update was successful:', notificationError);
+      // Continue with response even if notification fails
     }
 
     res.json(request);
@@ -185,7 +246,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Assign a request to an employee
+// Assign a request to an employee - UPDATED with safe validation
 router.patch('/:id/assign', async (req, res) => {
   try {
     const { assignedTo } = req.body;
@@ -194,23 +255,41 @@ router.patch('/:id/assign', async (req, res) => {
       return res.status(400).json({ error: 'assignedTo field is required' });
     }
 
+    // Validate that employee exists if Employee model is available
+    if (Employee) {
+      try {
+        const employeeExists = await Employee.findById(assignedTo);
+        if (!employeeExists) {
+          return res.status(400).json({ error: 'Assigned employee not found' });
+        }
+      } catch (employeeError) {
+        console.warn('Error validating employee, continuing without validation:', employeeError.message);
+        // Continue without validation if there's an error
+      }
+    }
+
     const request = await Request.findByIdAndUpdate(
       req.params.id,
       { 
         assignedTo,
-        status: 'in-progress' // Optionally change status when assigned
+        status: 'in-progress'
       },
       { new: true, runValidators: true }
-    );
+    ).populate('assignedTo', 'name employeeId jobTitle');
 
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Send notification after assignment
-    const io = req.app.get('io');
-    if (io) {
-      await sendRequestNotification(request, 'assigned', io);
+    // Send notification after assignment (with error handling)
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        await sendRequestNotification(request, 'assigned', io);
+      }
+    } catch (notificationError) {
+      console.error('Notification failed but assignment was successful:', notificationError);
+      // Continue with response even if notification fails
     }
 
     res.json(request);
@@ -240,16 +319,21 @@ router.patch('/:id/status', async (req, res) => {
       req.params.id,
       updates,
       { new: true, runValidators: true }
-    );
+    ).populate('assignedTo', 'name employeeId jobTitle');
 
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Send notification after status change
-    const io = req.app.get('io');
-    if (io) {
-      await sendRequestNotification(request, 'status_changed', io);
+    // Send notification after status change (with error handling)
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        await sendRequestNotification(request, 'status_changed', io);
+      }
+    } catch (notificationError) {
+      console.error('Notification failed but status update was successful:', notificationError);
+      // Continue with response even if notification fails
     }
 
     res.json(request);
@@ -302,6 +386,20 @@ router.get('/stats/summary', async (req, res) => {
   } catch (err) {
     console.error('Error fetching stats:', err);
     res.status(500).json({ error: 'Failed to fetch statistics', details: err.message });
+  }
+});
+
+// GET /api/requests/employees - get all employees for request assignment
+router.get('/employees/list', async (req, res) => {
+  try {
+    const employees = await Employee.find({ role: 'employee' })
+      .select('name employeeId jobTitle department')
+      .sort({ name: 1 });
+
+    res.json(employees);
+  } catch (error) {
+    console.error('Get employees error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch employees' });
   }
 });
 
