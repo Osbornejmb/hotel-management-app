@@ -7,11 +7,13 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       const res = await axios.post(
         `${process.env.REACT_APP_API_URL}/api/users/login`,
@@ -27,6 +29,7 @@ function LoginPage() {
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     }
+      setLoading(false);
   };
 
   return (
@@ -46,6 +49,7 @@ function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="login-input"
+            disabled={loading}
           />
           <input
             type="password"
@@ -54,9 +58,10 @@ function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="login-input"
+            disabled={loading}
           />
-          <button type="submit" className="login-button">
-            Login
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         {error && <p className="login-error">{error}</p>}

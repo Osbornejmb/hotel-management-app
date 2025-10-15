@@ -65,6 +65,10 @@ function MenuManager() {
   const [addForm, setAddForm] = React.useState({ name: '', price: '', category: 'breakfast', img: '', details: '', available: true });
   const [showAddPopup, setShowAddPopup] = React.useState(false);
   const [menuCategoryFilter, setMenuCategoryFilter] = React.useState('all');
+  // Loading and pending-delete states for menu actions
+  const [togglingItemId, setTogglingItemId] = React.useState(null);
+  const [menuSaving, setMenuSaving] = React.useState(false);
+  const [pendingDelete, setPendingDelete] = React.useState(null); // { id, category, timeoutId }
 
   const fetchFood = React.useCallback(async () => {
     try {
@@ -77,6 +81,7 @@ function MenuManager() {
   }, []);
 
   const handleToggleAvailability = React.useCallback(async (item) => {
+    setTogglingItemId(item._id);
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food/${item.category}/${item._id}/availability`, {
         method: 'PATCH',
@@ -91,6 +96,8 @@ function MenuManager() {
       }
     } catch (error) {
       setMessage('Failed to update availability.');
+    } finally {
+      setTogglingItemId(null);
     }
   }, [fetchFood]);
 
@@ -102,6 +109,7 @@ function MenuManager() {
       return;
     }
     try {
+      setMenuSaving(true);
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,22 +126,33 @@ function MenuManager() {
       }
     } catch (error) {
       setMessage('Failed to add food item.');
+    } finally {
+      setMenuSaving(false);
     }
   }, [addForm, fetchFood]);
 
   const handleDelete = React.useCallback(async (id, category) => {
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food/${category}/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setMessage('Food item deleted.');
-        fetchFood();
-      } else {
+    // schedule deletion with undo
+    if (pendingDelete && pendingDelete.id === id) return;
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/food/${category}/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setMessage('Food item deleted.');
+          fetchFood();
+        } else {
+          setMessage('Failed to delete food item.');
+        }
+      } catch (error) {
         setMessage('Failed to delete food item.');
+      } finally {
+        setPendingDelete(null);
       }
-    } catch (error) {
-      setMessage('Failed to delete food item.');
-    }
-  }, [fetchFood]);
+    }, 6000); // 6s undo window
+
+    setPendingDelete({ id, category, timeoutId });
+    setMessage('Food item scheduled for deletion. You have 6 seconds to undo.');
+  }, [fetchFood, pendingDelete]);
 
   const startEdit = React.useCallback(item => {
     setEditId(item._id);
@@ -209,7 +228,22 @@ function MenuManager() {
             ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
             : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
-          {message}
+          <div className="flex items-center justify-center gap-4">
+            <div>{message}</div>
+            {pendingDelete && (
+              <button
+                className="px-4 py-2 rounded-lg bg-white border border-amber-200 text-amber-700 font-semibold hover:bg-amber-50"
+                onClick={() => {
+                  // cancel pending delete
+                  clearTimeout(pendingDelete.timeoutId);
+                  setPendingDelete(null);
+                  setMessage('Deletion cancelled.');
+                }}
+              >
+                Undo
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -244,8 +278,9 @@ function MenuManager() {
                         : 'bg-red-500 text-white hover:bg-red-600'
                     }`}
                     onClick={() => handleToggleAvailability(item)}
+                    disabled={togglingItemId === item._id}
                   >
-                    {item.available ? 'Available' : 'Unavailable'}
+                    {togglingItemId === item._id ? 'Updating...' : (item.available ? 'Available' : 'Unavailable')}
                   </button>
                 </td>
                 <td className="px-4 py-3">
@@ -253,12 +288,14 @@ function MenuManager() {
                     <button 
                       className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors"
                       onClick={() => startEdit(item)}
+                      disabled={menuSaving}
                     >
-                      Edit
+                      {menuSaving ? 'Saving...' : 'Edit'}
                     </button>
                     <button 
                       className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
                       onClick={() => handleDelete(item._id, item.category)}
+                      disabled={pendingDelete !== null}
                     >
                       Delete
                     </button>
@@ -468,6 +505,7 @@ function RestaurantAdminDashboard() {
   const [notifications, setNotifications] = React.useState([]);
   const [showNotificationPopup, setShowNotificationPopup] = React.useState(false);
   const [notificationCount, setNotificationCount] = React.useState(0);
+  const [confirmDeleteOrderId, setConfirmDeleteOrderId] = React.useState(null);
   
   // Refs to track previous state for comparison
   const previousOrdersRef = React.useRef([]);
@@ -849,7 +887,7 @@ function RestaurantAdminDashboard() {
                         {order.status === 'delivered' && (
                           <button 
                             className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
-                            onClick={() => handleDeleteDelivered(order._id)}
+                            onClick={() => setConfirmDeleteOrderId(order._id)}
                           >
                             Delete
                           </button>
@@ -1101,6 +1139,37 @@ function RestaurantAdminDashboard() {
                   onClick={() => setShowCancelPopup(false)}
                 >
                   Go Back
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Delivered Order Popup */}
+      {confirmDeleteOrderId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-amber-200">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+              <h3 className="text-2xl font-bold text-white">Delete Delivered Order</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-amber-900 mb-4">Are you sure you want to permanently delete this delivered order? This action cannot be undone.</p>
+              <div className="flex justify-center space-x-4 mt-6">
+                <button 
+                  className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200"
+                  onClick={async () => {
+                    await handleDeleteDelivered(confirmDeleteOrderId);
+                    setConfirmDeleteOrderId(null);
+                  }}
+                >
+                  Confirm Delete
+                </button>
+                <button 
+                  className="px-8 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
+                  onClick={() => setConfirmDeleteOrderId(null)}
+                >
+                  Cancel
                 </button>
               </div>
             </div>

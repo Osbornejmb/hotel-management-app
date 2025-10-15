@@ -73,6 +73,11 @@ export default function CustomerInterface() {
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [tab, setTab] = useState('pending');
+  // Loading states for cart and orders
+  const [cartProcessingIdx, setCartProcessingIdx] = useState(null);
+  const [cartRemovingIdx, setCartRemovingIdx] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   // Get current room number from localStorage
   const roomNumber = localStorage.getItem('customerRoomNumber');
@@ -157,42 +162,43 @@ export default function CustomerInterface() {
   // Cart operations
   const updateQuantity = async (idx, newQuantity) => {
     if (newQuantity < 1) return;
-    
-    if (roomNumber) {
-      try {
+    setCartProcessingIdx(idx);
+    try {
+      if (roomNumber) {
         await axios.patch(
           `${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/${idx}/quantity`,
           { quantity: newQuantity }
         );
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
-      } catch {
+      } else {
         setCart((prev) => {
           const updatedCart = [...prev];
           updatedCart[idx].quantity = newQuantity;
           return updatedCart;
         });
       }
-    } else {
-      setCart((prev) => {
-        const updatedCart = [...prev];
-        updatedCart[idx].quantity = newQuantity;
-        return updatedCart;
-      });
+    } catch {
+      // fallback optimistic update already handled above when offline
+    } finally {
+      setCartProcessingIdx(null);
     }
   };
 
   const removeFromCart = async (idx) => {
-    if (roomNumber) {
-      try {
+    setCartRemovingIdx(idx);
+    try {
+      if (roomNumber) {
         await axios.delete(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/${idx}`);
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
-      } catch {
+      } else {
         setCart((prev) => prev.filter((_, i) => i !== idx));
       }
-    } else {
+    } catch {
       setCart((prev) => prev.filter((_, i) => i !== idx));
+    } finally {
+      setCartRemovingIdx(null);
     }
   };
 
@@ -201,6 +207,7 @@ export default function CustomerInterface() {
     if (!['pending', 'acknowledged'].includes(order.status)) return;
     const confirmed = window.confirm('Are you sure you want to cancel this order?');
     if (!confirmed) return;
+    setCancellingOrderId(order._id);
     try {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancel`, {
         method: 'POST',
@@ -221,6 +228,8 @@ export default function CustomerInterface() {
       }
     } catch {
       alert('Failed to cancel order.');
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -1161,8 +1170,9 @@ export default function CustomerInterface() {
                             <button 
                               onClick={() => updateQuantity(idx, (item.quantity || 1) - 1)} 
                               className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                              disabled={cartProcessingIdx === idx}
                             >
-                              −
+                              {cartProcessingIdx === idx ? '…' : '−'}
                             </button>
                             <span className="min-w-[40px] text-center font-semibold text-amber-900">
                               {item.quantity || 1}
@@ -1170,8 +1180,9 @@ export default function CustomerInterface() {
                             <button 
                               onClick={() => updateQuantity(idx, (item.quantity || 1) + 1)} 
                               className="w-8 h-8 rounded-full bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 flex items-center justify-center transition-colors"
+                              disabled={cartProcessingIdx === idx}
                             >
-                              +
+                              {cartProcessingIdx === idx ? '…' : '+'}
                             </button>
                           </div>
                           
@@ -1183,10 +1194,15 @@ export default function CustomerInterface() {
                             onClick={() => removeFromCart(idx)} 
                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             title="Remove item"
+                            disabled={cartRemovingIdx === idx}
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            {cartRemovingIdx === idx ? (
+                              '…'
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -1208,6 +1224,7 @@ export default function CustomerInterface() {
                 <button
                   onClick={async () => {
                     if (roomNumber && cart.length > 0) {
+                      setCheckoutLoading(true);
                       try {
                         await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
                         setCart([]);
@@ -1215,16 +1232,18 @@ export default function CustomerInterface() {
                         setShowCart(false);
                       } catch {
                         alert('Checkout failed. Please try again.');
+                      } finally {
+                        setCheckoutLoading(false);
                       }
                     }
                   }}
-                  disabled={cart.length === 0}
+                  disabled={cart.length === 0 || checkoutLoading}
                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Checkout</span>
+                  <span>{checkoutLoading ? 'Processing...' : 'Checkout'}</span>
                 </button>
 
                 <button
@@ -1330,8 +1349,9 @@ export default function CustomerInterface() {
                                 <button 
                                   className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
                                   onClick={() => cancelOrder(order)}
+                                  disabled={cancellingOrderId === order._id}
                                 >
-                                  Cancel
+                                  {cancellingOrderId === order._id ? 'Cancelling...' : 'Cancel'}
                                 </button>
                               )}
                             </div>

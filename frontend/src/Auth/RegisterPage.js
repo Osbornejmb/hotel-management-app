@@ -7,6 +7,7 @@ function RegisterPage() {
   const [form, setForm] = useState({ username: '', email: '', password: '', role: 'restaurantAdmin' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = e => {
@@ -17,6 +18,7 @@ function RegisterPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true);
     try {
   await axios.post(`${process.env.REACT_APP_API_URL}/api/users/register`, form);
       setSuccess('Registration successful! You can now login.');
@@ -24,6 +26,8 @@ function RegisterPage() {
       setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,6 +42,7 @@ function RegisterPage() {
           onChange={handleChange}
           required
           className="register-input"
+          disabled={loading}
         />
         <input
           name="email"
@@ -47,6 +52,7 @@ function RegisterPage() {
           required
           type="email"
           className="register-input"
+          disabled={loading}
         />
         <input
           name="password"
@@ -56,6 +62,7 @@ function RegisterPage() {
           required
           type="password"
           className="register-input"
+          disabled={loading}
         />
         <select
           name="role"
@@ -63,6 +70,7 @@ function RegisterPage() {
           onChange={handleChange}
           required
           className="register-select"
+          disabled={loading}
         >
           <option value="restaurantAdmin">Restaurant Admin</option>
           <option value="hotelAdmin">Hotel Admin</option>
@@ -70,8 +78,9 @@ function RegisterPage() {
         <button
           type="submit"
           className="register-button"
+          disabled={loading}
         >
-          Register
+          {loading ? 'Registering...' : 'Register'}
         </button>
       </form>
       {error && <p className="register-error">{error}</p>}
