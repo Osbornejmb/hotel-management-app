@@ -88,7 +88,15 @@ function HotelAdminHousekeeping() {
     fetchEmployees();
   }, []);
 
-  // Filter tasks by type 'CLEANING' and search
+  // Helper to normalize IDs (remove leading zeros, convert to string)
+  // Normalize to string and remove leading zeros for robust matching
+  const normalize = v => {
+    if (v === undefined || v === null) return '';
+    // Convert to string, remove all non-digit chars, then remove leading zeros
+    return v.toString().replace(/[^\d]/g, '').replace(/^0+/, '');
+  };
+
+  // Filter and map tasks
   const filteredTasks = tasks.filter(t =>
     t.type && t.type.toUpperCase() === 'CLEANING' && (
       t.room?.toString().includes(search) ||
@@ -96,16 +104,23 @@ function HotelAdminHousekeeping() {
       t.employeeId?.toLowerCase().includes(search.toLowerCase())
     )
   ).map(task => {
-    // Add timeFinished property
     let timeFinished = 'Not yet finished';
-    if (task.status && task.status.toUpperCase() === 'FINISHED') {
-      // If finishedAt exists, use it; otherwise, use updatedAt or createdAt as fallback
+    if (task.status && task.status.toUpperCase() === 'COMPLETED') {
       timeFinished = task.finishedAt ? new Date(task.finishedAt).toLocaleString() : (task.updatedAt ? new Date(task.updatedAt).toLocaleString() : new Date().toLocaleString());
     }
-    // Add employeeName from employee map
-    const emp = employees.find(e => e.employeeCode === task.employeeId);
-    const employeeName = emp ? emp.name : task.employeeId;
-    return { ...task, timeFinished, employeeName };
+    // Find employee by matching normalized employeeId only
+    const taskEmpIdNorm = normalize(task.employeeId);
+    // Debug: log normalized employeeId for task and all employees
+    if (task.employeeId) {
+      console.log('Task:', task.taskId, 'task.employeeId:', task.employeeId, 'normalized:', taskEmpIdNorm);
+      employees.forEach(e => {
+        console.log('Employee:', e.name, 'employeeId:', e.employeeId, 'normalized:', normalize(e.employeeId));
+      });
+    }
+    const emp = employees.find(e =>
+      normalize(e.employeeId) === taskEmpIdNorm
+    );
+    return { ...task, timeFinished, employee: emp };
   });
 
   return (
@@ -140,15 +155,13 @@ function HotelAdminHousekeeping() {
                   <td>{t.room}</td>
                   <td>{t.taskId}</td>
                   <td>
-                    {(() => {
-                      const emp = employees.find(e => e.employeeCode === t.employeeId);
-                      if (!emp) return t.employeeName;
-                      return (
-                        <EmployeeTooltip employee={emp}>
-                          {emp.name}
-                        </EmployeeTooltip>
-                      );
-                    })()}
+                    {t.employee ? (
+                      <EmployeeTooltip employee={t.employee}>
+                        {t.employee.name}
+                      </EmployeeTooltip>
+                    ) : (
+                      t.employeeId || '-'
+                    )}
                   </td>
                   <td>{t.status}</td>
                   <td>{t.priority}</td>

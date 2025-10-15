@@ -7,7 +7,8 @@ const Employee = require('./Employee');
 // Get all employees (for mapping employeeCode to name)
 router.get('/', async (req, res) => {
 	try {
-		const employees = await Employee.find({}, 'employeeCode name role department jobTitle');
+		// Add employeeId to the projection
+		const employees = await Employee.find({}, 'employeeId employeeCode name role department jobTitle');
 		res.json({ employees });
 	} catch (err) {
 		res.status(500).json({ error: 'Failed to fetch employees' });

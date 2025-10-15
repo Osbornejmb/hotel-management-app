@@ -15,6 +15,8 @@ const checkoutRoutes = require("./checkoutRoutes");
 const foodRoutes = require("./foodRoutes");
 const requestRoutes = require("./requestRoutes");
 const bookingRoutes = require("./bookingRoutes");
+
+const activityLogRoutes = require("./activityLogRoutes");
 const taskRoutes = require("./taskRoutes");
 
 const app = express();
@@ -33,6 +35,8 @@ app.use("/api/checkout", checkoutRoutes);
 
 app.use("/api/requests", requestRoutes);
 app.use("/api/bookings", bookingRoutes);
+
+app.use("/api/activitylogs", activityLogRoutes);
 app.use("/api/tasks", taskRoutes);
 
 const server = http.createServer(app);

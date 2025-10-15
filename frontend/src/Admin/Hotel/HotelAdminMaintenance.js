@@ -88,12 +88,11 @@ function EmployeeTooltip({ employee, children }) {
     fetchEmployees();
   }, []);
 
-  // Filter tasks by search and add timeFinished property
-  // Build employeeId to name map
-  const employeeMap = employees.reduce((acc, emp) => {
-    acc[emp.employeeCode] = emp.name;
-    return acc;
-  }, {});
+  // Normalize to string and remove leading zeros for robust matching
+  const normalize = v => {
+    if (v === undefined || v === null) return '';
+    return v.toString().replace(/[^\d]/g, '').replace(/^0+/, '');
+  };
 
   const filteredTasks = tasks.filter(t =>
     t.room?.toString().includes(search) ||
@@ -101,12 +100,13 @@ function EmployeeTooltip({ employee, children }) {
     t.employeeId?.toLowerCase().includes(search.toLowerCase())
   ).map(task => {
     let timeFinished = 'Not yet finished';
-    if (task.status && task.status.toUpperCase() === 'FINISHED') {
+    if (task.status && task.status.toUpperCase() === 'COMPLETED') {
       timeFinished = task.finishedAt ? new Date(task.finishedAt).toLocaleString() : (task.updatedAt ? new Date(task.updatedAt).toLocaleString() : new Date().toLocaleString());
     }
-    // Add employeeName property
-    const employeeName = employeeMap[task.employeeId] || task.employeeId || '';
-    return { ...task, timeFinished, employeeName };
+    // Find employee by matching normalized employeeId only
+    const taskEmpIdNorm = normalize(task.employeeId);
+    const emp = employees.find(e => normalize(e.employeeId) === taskEmpIdNorm);
+    return { ...task, timeFinished, employee: emp };
   });
 
   return (
@@ -141,15 +141,13 @@ function EmployeeTooltip({ employee, children }) {
                   <td>{t.room}</td>
                   <td>{t.taskId}</td>
                   <td>
-                    {(() => {
-                      const emp = employees.find(e => e.employeeCode === t.employeeId);
-                      if (!emp) return t.employeeName;
-                      return (
-                        <EmployeeTooltip employee={emp}>
-                          {emp.name}
-                        </EmployeeTooltip>
-                      );
-                    })()}
+                    {t.employee ? (
+                      <EmployeeTooltip employee={t.employee}>
+                        {t.employee.name}
+                      </EmployeeTooltip>
+                    ) : (
+                      t.employeeId || '-'
+                    )}
                   </td>
                   <td>{t.status}</td>
                   <td>{t.priority}</td>
