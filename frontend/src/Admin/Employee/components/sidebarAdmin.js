@@ -1,16 +1,30 @@
 import React from 'react';
 import LogoutButton from '../../../Auth/LogoutButton';
+// 👇 1. Import the required icons from lucide-react
+import {
+  Home,
+  Users,
+  Calendar,
+  CreditCard,
+  ClipboardList,
+  FileCheck,
+  Bed,
+  User,
+  LogOut,
+  CircleUser
+} from 'lucide-react';
 
 const SidebarAdmin = ({ activeSection, setActiveSection }) => {
+  // 👇 2. Replace emoji strings with Lucide icon components
   const navIcons = {
-    dashboard: '🏠',
-    employee: '👥',
-    attendance: '📅',
-    payroll: '💳',
-    tasks: '🧾',
-    'task-requests': '📋', // Added task requests icon
-    room: '🛏️',
-    profile: '👤'
+    dashboard: <Home size={18} />,
+    employee: <Users size={18} />,
+    attendance: <Calendar size={18} />,
+    payroll: <CreditCard size={18} />,
+    tasks: <ClipboardList size={18} />,
+    'task-requests': <FileCheck size={18} />,
+    room: <Bed size={18} />,
+    profile: <User size={18} />
   };
 
   const sections = [
@@ -20,7 +34,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
     { key: 'payroll', label: 'Payroll' },
     { key: 'tasks', label: 'Tasks' },
     { key: 'task-requests', label: 'Task Requests' }, // Added task requests section
-//    { key: 'room', label: 'Room Assignment' },
+    // { key: 'room', label: 'Room Assignment' },
   ];
 
   return (
@@ -65,7 +79,8 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
           fontSize: 24,
           marginBottom: 8
         }}>
-          <span style={{ opacity: 0.95 }}>◯</span>
+          {/* 👇 3. Replace the profile icon */}
+          <CircleUser size={32} strokeWidth={1.5} />
         </div>
         <div style={{ fontWeight: 700, fontSize: 16, marginTop: 4 }}>
           {localStorage.getItem('name') || localStorage.getItem('username') || 'Admin'}
@@ -98,7 +113,8 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
               transition: 'background 140ms ease'
             }}
           >
-            <span style={{ marginRight: 12, fontSize: 18 }}>{navIcons[sec.key] || '•'}</span>
+            {/* 👇 4. Render the icon component inside the span */}
+            <span style={{ marginRight: 12, fontSize: 18, display: 'flex' }}>{navIcons[sec.key] || '•'}</span>
             {sec.label}
           </button>
         ))}
@@ -132,7 +148,8 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          <span style={{ fontSize: '18px' }}>🔒</span>
+          {/* 👇 5. Replace the logout icon */}
+          <LogOut size={18} />
           Logout
         </LogoutButton>
       </div>
