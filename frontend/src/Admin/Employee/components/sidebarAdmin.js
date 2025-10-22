@@ -26,7 +26,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
   return (
     <aside style={{
       width: 220,
-      background: '#a57c2b',
+      background: '#4b2b17',
       padding: 24,
       display: 'flex',
       flexDirection: 'column',
@@ -57,7 +57,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
           width: 64,
           height: 64,
           borderRadius: '50%',
-          background: '#4b2b17',
+          background: '#a57c2b',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -94,7 +94,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection }) => {
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              background: activeSection === sec.key ? '#4b2b17' : '#a57c2b',
+              background: activeSection === sec.key ? '#a57c2b' : '#4b2b17',
               transition: 'background 140ms ease'
             }}
           >
