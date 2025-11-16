@@ -1094,6 +1094,54 @@ function RestaurantAdminDashboard() {
     return out;
   }, [perItemRoomCounts]);
 
+  // Small helper to escape HTML when writing report into a printable window
+  const escapeHtml = React.useCallback((unsafe) => {
+    if (!unsafe) return '';
+    return String(unsafe)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }, []);
+
+  // Export the generated rawAnalysis to a printable window and trigger the browser print dialog
+  const handleExportPDF = React.useCallback(() => {
+    if (!analysisResult) {
+      alert('No analysis available to export.');
+      return;
+    }
+
+    const content = analysisResult.rawAnalysis || '';
+    const win = window.open('', '_blank', 'noopener,noreferrer');
+    if (!win) {
+      alert('Popup blocked. Please allow popups to export the report.');
+      return;
+    }
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Food Order Analysis Report</title>
+      <style>body{font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#3b2a12; padding:24px} h1{color:#b45309} pre{white-space:pre-wrap; font-family:inherit; font-size:13px; line-height:1.4}</style>
+      </head><body>
+      <h1>Food Order Analysis Report</h1>
+      <pre>${escapeHtml(content)}</pre>
+      </body></html>`;
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+
+    // Give the browser a moment to render then open print dialog
+    setTimeout(() => {
+      try {
+        win.focus();
+        win.print();
+        // keep window open so user can choose save as PDF; don't close automatically
+      } catch (e) {
+        console.error('Print failed', e);
+      }
+    }, 600);
+  }, [analysisResult, escapeHtml]);
+
   // Handle bell click - clear notifications and counter
   const handleBellClick = () => {
     setShowNotificationPopup(prev => !prev);
@@ -1733,12 +1781,22 @@ function RestaurantAdminDashboard() {
 
                   {/* Recommendations Panel */}
                   <div className="mt-8 pt-8 border-t-2 border-amber-200">
-                    <h2 className="text-2xl font-bold text-amber-900 mb-6 flex items-center">
-                      <svg className="w-6 h-6 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      Actionable Recommendations
-                    </h2>
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-2xl font-bold text-amber-900 flex items-center">
+                        <svg className="w-6 h-6 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        Actionable Recommendations
+                      </h2>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={handleExportPDF}
+                          className="px-4 py-2 rounded-lg bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-colors"
+                        >
+                          Export report (PDF)
+                        </button>
+                      </div>
+                    </div>
 
                     {!analysisResult.analysis.recommendations || analysisResult.analysis.recommendations.length === 0 ? (
                       <div className="text-center py-8 text-amber-700 bg-amber-50 rounded-lg border border-amber-100">
