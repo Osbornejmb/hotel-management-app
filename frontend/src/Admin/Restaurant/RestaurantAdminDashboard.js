@@ -566,7 +566,22 @@ function generateOrderAnalysisSummary(orders) {
     roomOrderCounts[roomNumber] = (roomOrderCounts[roomNumber] || 0) + 1;
 
     // Extract unique item names in this order
-    const itemNames = order.items.map(item => item.name).filter(Boolean);
+    // For analytics/top-items we want combo components counted individually.
+    // If an order item is a combo (item.comboContents), count its components instead of the combo product name.
+    const itemNames = [];
+    (order.items || []).forEach(item => {
+      if (!item) return;
+
+      if (Array.isArray(item.comboContents) && item.comboContents.length > 0) {
+        // Add component names (so components are counted individually in analytics)
+        item.comboContents.forEach(component => {
+          if (component && component.name) itemNames.push(component.name);
+        });
+      } else if (item.name) {
+        // Regular single item
+        itemNames.push(item.name);
+      }
+    });
     const uniqueItems = [...new Set(itemNames)];
 
     // Process each item
@@ -601,10 +616,10 @@ function generateOrderAnalysisSummary(orders) {
   // Calculate totals
   const totalItems = Object.values(itemFrequency).reduce((sum, count) => sum + count, 0);
 
-  // Sort and extract top results
-  const sortedItemFrequency = Object.entries(itemFrequency)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
+  // Sort item frequencies (full list) and extract top results separately
+  const sortedItemFrequencyFull = Object.entries(itemFrequency)
+    .sort((a, b) => b[1] - a[1]);
+  const sortedItemFrequency = sortedItemFrequencyFull.slice(0, 10);
 
   const sortedDays = Object.entries(dayOrderCounts)
     .sort((a, b) => b[1] - a[1])
@@ -622,7 +637,9 @@ function generateOrderAnalysisSummary(orders) {
   const summary = {
     totalOrders: orders.length,
     totalItemsOrdered: totalItems,
-    itemFrequency: Object.fromEntries(sortedItemFrequency),
+    // full frequency map (all items)
+    itemFrequency: Object.fromEntries(sortedItemFrequencyFull),
+    // top items kept separately in analysis.mostFrequentItems
     itemsByDay: Object.fromEntries(
       Object.entries(itemsByDay).map(([item, days]) => [item, days.length])
     ),
@@ -664,6 +681,23 @@ function generateOrderAnalysisSummary(orders) {
       orders
     )
   };
+
+  // Identify low-performing items for insights
+  try {
+    const uniqueItemCount = Object.keys(summary.itemFrequency).length || 1;
+    const avgOrdersPerItem = summary.totalItemsOrdered / uniqueItemCount;
+    // Items with orders <= 20% of average (but at least 1) are considered low-performers
+    const threshold = Math.max(1, Math.floor(avgOrdersPerItem * 0.2));
+    const lowPerformers = Object.entries(summary.itemFrequency)
+      .map(([name, count]) => ({ name, orderCount: count }))
+      .filter(i => i.orderCount <= threshold)
+      .sort((a, b) => a.orderCount - b.orderCount)
+      .slice(0, 10);
+
+    analysis.lowPerformers = lowPerformers;
+  } catch (e) {
+    analysis.lowPerformers = [];
+  }
 
   // Generate actionable recommendations based on analysis
   analysis.recommendations = generateRecommendations(summary, analysis, orders);
@@ -828,6 +862,23 @@ function generateRecommendations(summary, analysis, orders) {
     ]
   });
 
+  // Recommendations for low-performing items
+  (analysis.lowPerformers || []).slice(0, 8).forEach(item => {
+    const actions = [];
+    actions.push(`Run a 2-week promotional test for "${item.name}" (10-20% discount)`);
+    actions.push('Bundle this item with a top-performing item and measure attach rate');
+    actions.push('Verify inventory & availability; check if low orders are due to stockouts or visibility');
+    actions.push('Consider menu placement changes or temporary removal if unprofitable');
+
+    recommendations.push({
+      type: 'low-performer',
+      item: item.name,
+      priority: 'medium',
+      reason: `${item.name} has low orders (${item.orderCount} orders)`,
+      actions
+    });
+  });
+
   return recommendations;
 }
 
@@ -985,6 +1036,12 @@ function RestaurantAdminDashboard() {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
   }, []);
 
+  // Clear all notifications (used by "Clear all" button in popup)
+  const clearAllNotifications = React.useCallback(() => {
+    setNotifications([]);
+    setNotificationCount(0);
+  }, []);
+
   // Dismiss a toast only (hide toast UI) but keep notification in popup
   const dismissToast = React.useCallback((id) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, dismissed: true } : n));
@@ -1074,10 +1131,24 @@ function RestaurantAdminDashboard() {
     (orders || []).forEach(order => {
       const room = order.roomNumber || 'unknown-room';
       (order.items || []).forEach(item => {
-        const name = item && item.name ? item.name : 'unknown-item';
-        const qty = item && item.quantity ? item.quantity : 1;
-        if (!map[name]) map[name] = {};
-        map[name][room] = (map[name][room] || 0) + qty;
+        if (!item) return;
+        const itemQty = item.quantity || 1;
+
+        // Count the main item (combo or single item)
+        const mainName = item.name || 'unknown-item';
+        if (!map[mainName]) map[mainName] = {};
+        map[mainName][room] = (map[mainName][room] || 0) + itemQty;
+
+        // If this is a combo, also count each component toward per-item room counts
+        if (Array.isArray(item.comboContents)) {
+          item.comboContents.forEach(component => {
+            if (!component || !component.name) return;
+            const compQty = (component.quantity || 1) * itemQty;
+            const compName = component.name;
+            if (!map[compName]) map[compName] = {};
+            map[compName][room] = (map[compName][room] || 0) + compQty;
+          });
+        }
       });
     });
     return map;
@@ -1514,9 +1585,18 @@ function RestaurantAdminDashboard() {
         <div className="notification-popup absolute top-20 right-4 bg-white rounded-2xl shadow-2xl p-6 min-w-80 max-w-sm z-50 border border-amber-200">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-amber-900">Recent Notifications</h3>
-            <span className="text-sm text-gray-500 bg-amber-100 px-2 py-1 rounded-full">
-              {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-            </span>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-500 bg-amber-100 px-2 py-1 rounded-full">
+                {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={clearAllNotifications}
+                className="px-3 py-1 rounded-lg bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100 transition-colors"
+                title="Clear all notifications"
+              >
+                Clear all
+              </button>
+            </div>
           </div>
           
           {notifications.length === 0 ? (
@@ -1795,6 +1875,26 @@ function RestaurantAdminDashboard() {
                       </ul>
                     </div>
                   </div>
+
+                  {/* Low Performing Items */}
+                  {analysisResult.analysis.lowPerformers && analysisResult.analysis.lowPerformers.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Low Performing Items</h3>
+                      <div className="p-4 bg-white rounded-lg border border-amber-100">
+                        <ul className="space-y-2">
+                          {analysisResult.analysis.lowPerformers.map(lp => (
+                            <li key={lp.name} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
+                              <div className="text-amber-900">{lp.name}</div>
+                              <div className="text-sm text-amber-700">{lp.orderCount} orders</div>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-4 text-sm text-amber-700">
+                          Suggested actions: run promotions, bundle with popular items, check availability or consider menu changes.
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Patterns / Insights */}
                   <div>

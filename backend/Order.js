@@ -19,7 +19,16 @@ const orderSchema = new mongoose.Schema({
         default: 1,
         min: 1
       },
-      addedAt: Date
+      addedAt: Date,
+      // If this item is a combo, preserve its components so analytics can count them later
+      comboContents: [
+        {
+          name: String,
+          img: String,
+          price: Number,
+          quantity: { type: Number, default: 1 }
+        }
+      ]
     }
   ],
   checkedOutAt: {

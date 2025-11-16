@@ -23,7 +23,7 @@ function HotelAdminDashboard({ children }) {
   const notificationAudioRef = useRef(null);
 
   // persist notification to backend (which should write to the hoteladnotifs collection)
-  const saveNotificationToDb = async (notif) => {
+  const saveNotificationToDb = React.useCallback(async (notif) => {
     try {
       await fetch('/api/hoteladnotifs', {
         method: 'POST',
@@ -34,10 +34,10 @@ function HotelAdminDashboard({ children }) {
     } catch (err) {
       console.error('Failed to save notification to DB', err);
     }
-  };
+  }, []);
 
   // Add notification if not duplicate (same bookingId + newStatus). Also push toast and browser notification.
-  const addNotification = (notif) => {
+  const addNotification = React.useCallback((notif) => {
     try {
       // build a dedupe key that covers booking/task/room notifications
       const keyParts = [];
@@ -97,7 +97,7 @@ function HotelAdminDashboard({ children }) {
     } catch (err) {
       // silent
     }
-  };
+  }, [saveNotificationToDb]);
 
   useEffect(() => {
     let intervalId;

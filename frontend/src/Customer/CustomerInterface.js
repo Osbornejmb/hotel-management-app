@@ -677,15 +677,17 @@ export default function CustomerInterface() {
   }, [seenOrderStatuses]);
 
   // --- Product carousel (ads) state and data ---
-  const carouselItems = [
-    { id: 'p1', title: 'Spa Relaxation Package', price: '₱1,200', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRJTL8auN0STxRsusN1WL2T3fb8WrXq5zdKA&s' },
-    { id: 'p2', title: 'Romantic Dinner for Two', price: '₱950', img: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=600&q=60' },
-    { id: 'p3', title: 'City Tour Package', price: '₱750', img: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=600&q=60' },
-    { id: 'p4', title: 'Breakfast Buffet Upgrade', price: '₱250', img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=60' }
-  ];
+  // We'll load real food items from the API and build combos (meal + drink + dessert + snack)
+  const [foodItems, setFoodItems] = useState([]);
+  const [foodLoaded, setFoodLoaded] = useState(false);
+  const [carouselItems, setCarouselItems] = useState([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const carouselPausedRef = useRef(false);
   const carouselContainerRef = useRef(null);
+  // Selected combo modal state
+  const [selectedCombo, setSelectedCombo] = useState(null);
+  const [showComboModal, setShowComboModal] = useState(false);
+  const [comboQuantity, setComboQuantity] = useState(1);
   const carouselNext = useCallback(() => setCarouselIndex(i => (i + 1) % carouselItems.length), [carouselItems.length]);
   const carouselPrev = useCallback(() => setCarouselIndex(i => (i - 1 + carouselItems.length) % carouselItems.length), [carouselItems.length]);
 
@@ -694,10 +696,121 @@ export default function CustomerInterface() {
     const t = setInterval(() => {
       if (carouselPausedRef.current) return;
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      setCarouselIndex(i => (i + 1) % carouselItems.length);
+      setCarouselIndex(i => (carouselItems.length ? (i + 1) % carouselItems.length : i));
     }, 4500);
     return () => clearInterval(t);
   }, [carouselItems.length]);
+
+  // Fetch food items from backend and build combo carousel
+  useEffect(() => {
+    let ignore = false;
+    const fetchFood = async () => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/food`);
+        let all = [];
+        if (res.data && typeof res.data === 'object') {
+          Object.values(res.data).forEach(arr => { if (Array.isArray(arr)) all = all.concat(arr); });
+        }
+        if (ignore) return;
+        setFoodItems(all.filter(f => f.available !== false));
+        setFoodLoaded(true);
+      } catch (err) {
+        console.error('Failed to fetch food items for combos', err);
+        setFoodLoaded(true);
+      }
+    };
+    fetchFood();
+    const interval = setInterval(fetchFood, 10_000);
+    return () => { ignore = true; clearInterval(interval); };
+  }, []);
+
+  // Build combos when foodItems update
+  useEffect(() => {
+    if (!foodLoaded) return;
+
+    const lower = (s = '') => (s || '').toString().toLowerCase();
+
+    const beverages = foodItems.filter(f => {
+      const c = lower(f.category);
+      return c.includes('bever') || c.includes('drink') || c.includes('juice') || c.includes('soda') || c.includes('tea') || c.includes('coffee');
+    });
+
+    const desserts = foodItems.filter(f => lower(f.category).includes('dessert'));
+    const snacks = foodItems.filter(f => lower(f.category).includes('snack') || lower(f.category).includes('side'));
+    // Meals = everything that's not beverage/dessert/snack
+    const meals = foodItems.filter(f => {
+      const c = lower(f.category);
+      if (!c) return true;
+      if (c.includes('bever') || c.includes('drink') || c.includes('dessert') || c.includes('snack') || c.includes('side')) return false;
+      return true;
+    });
+
+    const combos = [];
+    const maxCombos = 6;
+
+    // If we have all four categories, create combos combining one from each
+    if (meals.length && beverages.length && desserts.length && snacks.length) {
+      const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const used = new Set();
+      for (let i = 0; i < Math.min(maxCombos, meals.length); i++) {
+        const meal = pickRandom(meals);
+        const bev = pickRandom(beverages);
+        const des = pickRandom(desserts);
+        const sn = pickRandom(snacks);
+        const key = `${meal._id || meal.name}|${bev._id || bev.name}|${des._id || des.name}|${sn._id || sn.name}`;
+        if (used.has(key)) continue;
+        used.add(key);
+        const price = [meal, bev, des, sn].reduce((s, it) => s + (Number(it.price) || 0), 0);
+        combos.push({
+          id: `combo-${i}-${meal._id || meal.name}`,
+          title: `${meal.name} + ${bev.name} + ${des.name} + ${sn.name}`,
+          price: Math.round(price),
+          img: meal.img || bev.img || des.img || sn.img || '',
+          items: [
+            { name: meal.name, qty: 1 },
+            { name: bev.name, qty: 1 },
+            { name: des.name, qty: 1 },
+            { name: sn.name, qty: 1 }
+          ],
+          description: `${meal.name} with ${bev.name}, ${des.name} and ${sn.name}`
+        });
+      }
+    }
+
+    // Fallback: if not enough categories, try to create combos from meals + beverages
+    if (combos.length === 0 && meals.length && beverages.length) {
+      const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      for (let i = 0; i < Math.min(maxCombos, meals.length); i++) {
+        const meal = pickRandom(meals);
+        const bev = pickRandom(beverages);
+        const price = (Number(meal.price) || 0) + (Number(bev.price) || 0);
+        combos.push({
+          id: `combo-mealbev-${i}-${meal._id || meal.name}`,
+          title: `${meal.name} + ${bev.name}`,
+          price: Math.round(price),
+          img: meal.img || bev.img || '',
+          items: [{ name: meal.name, qty: 1 }, { name: bev.name, qty: 1 }],
+          description: `${meal.name} served with ${bev.name}`
+        });
+      }
+    }
+
+    // Final fallback: show individual popular items as single-item combos
+    if (combos.length === 0 && foodItems.length) {
+      const top = foodItems.slice(0, Math.min(6, foodItems.length));
+      combos.push(...top.map((f, i) => ({
+        id: `single-${i}-${f._id || f.name}`,
+        title: f.name,
+        price: Math.round(Number(f.price) || 0),
+        img: f.img || '',
+        items: [{ name: f.name, qty: 1 }],
+        description: f.details || f.description || ''
+      })));
+    }
+
+    setCarouselItems(combos.slice(0, 6));
+    setCarouselIndex(0);
+  }, [foodItems, foodLoaded]);
 
   // keyboard navigation for carousel (left/right) — ignore when typing in inputs
   useEffect(() => {
@@ -711,6 +824,60 @@ export default function CustomerInterface() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [carouselNext, carouselPrev]);
+
+  // Handlers for combo modal and adding to cart
+  const handleOpenCombo = (combo) => {
+    setSelectedCombo(combo);
+    setComboQuantity(1);
+    setShowComboModal(true);
+    carouselPausedRef.current = true;
+  };
+
+  const handleCloseCombo = () => {
+    setShowComboModal(false);
+    setSelectedCombo(null);
+    carouselPausedRef.current = false;
+  };
+
+  const handleAddComboToCart = async (quantity = 1) => {
+    if (!selectedCombo) return;
+    const item = {
+      name: selectedCombo.title,
+      price: Number(selectedCombo.price) || 0,
+      img: selectedCombo.img,
+      quantity,
+      category: 'combo',
+      comboContents: selectedCombo.items
+    };
+
+    // If roomNumber is present, persist to backend cart; otherwise update local cart
+    if (roomNumber) {
+      try {
+        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/items`, item);
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
+        setCart(res.data?.items || []);
+        alert('Combo added to your cart');
+      } catch (err) {
+        console.error('Failed to add combo to cart', err);
+        alert('Failed to add combo to cart. Please try again.');
+      } finally {
+        handleCloseCombo();
+      }
+    } else {
+      // offline/local fallback
+      setCart(prev => {
+        const existingIdx = prev.findIndex(i => i.name === item.name && i.price === item.price);
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          updated[existingIdx].quantity = (updated[existingIdx].quantity || 1) + quantity;
+          return updated;
+        }
+        return [item, ...prev];
+      });
+      handleCloseCombo();
+      alert('Combo added to your cart');
+    }
+  };
 
   const handleLogout = async () => {
     const password = window.prompt('Enter hotel admin password to log out:');
@@ -1048,77 +1215,74 @@ export default function CustomerInterface() {
         </div>
       )}
 
-      {/* Product Carousel */}
+      {/* Product Carousel (Food Combos) */}
       <div className="container mx-auto px-4 mt-6">
-        <div 
-          ref={carouselContainerRef} 
-          onMouseEnter={() => { carouselPausedRef.current = true; }} 
-          onMouseLeave={() => { carouselPausedRef.current = false; }} 
+        <div
+          ref={carouselContainerRef}
+          onMouseEnter={() => { carouselPausedRef.current = true; }}
+          onMouseLeave={() => { carouselPausedRef.current = false; }}
           className="bg-white rounded-2xl shadow-lg overflow-hidden border border-amber-200"
         >
           <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-amber-100 to-orange-100 border-b border-amber-200">
-            <div className="text-lg font-semibold text-amber-900">Recommended for you</div>
-            <div className="text-sm text-amber-700 bg-amber-200 px-3 py-1 rounded-full">Offers & hotel extras</div>
+            <div className="text-lg font-semibold text-amber-900">Combo Deals</div>
+            <div className="text-sm text-amber-700 bg-amber-200 px-3 py-1 rounded-full">Limited time</div>
           </div>
-          
+
           <div className="flex items-center gap-4 p-6">
-            <button 
-              aria-label="previous" 
-              onClick={carouselPrev} 
+            <button
+              aria-label="previous"
+              onClick={carouselPrev}
               className="p-3 rounded-full hover:bg-amber-100 text-amber-700 transition-colors duration-200"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            
+
             <div className="flex-1 overflow-hidden">
               <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
-                {carouselItems.map(item => (
-                  <div key={item.id} className="flex-shrink-0 w-full">
-                    <div className="flex items-center gap-6 p-4">
-                      <img 
-                        src={item.img} 
-                        alt={item.title} 
-                        className="w-40 h-28 object-cover rounded-xl shadow-md" 
+                {carouselItems.map(combo => (
+                  <div key={combo.id} className="flex-shrink-0 w-full px-4">
+                    <div
+                      className="flex items-center gap-6 p-4 cursor-pointer hover:shadow-lg rounded-lg"
+                      onClick={() => handleOpenCombo(combo)}
+                    >
+                      <img
+                        src={combo.img}
+                        alt={combo.title}
+                        className="w-40 h-28 object-cover rounded-xl shadow-md"
                       />
                       <div className="flex-1">
-                        <div className="text-xl font-bold text-amber-900 mb-2">{item.title}</div>
-                        <div className="text-2xl font-bold text-orange-600 mb-4">{item.price}</div>
-                        <div>
-                          <button 
-                            onClick={() => alert(item.title + ' — More info coming soon')} 
-                            className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 transform hover:scale-105"
-                          >
-                            View Details
-                          </button>
-                        </div>
+                        <div className="text-xl font-bold text-amber-900 mb-1">{combo.title}</div>
+                        <div className="text-sm text-gray-600 mb-2">{combo.description}</div>
+                        <div className="text-2xl font-bold text-orange-600">₱{combo.price.toFixed(2)}</div>
+                        <div className="text-xs text-gray-500 mt-2">Click to view details & add to cart</div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              
+
               {/* Dots Indicator */}
               <div className="flex items-center justify-center gap-3 mt-6">
                 {carouselItems.map((_, idx) => (
-                  <button 
-                    key={idx} 
-                    onClick={() => setCarouselIndex(idx)} 
-                    aria-label={`Go to slide ${idx + 1}`} 
+                  <button
+                    key={idx}
+                    onClick={() => setCarouselIndex(idx)}
+                    aria-label={`Go to slide ${idx + 1}`}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      idx === carouselIndex 
-                        ? 'bg-amber-600 w-8' 
+                      idx === carouselIndex
+                        ? 'bg-amber-600 w-8'
                         : 'bg-amber-300 hover:bg-amber-400'
                     }`}
                   />
                 ))}
               </div>
             </div>
-            
-            <button 
-              aria-label="next" 
-              onClick={carouselNext} 
+
+            <button
+              aria-label="next"
+              onClick={carouselNext}
               className="p-3 rounded-full hover:bg-amber-100 text-amber-700 transition-colors duration-200"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1128,6 +1292,49 @@ export default function CustomerInterface() {
           </div>
         </div>
       </div>
+
+      {/* Combo Modal */}
+      {showComboModal && selectedCombo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden border border-amber-200">
+            <div className="p-6 flex items-start gap-4">
+              <img src={selectedCombo.img} alt={selectedCombo.title} className="w-40 h-32 object-cover rounded-lg" />
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-2xl font-bold text-amber-900">{selectedCombo.title}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{selectedCombo.description}</p>
+                  </div>
+                  <div className="text-2xl font-bold text-orange-600">₱{selectedCombo.price.toFixed(2)}</div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="text-sm font-semibold text-amber-800 mb-2">Includes:</div>
+                  <ul className="text-sm list-disc list-inside text-gray-700">
+                    {selectedCombo.items.map((it, i) => (
+                      <li key={i}>{it.name} {it.qty ? `×${it.qty}` : ''}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="text-sm text-gray-600">Quantity:</div>
+                  <div className="flex items-center border rounded-lg overflow-hidden">
+                    <button onClick={() => setComboQuantity(q => Math.max(1, q - 1))} className="px-3 py-2">−</button>
+                    <div className="px-4 py-2 bg-white text-sm font-semibold">{comboQuantity}</div>
+                    <button onClick={() => setComboQuantity(q => q + 1)} className="px-3 py-2">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-amber-50 border-t border-amber-200 flex justify-end gap-4">
+              <button onClick={handleCloseCombo} className="px-6 py-3 rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-semibold">Cancel</button>
+              <button onClick={() => handleAddComboToCart(comboQuantity)} className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cart Popup */}
       {showCart && (

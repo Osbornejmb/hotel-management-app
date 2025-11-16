@@ -20,7 +20,16 @@ const cartSchema = new mongoose.Schema({
         default: 1,
         min: 1
       },
-      addedAt: { type: Date, default: Date.now }
+      addedAt: { type: Date, default: Date.now },
+      // If item represents a combo, store its components so they survive checkout
+      comboContents: [
+        {
+          name: String,
+          img: String,
+          price: Number,
+          quantity: { type: Number, default: 1 }
+        }
+      ]
     }
   ],
   updatedAt: {
