@@ -357,6 +357,22 @@ router.post('/:roomNumber/upsell', async (req, res) => {
       return c.includes('snack');
     });
 
+    // Randomize candidate lists so recommendations are not always the first items
+    const shuffleArray = (sourceArr) => {
+      const arr = Array.isArray(sourceArr) ? sourceArr.slice() : [];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+      }
+      return arr;
+    };
+
+    const shuffledBeverageCandidates = shuffleArray(beverageCandidates);
+    const shuffledDessertCandidates = shuffleArray(dessertCandidates);
+    const shuffledSnackCandidates = shuffleArray(snackCandidates);
+
     const candidateCounts = {
       beverages: beverageCandidates.length,
       desserts: dessertCandidates.length,
@@ -418,9 +434,9 @@ router.post('/:roomNumber/upsell', async (req, res) => {
       // First pass: add one from each missing category
       for (const cat of priorityOrder) {
         if (missing.includes(cat) && recommendations.length < maxRecs) {
-          if (cat === 'beverages' && beverageCandidates.length > 0) pushCandidates([beverageCandidates[0]], 'beverage', maxRecs);
-          if (cat === 'snacks' && snackCandidates.length > 0) pushCandidates([snackCandidates[0]], 'snack', maxRecs);
-          if (cat === 'desserts' && dessertCandidates.length > 0) pushCandidates([dessertCandidates[0]], 'dessert', maxRecs);
+          if (cat === 'beverages' && shuffledBeverageCandidates.length > 0) pushCandidates([shuffledBeverageCandidates[0]], 'beverage', maxRecs);
+          if (cat === 'snacks' && shuffledSnackCandidates.length > 0) pushCandidates([shuffledSnackCandidates[0]], 'snack', maxRecs);
+          if (cat === 'desserts' && shuffledDessertCandidates.length > 0) pushCandidates([shuffledDessertCandidates[0]], 'dessert', maxRecs);
         }
       }
 
@@ -428,9 +444,9 @@ router.post('/:roomNumber/upsell', async (req, res) => {
       if (recommendations.length < maxRecs) {
         for (const cat of priorityOrder) {
           if (recommendations.length >= maxRecs) break;
-          if (cat === 'beverages') pushCandidates(beverageCandidates, 'beverage', maxRecs);
-          if (cat === 'snacks') pushCandidates(snackCandidates, 'snack', maxRecs);
-          if (cat === 'desserts') pushCandidates(dessertCandidates, 'dessert', maxRecs);
+          if (cat === 'beverages') pushCandidates(shuffledBeverageCandidates, 'beverage', maxRecs);
+          if (cat === 'snacks') pushCandidates(shuffledSnackCandidates, 'snack', maxRecs);
+          if (cat === 'desserts') pushCandidates(shuffledDessertCandidates, 'dessert', maxRecs);
         }
       }
     }
