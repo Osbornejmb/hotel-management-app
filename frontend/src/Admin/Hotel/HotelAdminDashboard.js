@@ -22,6 +22,83 @@ function HotelAdminDashboard({ children }) {
   // Ref for notification sound
   const notificationAudioRef = useRef(null);
 
+  // persist notification to backend (which should write to the hoteladnotifs collection)
+  const saveNotificationToDb = async (notif) => {
+    try {
+      await fetch('/api/hoteladnotifs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(notif),
+      });
+    } catch (err) {
+      console.error('Failed to save notification to DB', err);
+    }
+  };
+
+  // Add notification if not duplicate (same bookingId + newStatus). Also push toast and browser notification.
+  const addNotification = (notif) => {
+    try {
+      // build a dedupe key that covers booking/task/room notifications
+      const keyParts = [];
+      if (notif.bookingId) keyParts.push(`b:${notif.bookingId}`);
+      if (notif.taskId) keyParts.push(`t:${notif.taskId}`);
+      if (notif.roomNumber) keyParts.push(`r:${notif.roomNumber}`);
+      if (notif.isTaskNotification) keyParts.push('type:task');
+      if (notif.isRoomNotification) keyParts.push('type:room');
+      keyParts.push(`s:${notif.newStatus}`);
+      const dedupeKey = keyParts.join('|');
+      const recent = recentNotifKeysRef.current;
+      if (recent.has(dedupeKey)) {
+        // already processed recently — skip duplicate
+        return;
+      }
+      // mark as seen for 6 seconds
+      recent.set(dedupeKey, Date.now());
+      setTimeout(() => { recent.delete(dedupeKey); }, 6000);
+    } catch (err) {
+      // silent
+    }
+    setNotifications(prev => {
+      const exists = prev.some(n => n.bookingId === notif.bookingId && n.newStatus === notif.newStatus);
+      if (exists) return prev;
+      // Play notification sound
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.currentTime = 0;
+        notificationAudioRef.current.play().catch(() => {});
+      }
+      return [notif, ...prev];
+    });
+    setToasts(prev => {
+      const exists = prev.some(t => t.bookingId === notif.bookingId && t.newStatus === notif.newStatus);
+      if (exists) return prev;
+      return [{ ...notif, toastId: `t-${notif.id}` }, ...prev];
+    });
+    // persist to DB (fire-and-forget)
+    // Only persist if not explicitly marked as fetched/panel-only
+    if (notif.persist !== false) {
+      saveNotificationToDb(notif);
+    }
+    // Browser notification
+    try {
+      if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+          const n = new Notification('Room status changed', { body: `Room ${notif.roomNumber}: ${notif.oldStatus ? notif.oldStatus + ' → ' : ''}${notif.newStatus}`, requireInteraction: true });
+          n.onclick = () => { window.focus(); n.close(); };
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              const n = new Notification('Room status changed', { body: `Room ${notif.roomNumber}: ${notif.oldStatus ? notif.oldStatus + ' → ' : ''}${notif.newStatus}`, requireInteraction: true });
+              n.onclick = () => { window.focus(); n.close(); };
+            }
+          }).catch(() => {});
+        }
+      }
+    } catch (err) {
+      // silent
+    }
+  };
+
   useEffect(() => {
     let intervalId;
     const fetchBookings = async () => {
@@ -148,7 +225,7 @@ function HotelAdminDashboard({ children }) {
     });
 
     return () => { clearInterval(intervalId); if (socketRef.current && socketRef.current.disconnect) socketRef.current.disconnect(); };
-  }, []);
+  }, [addNotification]);
 
   const sidebarButtons = [
     { name: 'Dashboard', path: '/admin/hotel', icon: <FaTachometerAlt /> },
@@ -166,83 +243,6 @@ function HotelAdminDashboard({ children }) {
 
   const dismissToast = (toastId) => {
     setToasts(prev => prev.filter(t => t.toastId !== toastId));
-  };
-
-  // persist notification to backend (which should write to the hoteladnotifs collection)
-  const saveNotificationToDb = async (notif) => {
-    try {
-      await fetch('/api/hoteladnotifs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(notif),
-      });
-    } catch (err) {
-      console.error('Failed to save notification to DB', err);
-    }
-  };
-
-  // Add notification if not duplicate (same bookingId + newStatus). Also push toast and browser notification.
-  const addNotification = (notif) => {
-    try {
-      // build a dedupe key that covers booking/task/room notifications
-      const keyParts = [];
-      if (notif.bookingId) keyParts.push(`b:${notif.bookingId}`);
-      if (notif.taskId) keyParts.push(`t:${notif.taskId}`);
-      if (notif.roomNumber) keyParts.push(`r:${notif.roomNumber}`);
-      if (notif.isTaskNotification) keyParts.push('type:task');
-      if (notif.isRoomNotification) keyParts.push('type:room');
-      keyParts.push(`s:${notif.newStatus}`);
-      const dedupeKey = keyParts.join('|');
-      const recent = recentNotifKeysRef.current;
-      if (recent.has(dedupeKey)) {
-        // already processed recently — skip duplicate
-        return;
-      }
-      // mark as seen for 6 seconds
-      recent.set(dedupeKey, Date.now());
-      setTimeout(() => { recent.delete(dedupeKey); }, 6000);
-    } catch (err) {
-      // silent
-    }
-    setNotifications(prev => {
-      const exists = prev.some(n => n.bookingId === notif.bookingId && n.newStatus === notif.newStatus);
-      if (exists) return prev;
-      // Play notification sound
-      if (notificationAudioRef.current) {
-        notificationAudioRef.current.currentTime = 0;
-        notificationAudioRef.current.play().catch(() => {});
-      }
-      return [notif, ...prev];
-    });
-    setToasts(prev => {
-      const exists = prev.some(t => t.bookingId === notif.bookingId && t.newStatus === notif.newStatus);
-      if (exists) return prev;
-      return [{ ...notif, toastId: `t-${notif.id}` }, ...prev];
-    });
-    // persist to DB (fire-and-forget)
-    // Only persist if not explicitly marked as fetched/panel-only
-    if (notif.persist !== false) {
-      saveNotificationToDb(notif);
-    }
-    // Browser notification
-    try {
-      if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-          const n = new Notification('Room status changed', { body: `Room ${notif.roomNumber}: ${notif.oldStatus ? notif.oldStatus + ' → ' : ''}${notif.newStatus}`, requireInteraction: true });
-          n.onclick = () => { window.focus(); n.close(); };
-        } else if (Notification.permission !== 'denied') {
-          Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-              const n = new Notification('Room status changed', { body: `Room ${notif.roomNumber}: ${notif.oldStatus ? notif.oldStatus + ' → ' : ''}${notif.newStatus}`, requireInteraction: true });
-              n.onclick = () => { window.focus(); n.close(); };
-            }
-          }).catch(() => {});
-        }
-      }
-    } catch (err) {
-      // ignore
-    }
   };
 
   return (

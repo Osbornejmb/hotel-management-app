@@ -15,6 +15,8 @@ import {
   Legend,
   ArcElement
 } from 'chart.js';
+// PDF export
+import { jsPDF } from 'jspdf';
 
 ChartJS.register(
   CategoryScale,
@@ -1094,53 +1096,80 @@ function RestaurantAdminDashboard() {
     return out;
   }, [perItemRoomCounts]);
 
-  // Small helper to escape HTML when writing report into a printable window
-  const escapeHtml = React.useCallback((unsafe) => {
-    if (!unsafe) return '';
-    return String(unsafe)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }, []);
-
-  // Export the generated rawAnalysis to a printable window and trigger the browser print dialog
+  // Export the generated rawAnalysis as a PDF file download
   const handleExportPDF = React.useCallback(() => {
     if (!analysisResult) {
       alert('No analysis available to export.');
       return;
     }
 
-    const content = analysisResult.rawAnalysis || '';
-    const win = window.open('', '_blank', 'noopener,noreferrer');
-    if (!win) {
-      alert('Popup blocked. Please allow popups to export the report.');
-      return;
+    try {
+      const content = analysisResult.rawAnalysis || '';
+      
+      // Create a new PDF document (A4, portrait)
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // PDF document properties
+      doc.setProperties({
+        title: 'Food Order Analysis Report',
+        subject: 'Restaurant Analytics Report',
+        author: 'Lumine Restaurant Admin',
+        keywords: 'orders, analysis, restaurant'
+      });
+
+      // Set font and colors
+      doc.setTextColor(180, 83, 9); // amber-900
+      doc.setFontSize(20);
+      doc.text('Food Order Analysis Report', 15, 20);
+
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 15, 30);
+
+      // Add a horizontal line
+      doc.setDrawColor(245, 158, 11); // amber-500
+      doc.line(15, 35, 195, 35);
+
+      // Split content into lines and add to PDF
+      doc.setTextColor(59, 42, 18); // amber-950
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const maxWidth = pageWidth - 2 * margin;
+      const lineHeight = 5;
+      let yPosition = 42;
+
+      // Split text into lines and handle page breaks
+      const lines = doc.splitTextToSize(content, maxWidth);
+      
+      lines.forEach((line) => {
+        if (yPosition > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+        doc.text(line, margin, yPosition);
+        yPosition += lineHeight;
+      });
+
+      // Add footer
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(8);
+      doc.text('Lumine Restaurant Analytics', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+      // Download the PDF
+      doc.save(`food-order-analysis-${new Date().getTime()}.pdf`);
+    } catch (e) {
+      console.error('PDF export failed:', e);
+      alert('Failed to generate PDF. Please try again.');
     }
-
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Food Order Analysis Report</title>
-      <style>body{font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#3b2a12; padding:24px} h1{color:#b45309} pre{white-space:pre-wrap; font-family:inherit; font-size:13px; line-height:1.4}</style>
-      </head><body>
-      <h1>Food Order Analysis Report</h1>
-      <pre>${escapeHtml(content)}</pre>
-      </body></html>`;
-
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-
-    // Give the browser a moment to render then open print dialog
-    setTimeout(() => {
-      try {
-        win.focus();
-        win.print();
-        // keep window open so user can choose save as PDF; don't close automatically
-      } catch (e) {
-        console.error('Print failed', e);
-      }
-    }, 600);
-  }, [analysisResult, escapeHtml]);
+  }, [analysisResult]);
 
   // Handle bell click - clear notifications and counter
   const handleBellClick = () => {
