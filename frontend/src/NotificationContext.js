@@ -47,8 +47,7 @@ export function NotificationProvider({ children }) {
     fetchBookings().then(() => {
       intervalId = setInterval(fetchBookings, 20000);
       const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
-      socketRef.current = socket;
-      socket.on('connect', () => console.debug('socket connected', socket.id));
+  socketRef.current = socket;
       socket.on('bookingStatusChanged', (payload) => {
         const lastSeen = (prevStatusesRef.current && prevStatusesRef.current[payload.bookingId]) || null;
         const notif = {
@@ -99,8 +98,7 @@ export function NotificationProvider({ children }) {
     }).catch(() => {
       intervalId = setInterval(fetchBookings, 20000);
       const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
-      socketRef.current = socket;
-      socket.on('connect', () => console.debug('socket connected', socket.id));
+  socketRef.current = socket;
       socket.on('bookingStatusChanged', (payload) => {
         const lastSeen = (prevStatusesRef.current && prevStatusesRef.current[payload.bookingId]) || null;
         const notif = {

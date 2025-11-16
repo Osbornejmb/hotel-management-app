@@ -17,6 +17,8 @@ function HotelAdminDashboard({ children }) {
   const [toasts, setToasts] = useState([]);
   const prevStatusesRef = useRef({});
   const socketRef = useRef(null);
+  // short-lived dedupe keys to avoid sending the same notif twice (socket + poll race)
+  const recentNotifKeysRef = useRef(new Map());
   // Ref for notification sound
   const notificationAudioRef = useRef(null);
 
@@ -43,6 +45,8 @@ function HotelAdminDashboard({ children }) {
               roomNumber,
               oldStatus: prevStatus,
               newStatus: status,
+              // fetched from polling (notification panel) — do not persist to DB
+              persist: false,
               timestamp: new Date().toISOString(),
               read: false,
             };
@@ -59,8 +63,7 @@ function HotelAdminDashboard({ children }) {
       intervalId = setInterval(fetchBookings, 20000);
       // Setup socket.io client for real-time notifications
       const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
-      socketRef.current = socket;
-      socket.on('connect', () => console.debug('socket connected', socket.id));
+  socketRef.current = socket;
       socket.on('bookingStatusChanged', (payload) => {
         // payload: { bookingId, roomNumber, newStatus }
         // try to retrieve the last-seen status stored in prevStatusesRef
@@ -71,6 +74,8 @@ function HotelAdminDashboard({ children }) {
           roomNumber: payload.roomNumber,
           oldStatus: lastSeen,
           newStatus: payload.newStatus,
+          // socket-originated notifications are considered popups and should be persisted
+          persist: true,
           timestamp: new Date().toISOString(),
           read: false,
         };
@@ -90,6 +95,8 @@ function HotelAdminDashboard({ children }) {
           roomType: payload.roomType,
           oldStatus: null,
           newStatus: payload.status,
+          // room updates from socket: treat as popup/persist
+          persist: true,
           timestamp: new Date().toISOString(),
           read: false,
           isRoomNotification: true,
@@ -108,6 +115,8 @@ function HotelAdminDashboard({ children }) {
           taskType: payload.type,
           oldStatus: null,
           newStatus: payload.status,
+          // task updates from socket: treat as popup/persist
+          persist: true,
           timestamp: new Date().toISOString(),
           read: false,
           isTaskNotification: true,
@@ -118,8 +127,7 @@ function HotelAdminDashboard({ children }) {
       // initial fetch failed; still try to start polling and socket
       intervalId = setInterval(fetchBookings, 20000);
       const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
-      socketRef.current = socket;
-      socket.on('connect', () => console.debug('socket connected', socket.id));
+  socketRef.current = socket;
       socket.on('bookingStatusChanged', (payload) => {
         const lastSeen = (prevStatusesRef.current && prevStatusesRef.current[payload.bookingId]) || null;
         const notif = {
@@ -160,8 +168,43 @@ function HotelAdminDashboard({ children }) {
     setToasts(prev => prev.filter(t => t.toastId !== toastId));
   };
 
+  // persist notification to backend (which should write to the hoteladnotifs collection)
+  const saveNotificationToDb = async (notif) => {
+    try {
+      await fetch('/api/hoteladnotifs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(notif),
+      });
+    } catch (err) {
+      console.error('Failed to save notification to DB', err);
+    }
+  };
+
   // Add notification if not duplicate (same bookingId + newStatus). Also push toast and browser notification.
   const addNotification = (notif) => {
+    try {
+      // build a dedupe key that covers booking/task/room notifications
+      const keyParts = [];
+      if (notif.bookingId) keyParts.push(`b:${notif.bookingId}`);
+      if (notif.taskId) keyParts.push(`t:${notif.taskId}`);
+      if (notif.roomNumber) keyParts.push(`r:${notif.roomNumber}`);
+      if (notif.isTaskNotification) keyParts.push('type:task');
+      if (notif.isRoomNotification) keyParts.push('type:room');
+      keyParts.push(`s:${notif.newStatus}`);
+      const dedupeKey = keyParts.join('|');
+      const recent = recentNotifKeysRef.current;
+      if (recent.has(dedupeKey)) {
+        // already processed recently — skip duplicate
+        return;
+      }
+      // mark as seen for 6 seconds
+      recent.set(dedupeKey, Date.now());
+      setTimeout(() => { recent.delete(dedupeKey); }, 6000);
+    } catch (err) {
+      // silent
+    }
     setNotifications(prev => {
       const exists = prev.some(n => n.bookingId === notif.bookingId && n.newStatus === notif.newStatus);
       if (exists) return prev;
@@ -177,6 +220,11 @@ function HotelAdminDashboard({ children }) {
       if (exists) return prev;
       return [{ ...notif, toastId: `t-${notif.id}` }, ...prev];
     });
+    // persist to DB (fire-and-forget)
+    // Only persist if not explicitly marked as fetched/panel-only
+    if (notif.persist !== false) {
+      saveNotificationToDb(notif);
+    }
     // Browser notification
     try {
       if ('Notification' in window) {

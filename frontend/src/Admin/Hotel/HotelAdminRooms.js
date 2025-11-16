@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+ import React, { useEffect, useState } from 'react';
 import HotelAdminDashboard from './HotelAdminDashboard';
 import './HotelAdminRooms.css';
 
@@ -55,17 +55,40 @@ export default function HotelAdminRooms() {
   useEffect(() => {
     if (!modalRoom) return;
     setLogsLoading(true);
-    fetch(`${process.env.REACT_APP_API_URL}/api/activitylogs`)
-      .then(res => res.json())
-      .then(data => {
-        // Filter logs for this room only
-        const logs = Array.isArray(data)
-          ? data.filter(log => log.collection === 'rooms' && log.details && (log.details.roomNumber === modalRoom.roomNumber || log.documentId === modalRoom._id))
-          : [];
-        setActivityLogs(logs);
-      })
-      .catch(() => setActivityLogs([]))
-      .finally(() => setLogsLoading(false));
+    // Fetch activity logs and hoteladnotifs, then merge entries for this room
+    Promise.all([
+      fetch(`${process.env.REACT_APP_API_URL}/api/activitylogs`).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${process.env.REACT_APP_API_URL}/api/hoteladnotifs`).then(r => r.ok ? r.json() : []).catch(() => []),
+    ]).then(([activityData, notifData]) => {
+      // Filter activity logs for this room only
+      const roomNumberStr = String(modalRoom.roomNumber);
+      const activityLogsForRoom = Array.isArray(activityData)
+        ? activityData.filter(log => log.collection === 'rooms' && log.details && (
+            String(log.details.roomNumber) === roomNumberStr || String(log.documentId) === String(modalRoom._id)
+          ))
+        : [];
+
+      // Map hoteladnotifs entries to the same shape expected by the UI
+      const notifLogsForRoom = Array.isArray(notifData)
+        ? notifData.filter(n => n && n.roomNumber && String(n.roomNumber) === roomNumberStr)
+          .map(n => ({
+            _id: n._id || n.id,
+            actionType: 'notification',
+            details: {
+              roomNumber: n.roomNumber,
+              status: n.newStatus || n.status || null,
+              raw: n.raw || n,
+            },
+            timestamp: n.timestamp || n.createdAt || n.date || null,
+          }))
+        : [];
+
+      // Combine and sort by timestamp desc
+      const combined = [...activityLogsForRoom, ...notifLogsForRoom]
+        .filter(l => l && l.timestamp)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setActivityLogs(combined);
+    }).catch(() => setActivityLogs([])).finally(() => setLogsLoading(false));
   }, [modalRoom]);
 
   return (
@@ -269,30 +292,35 @@ function RequestModal({ jobType, room, onClose }) {
   }
 
   return (
-    <div className="room-modal-backdrop" style={{zIndex: 2000}}>
-      <div className="room-modal" style={{maxWidth: 350, textAlign: 'center'}}>
-        <h4>Confirm {jobType === 'cleaning' ? 'Cleaning' : 'Maintenance'} Request</h4>
-        <p>Room: <b>{room?.roomNumber}</b></p>
-        <div style={{ margin: '1em 0' }}>
-          <label htmlFor="priority-select"><b>Priority:</b></label>
-          <select
-            id="priority-select"
-            value={priority}
-            onChange={e => setPriority(e.target.value)}
-            style={{ marginLeft: 8, padding: '0.3em', borderRadius: 4 }}
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
+    <div className="room-modal-backdrop" style={{ zIndex: 2000 }}>
+      <div className="room-modal request-modal" role="dialog" aria-modal="true">
+        <div className="request-modal-header">
+          <div>
+            <div className="request-modal-title">Confirm {jobType === 'cleaning' ? 'Cleaning' : 'Maintenance'} Request</div>
+            <div className="request-modal-sub">Room <strong>{room?.roomNumber}</strong></div>
+          </div>
+          <button className="room-modal-close" onClick={onClose} aria-label="Close">×</button>
         </div>
-        {error && <div style={{ color: 'red', marginBottom: 8 }}>{error}</div>}
-        {success && <div style={{ color: 'green', marginBottom: 8 }}>{success}</div>}
-        <div className="modal-actions">
-          <button onClick={onClose} disabled={loading}>Cancel</button>
-          <button onClick={handleConfirm} disabled={loading} style={{ background: '#a57c2b', color: '#fff' }}>
-            {loading ? 'Submitting...' : 'Confirm'}
-          </button>
+
+        <div className="request-modal-body">
+          <div className="request-form-row">
+            <label htmlFor="priority-select">Priority</label>
+            <select id="priority-select" className="request-select" value={priority} onChange={e => setPriority(e.target.value)}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          {error && <div className="request-status request-error">{error}</div>}
+          {success && <div className="request-status request-success">{success}</div>}
+
+          <div className="request-actions">
+            <button className="modal-btn secondary" onClick={onClose} disabled={loading}>Cancel</button>
+            <button className="modal-btn primary" onClick={handleConfirm} disabled={loading}>
+              {loading ? 'Submitting...' : 'Confirm'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

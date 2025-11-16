@@ -26,7 +26,9 @@
   font-size: 1rem;
 }
 .dashboard-analytics-container {
-  max-width: 1100px;
+  /* use full available width so charts can expand horizontally */
+  max-width: 100%;
+  width: calc(100% - 4rem);
   margin: 2rem auto;
   background: #fff;
   border-radius: 12px;
@@ -39,21 +41,23 @@
   display: flex;
   gap: 2rem;
   align-items: flex-start;
-  justify-content: center;
-  flex-wrap: wrap;
+  justify-content: stretch;
+  flex-wrap: nowrap; /* keep charts on one row and let them size */
 }
 .dashboard-analytics-grid .chart-panel {
   background: transparent;
 }
 .dashboard-analytics-grid .chart-panel.bar {
-  flex: 2 1 640px;
-  min-width: 520px;
-  height: 360px; /* allow bar to be taller */
+  /* let the bar chart take the majority of horizontal space */
+  flex: 3 1 0;
+  min-width: 0; /* allow it to shrink when space is constrained */
+  height: 460px; /* taller for better readability */
 }
 .dashboard-analytics-grid .chart-panel.pie {
-  flex: 1 1 320px;
-  min-width: 280px;
-  height: 360px;
+  /* pie chart stays visible but smaller */
+  flex: 1 1 300px;
+  min-width: 240px;
+  height: 460px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,4 +67,78 @@
   text-align: center;
   margin-top: 0;
   font-weight: 700;
+}
+
+/* Automated Report styles */
+.automated-report {
+  margin-top: 20px;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  border: 1px solid #eee;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.automated-report-title {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+.automated-report-grid {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.report-left {
+  min-width: 220px;
+  flex: 0 0 220px;
+}
+.report-occupancy-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+.report-occupancy-label {
+  color: #666;
+  margin-bottom: 8px;
+}
+.report-stats {
+  margin: 8px 0 12px 0;
+  color: #333;
+  line-height: 1.6;
+}
+.report-export-btn {
+  background: #b48a2c;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.report-main {
+  flex: 1 1 480px;
+  min-width: 260px;
+}
+.report-section-title { margin: 0 0 8px 0; }
+.muted { color: #666; }
+.busiest-months-list { margin-top: 6px; }
+.report-suggestions { margin-top: 8px; }
+.report-right {
+  width: 280px;
+  flex: 0 0 280px;
+}
+.report-summary { color: #333; }
+
+@media (max-width: 1100px) {
+  /* stack charts on narrower screens */
+  .dashboard-analytics-grid { flex-wrap: wrap; }
+  .dashboard-analytics-grid .chart-panel.bar,
+  .dashboard-analytics-grid .chart-panel.pie { flex: 1 1 100%; min-width: 0; height: 420px; }
+}
+
+@media (max-width: 900px) {
+  .automated-report-grid { flex-direction: column; }
+  .report-right, .report-left { width: 100%; flex: 0 0 auto; }
 }
