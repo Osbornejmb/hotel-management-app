@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import CheckoutUpsellModal from './CheckoutUpsellModal';
+import OrderConfirmationModal from './OrderConfirmationModal';
 
 // Custom hook to manage notification sounds (from CustomerInterface)
 const useNotificationSound = () => {
@@ -53,6 +55,16 @@ function FoodAndBeverages() {
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [tab, setTab] = useState('pending');
+
+  // Upsell Modal states
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
+  const [upsellData, setUpsellData] = useState({});
+  const [isUpsellLoading, setIsUpsellLoading] = useState(false);
+  const [, setPendingCheckout] = useState(false);
+
+  // Order Confirmation Modal states
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [isConfirmationLoading, setIsConfirmationLoading] = useState(false);
 
   // Food-specific states
   const [search, setSearch] = useState('');
@@ -739,6 +751,124 @@ function FoodAndBeverages() {
     }
   };
 
+  // ========== UPSELL MODAL HANDLERS ==========
+  
+  // Fetch upsell recommendations from backend
+  const fetchUpsellRecommendations = async () => {
+    if (!roomNumber) return;
+    setIsUpsellLoading(true);
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/upsell`
+      );
+      
+      const { showUpsell, upsellHeading, upsellMessage, recommendations } = response.data;
+      
+      if (showUpsell && recommendations && recommendations.length > 0) {
+        setUpsellData({
+          upsellHeading,
+          upsellMessage,
+          recommendations
+        });
+        setShowUpsellModal(true);
+      } else {
+        // No upsell needed, proceed with checkout
+        await completeCheckout();
+      }
+    } catch (error) {
+      console.error('Error fetching upsell recommendations:', error);
+      // On error, proceed with checkout anyway
+      await completeCheckout();
+    } finally {
+      setIsUpsellLoading(false);
+    }
+  };
+
+  // Complete the checkout process
+  const completeCheckout = async () => {
+    if (!roomNumber || cart.length === 0) return;
+    
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+      setCart([]);
+      alert('Checkout successful! Your order has been sent to the restaurant.');
+      setShowCart(false);
+      setPendingCheckout(false);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Checkout failed. Please try again.');
+      setPendingCheckout(false);
+    }
+  };
+
+  // Handle checkout button click - show upsell modal first
+  const handleCheckoutClick = async () => {
+    if (!roomNumber || cart.length === 0) return;
+    setPendingCheckout(true);
+    await fetchUpsellRecommendations();
+  };
+
+  // Handle adding item to cart from upsell modal
+  const handleUpsellAddToCart = async (item, quantity = 1) => {
+    try {
+      // Add item to cart via API
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/items`,
+        {
+          name: item.name,
+          img: item.img,
+          category: item.category,
+          price: item.price,
+          quantity: quantity
+        }
+      );
+      
+      // Refresh cart
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
+      setCart(res.data?.items || []);
+      
+      // Close modal and show confirmation
+      setShowUpsellModal(false);
+      setShowConfirmationModal(true);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Failed to add item to cart. Please try again.');
+    }
+  };
+
+  // Handle "No Thanks, Continue" button
+  const handleUpsellSkip = async () => {
+    setShowUpsellModal(false);
+    setShowConfirmationModal(true);
+  };
+
+  // Handle order confirmation
+  const handleConfirmOrder = async () => {
+    if (!roomNumber || cart.length === 0) return;
+    
+    setIsConfirmationLoading(true);
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+      setCart([]);
+      alert('Checkout successful! Your order has been sent to the restaurant.');
+      setShowCart(false);
+      setShowConfirmationModal(false);
+      setPendingCheckout(false);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Checkout failed. Please try again.');
+      setPendingCheckout(false);
+    } finally {
+      setIsConfirmationLoading(false);
+    }
+  };
+
+  // Handle cancel order confirmation
+  const handleCancelConfirmation = () => {
+    setShowConfirmationModal(false);
+    setShowCart(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex flex-col overflow-hidden">
       {/* Toast Notifications Container */}
@@ -1204,6 +1334,24 @@ function FoodAndBeverages() {
         </div>
       )}
 
+      {/* Checkout Upsell Modal */}
+      <CheckoutUpsellModal
+        isOpen={showUpsellModal}
+        upsellData={upsellData}
+        onAddToCart={handleUpsellAddToCart}
+        onContinueCheckout={handleUpsellSkip}
+        isLoading={isUpsellLoading}
+      />
+
+      {/* Order Confirmation Modal */}
+      <OrderConfirmationModal
+        isOpen={showConfirmationModal}
+        items={cart}
+        onConfirm={handleConfirmOrder}
+        onCancel={handleCancelConfirmation}
+        isLoading={isConfirmationLoading}
+      />
+
       {/* Cart Popup */}
       {showCart && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1290,18 +1438,7 @@ function FoodAndBeverages() {
             <div className="p-6 bg-amber-50 border-t border-amber-200">
               <div className="flex justify-center space-x-4">
                 <button
-                  onClick={async () => {
-                    if (roomNumber && cart.length > 0) {
-                      try {
-                        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-                        setCart([]);
-                        alert('Checkout successful! Your order has been sent to the restaurant.');
-                        setShowCart(false);
-                      } catch {
-                        alert('Checkout failed. Please try again.');
-                      }
-                    }
-                  }}
+                  onClick={handleCheckoutClick}
                   disabled={cart.length === 0}
                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >

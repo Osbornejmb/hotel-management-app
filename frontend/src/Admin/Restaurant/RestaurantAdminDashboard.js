@@ -1,6 +1,32 @@
 import React from 'react';
 import LogoutButton from '../../Auth/LogoutButton';
 import './RestaurantAdminDashboard.css';
+// Charts
+import { Bar, Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 // Toast Notification Component
 function ToastNotification({ message, type, onClose }) {
@@ -485,6 +511,398 @@ function MenuManager() {
   );
 }
 
+// Generate dynamic summary and analysis of food orders
+function generateOrderAnalysisSummary(orders) {
+  /**
+   * Generates a comprehensive summary and analysis of food orders
+   * @param {Array} orders - Array of order objects with items, roomNumber, checkedOutAt properties
+   * @returns {Object} - Contains summary and analysis
+   */
+
+  if (!orders || orders.length === 0) {
+    return {
+      summary: {
+        totalOrders: 0,
+        totalItemsOrdered: 0,
+        itemFrequency: {},
+        itemsByDay: {},
+        itemsByRoom: {},
+        commonPairings: []
+      },
+      analysis: {
+        peakOrderingDays: [],
+        mostFrequentItems: [],
+        mostActiveRooms: [],
+        mostCommonPairings: [],
+        patterns: []
+      },
+      rawAnalysis: "No order data available for analysis."
+    };
+  }
+
+  // Initialize tracking objects
+  const itemFrequency = {};
+  const itemsByDay = {};
+  const itemsByRoom = {};
+  const pairingMap = {}; // to track item combinations
+  const roomOrderCounts = {};
+  const dayOrderCounts = {};
+
+  // Process each order
+  orders.forEach(order => {
+    if (!order.items || order.items.length === 0) return;
+
+    // Extract day from checkedOutAt (YYYY-MM-DD format)
+    const orderDate = order.checkedOutAt 
+      ? new Date(order.checkedOutAt).toISOString().split('T')[0]
+      : 'unknown-date';
+    
+    const roomNumber = order.roomNumber || 'unknown-room';
+
+    // Track day and room order counts
+    dayOrderCounts[orderDate] = (dayOrderCounts[orderDate] || 0) + 1;
+    roomOrderCounts[roomNumber] = (roomOrderCounts[roomNumber] || 0) + 1;
+
+    // Extract unique item names in this order
+    const itemNames = order.items.map(item => item.name).filter(Boolean);
+    const uniqueItems = [...new Set(itemNames)];
+
+    // Process each item
+    uniqueItems.forEach(itemName => {
+      // Track frequency
+      itemFrequency[itemName] = (itemFrequency[itemName] || 0) + 1;
+
+      // Track by day
+      if (!itemsByDay[itemName]) itemsByDay[itemName] = [];
+      if (!itemsByDay[itemName].includes(orderDate)) {
+        itemsByDay[itemName].push(orderDate);
+      }
+
+      // Track by room
+      if (!itemsByRoom[itemName]) itemsByRoom[itemName] = [];
+      if (!itemsByRoom[itemName].includes(roomNumber)) {
+        itemsByRoom[itemName].push(roomNumber);
+      }
+    });
+
+    // Track common pairings (items that appear together)
+    if (uniqueItems.length > 1) {
+      for (let i = 0; i < uniqueItems.length; i++) {
+        for (let j = i + 1; j < uniqueItems.length; j++) {
+          const pairing = [uniqueItems[i], uniqueItems[j]].sort().join(' + ');
+          pairingMap[pairing] = (pairingMap[pairing] || 0) + 1;
+        }
+      }
+    }
+  });
+
+  // Calculate totals
+  const totalItems = Object.values(itemFrequency).reduce((sum, count) => sum + count, 0);
+
+  // Sort and extract top results
+  const sortedItemFrequency = Object.entries(itemFrequency)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  const sortedDays = Object.entries(dayOrderCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const sortedRooms = Object.entries(roomOrderCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const sortedPairings = Object.entries(pairingMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
+
+  // Compile summary
+  const summary = {
+    totalOrders: orders.length,
+    totalItemsOrdered: totalItems,
+    itemFrequency: Object.fromEntries(sortedItemFrequency),
+    itemsByDay: Object.fromEntries(
+      Object.entries(itemsByDay).map(([item, days]) => [item, days.length])
+    ),
+    itemsByRoom: Object.fromEntries(
+      Object.entries(itemsByRoom).map(([item, rooms]) => [item, rooms.length])
+    ),
+    commonPairings: sortedPairings.map(([pairing, count]) => ({
+      pairing,
+      frequency: count
+    }))
+  };
+
+  // Generate analysis insights
+  const analysis = {
+    peakOrderingDays: sortedDays.map(([day, count]) => ({
+      date: day,
+      orderCount: count
+    })),
+    mostFrequentItems: sortedItemFrequency.map(([name, count]) => ({
+      name,
+      orderCount: count,
+      daysOrdered: itemsByDay[name]?.length || 0,
+      roomsOrdered: itemsByRoom[name]?.length || 0
+    })),
+    mostActiveRooms: sortedRooms.map(([room, count]) => ({
+      roomNumber: room,
+      totalOrders: count
+    })),
+    mostCommonPairings: sortedPairings.map(([pairing, count]) => ({
+      items: pairing,
+      frequency: count
+    })),
+    patterns: generatePatterns(
+      summary,
+      sortedItemFrequency,
+      sortedDays,
+      sortedRooms,
+      sortedPairings,
+      orders
+    )
+  };
+
+  // Generate actionable recommendations based on analysis
+  analysis.recommendations = generateRecommendations(summary, analysis, orders);
+
+  // Generate raw written analysis
+  const rawAnalysis = generateRawAnalysis(summary, analysis);
+
+  return {
+    summary,
+    analysis,
+    rawAnalysis,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+// Helper function to generate pattern insights
+function generatePatterns(summary, sortedItems, sortedDays, sortedRooms, sortedPairings, orders) {
+  const patterns = [];
+
+  // Pattern 1: Peak ordering periods
+  if (sortedDays.length > 0) {
+    const peakDay = sortedDays[0];
+    const avgOrdersPerDay = summary.totalOrders / Object.keys(summary.itemsByDay).length;
+    if (peakDay[1] > avgOrdersPerDay * 1.5) {
+      patterns.push(`Peak ordering detected on ${peakDay[0]} with ${peakDay[1]} orders (${Math.round((peakDay[1] / avgOrdersPerDay - 1) * 100)}% above average).`);
+    }
+  }
+
+  // Pattern 2: Most popular item
+  if (sortedItems.length > 0) {
+    const topItem = sortedItems[0];
+    const percentage = Math.round((topItem[1] / summary.totalItemsOrdered) * 100);
+    patterns.push(`"${topItem[0]}" is the most popular item, appearing in ${topItem[1]} orders (${percentage}% of all items ordered).`);
+  }
+
+  // Pattern 3: Item pairing trends
+  if (sortedPairings.length > 0) {
+    const topPairing = sortedPairings[0];
+    patterns.push(`Strong item pairing detected: "${topPairing[0]}" appears together ${topPairing[1]} times.`);
+  }
+
+  // Pattern 4: Room ordering behavior
+  if (sortedRooms.length > 0) {
+    const activeRooms = sortedRooms.length;
+    const topRoom = sortedRooms[0];
+    const avgOrdersPerRoom = summary.totalOrders / activeRooms;
+    if (topRoom[1] > avgOrdersPerRoom * 1.5) {
+      patterns.push(`Room ${topRoom[0]} is exceptionally active with ${topRoom[1]} orders, ${Math.round((topRoom[1] / avgOrdersPerRoom - 1) * 100)}% above average.`);
+    }
+  }
+
+  // Pattern 5: Inventory insights
+  if (sortedItems.length >= 2) {
+    const topTwo = sortedItems.slice(0, 2);
+    const difference = topTwo[0][1] - topTwo[1][1];
+    if (difference > 5) {
+      patterns.push(`Significant demand gap: "${topTwo[0][0]}" outpaces "${topTwo[1][0]}" by ${difference} orders.`);
+    }
+  }
+
+  // Pattern 6: Diversification
+  const uniqueItems = Object.keys(summary.itemFrequency).length;
+  if (uniqueItems > 10) {
+    patterns.push(`High menu diversity observed with ${uniqueItems} different items ordered.`);
+  } else if (uniqueItems <= 5) {
+    patterns.push(`Limited menu diversity: only ${uniqueItems} items were ordered. Consider promotions for other menu items.`);
+  }
+
+  return patterns;
+}
+
+// Helper function to generate actionable recommendations
+function generateRecommendations(summary, analysis, orders) {
+  const recommendations = [];
+
+  // 1) Recommendations for top items
+  (analysis.mostFrequentItems || []).slice(0, 6).forEach(item => {
+    const examplePair = (summary.commonPairings || []).find(p => p.pairing.toLowerCase().includes(item.name.toLowerCase()));
+    const actions = [];
+      actions.push(`Feature "${item.name}" in Top Items / Hero banner of menu`);
+      actions.push(`Create a one-click bundle with its most common pairing${examplePair ? ` (e.g. ${examplePair.pairing})` : ''}`);
+    actions.push('Mark as inventory priority and set low-stock alerts');
+    actions.push('Run a 2-week A/B price test (small premium vs control) to measure elasticity');
+    actions.push('Promote as a time-limited special during off-peak to boost slow periods');
+
+    recommendations.push({
+      type: 'top-item',
+      item: item.name,
+      priority: 'high',
+      reason: `${item.name} appears in ${item.orderCount} orders and across ${item.daysOrdered} days`,
+      actions
+    });
+  });
+
+  // 2) Recommendations for common pairings
+  (summary.commonPairings || []).slice(0, 6).forEach(pair => {
+    const actions = [];
+    actions.push(`Create a combo product for ${pair.pairing} with a small discount (5-10%)`);
+    actions.push('Add pairing as a checkout upsell / recommended add-on with one-click');
+    actions.push('Track bundle attach rate and conversion over 2 weeks');
+
+    recommendations.push({
+      type: 'pairing',
+      pairing: pair.pairing,
+      priority: 'high',
+      reason: `Pairing appears ${pair.frequency} times`,
+      actions
+    });
+  });
+
+  // 3) Peak day recommendations (staffing & prep)
+  (analysis.peakOrderingDays || []).slice(0, 3).forEach(day => {
+    const actions = [];
+    actions.push(`Increase kitchen staff and prep quantities on ${day.date} (plan +20% capacity based on historical peak).`);
+    actions.push('Prepare ingredient prep-sheets and staging for the shift');
+    actions.push('Consider surge pricing only if capacity is constrained');
+
+    recommendations.push({
+      type: 'peak-day',
+      date: day.date,
+      priority: 'medium',
+      reason: `High orders (${day.orderCount}) on ${day.date}`,
+      actions
+    });
+  });
+
+  // 4) Top rooms (VIP & targeting)
+  (analysis.mostActiveRooms || []).slice(0, 6).forEach(room => {
+    const actions = [];
+    actions.push('Flag as high-value room for personalized offers');
+    actions.push('Offer a targeted discount or free item on next order to increase retention');
+    actions.push('Consider a loyalty or VIP program for repeated high-frequency rooms');
+
+    recommendations.push({
+      type: 'top-room',
+      room: room.roomNumber,
+      priority: 'medium',
+      reason: `Room ${room.roomNumber} placed ${room.totalOrders} orders`,
+      actions
+    });
+  });
+
+  // 5) Operational & strategic recommendations
+  // Menu diversity / demand gaps
+  if (analysis.patterns && analysis.patterns.length) {
+    recommendations.push({
+      type: 'patterns',
+      priority: 'low',
+      reason: 'Auto-detected patterns',
+      actions: analysis.patterns.slice(0,5).map(p => `Investigate pattern: ${p}`)
+    });
+  }
+
+  recommendations.push({
+    type: 'quick-wins',
+    priority: 'high',
+    reason: 'Immediate action suggestions',
+    actions: [
+      'Highlight top 3 items on menu and home screen',
+      'Create 2 quick bundles from top pairings and measure attach rate',
+      'Set low-stock alerts for top 10 items'
+    ]
+  });
+
+  return recommendations;
+}
+
+// Helper function to generate written analysis
+function generateRawAnalysis(summary, analysis) {
+  let text = "=== FOOD ORDER ANALYSIS REPORT ===\n\n";
+
+  text += `OVERVIEW\n`;
+  text += `Total Orders Analyzed: ${summary.totalOrders}\n`;
+  text += `Total Items Ordered: ${summary.totalItemsOrdered}\n`;
+  text += `Unique Items: ${Object.keys(summary.itemFrequency).length}\n\n`;
+
+  if (analysis.mostFrequentItems.length > 0) {
+    text += `TOP PERFORMING ITEMS\n`;
+    analysis.mostFrequentItems.slice(0, 5).forEach((item, idx) => {
+      text += `${idx + 1}. ${item.name}: ${item.orderCount} orders (across ${item.daysOrdered} days, ${item.roomsOrdered} rooms)\n`;
+    });
+    text += "\n";
+  }
+
+  if (analysis.peakOrderingDays.length > 0) {
+    text += `PEAK ORDERING PERIODS\n`;
+    analysis.peakOrderingDays.forEach(day => {
+      text += `${day.date}: ${day.orderCount} orders\n`;
+    });
+    text += "\n";
+  }
+
+  if (analysis.mostActiveRooms.length > 0) {
+    text += `MOST ACTIVE ROOMS\n`;
+    analysis.mostActiveRooms.forEach(room => {
+      text += `Room ${room.roomNumber}: ${room.totalOrders} orders\n`;
+    });
+    text += "\n";
+  }
+
+  if (analysis.mostCommonPairings.length > 0) {
+    text += `ITEM PAIRINGS (Items Frequently Ordered Together)\n`;
+    analysis.mostCommonPairings.slice(0, 5).forEach(pairing => {
+      text += `${pairing.items}: ${pairing.frequency} times\n`;
+    });
+    text += "\n";
+  }
+
+  text += `KEY INSIGHTS\n`;
+  if (analysis.patterns.length > 0) {
+    analysis.patterns.forEach((pattern, idx) => {
+      text += `• ${pattern}\n`;
+    });
+  } else {
+    text += "• Insufficient data for pattern analysis.\n";
+  }
+
+  // Append readable recommendations section if available
+  text += `\nRECOMMENDATIONS\n`;
+  if (analysis.recommendations && analysis.recommendations.length > 0) {
+    analysis.recommendations.forEach((rec, idx) => {
+      const header = rec.type ? rec.type.toString().toUpperCase() : `RECOMMENDATION`;
+      text += `${idx + 1}. ${header} - ${rec.reason || ''}\n`;
+      if (rec.item) text += `   Item: ${rec.item}\n`;
+      if (rec.pairing) text += `   Pairing: ${rec.pairing}\n`;
+      if (rec.room) text += `   Room: ${rec.room}\n`;
+      if (rec.date) text += `   Date: ${rec.date}\n`;
+      if (rec.actions && rec.actions.length) {
+        rec.actions.slice(0, 10).forEach(action => {
+          text += `     - ${action}\n`;
+        });
+      }
+      text += "\n";
+    });
+  } else {
+    text += "No automated recommendations available.\n\n";
+  }
+
+  return text;
+}
+
 // Status steps array outside component to avoid recreation
 const statusSteps = [
   'pending',
@@ -498,6 +916,9 @@ function RestaurantAdminDashboard() {
   const [orders, setOrders] = React.useState([]);
   const [cancelledOrders, setCancelledOrders] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState('orders');
+  // analysis result for analytics tab
+  const [analysisResult, setAnalysisResult] = React.useState(null);
+  const [topItemQuery, setTopItemQuery] = React.useState('');
   const [orderFilter, setOrderFilter] = React.useState('pending');
   const [showCancelPopup, setShowCancelPopup] = React.useState(false);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
@@ -633,6 +1054,45 @@ function RestaurantAdminDashboard() {
     
     return () => clearInterval(interval);
   }, [activeTab, fetchOrders, fetchCancelledOrders, checkForNotifications]);
+
+  // Recompute analysis whenever orders change
+  React.useEffect(() => {
+    try {
+      const result = generateOrderAnalysisSummary(orders);
+      setAnalysisResult(result);
+    } catch (e) {
+      console.error('Error generating order analysis:', e);
+      setAnalysisResult(null);
+    }
+  }, [orders]);
+
+  // Compute per-item room counts (which room ordered an item the most)
+  const perItemRoomCounts = React.useMemo(() => {
+    const map = {};
+    (orders || []).forEach(order => {
+      const room = order.roomNumber || 'unknown-room';
+      (order.items || []).forEach(item => {
+        const name = item && item.name ? item.name : 'unknown-item';
+        const qty = item && item.quantity ? item.quantity : 1;
+        if (!map[name]) map[name] = {};
+        map[name][room] = (map[name][room] || 0) + qty;
+      });
+    });
+    return map;
+  }, [orders]);
+
+  const perItemTopRoom = React.useMemo(() => {
+    const out = {};
+    Object.entries(perItemRoomCounts).forEach(([item, rooms]) => {
+      const sorted = Object.entries(rooms).sort((a, b) => b[1] - a[1]);
+      if (sorted.length > 0) {
+        out[item] = { room: sorted[0][0], count: sorted[0][1] };
+      } else {
+        out[item] = { room: null, count: 0 };
+      }
+    });
+    return out;
+  }, [perItemRoomCounts]);
 
   // Handle bell click - clear notifications and counter
   const handleBellClick = () => {
@@ -1057,6 +1517,16 @@ function RestaurantAdminDashboard() {
               >
                 Menu Management
               </button>
+              <button
+                className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
+                  activeTab === 'analytics'
+                    ? 'bg-amber-500 text-white shadow-md'
+                    : 'text-amber-700 hover:bg-amber-100'
+                }`}
+                onClick={() => setActiveTab('analytics')}
+              >
+                Analytics
+              </button>
             </div>
           </div>
         </div>
@@ -1088,6 +1558,262 @@ function RestaurantAdminDashboard() {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'menu' ? (
             <MenuManager />
+          ) : activeTab === 'analytics' ? (
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-amber-200">
+              <h2 className="text-3xl font-bold text-amber-900 mb-6 text-center">Analytics & Visuals</h2>
+              {!analysisResult ? (
+                <div className="text-center py-12 text-gray-500">Loading analysis...</div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
+                      <div className="text-sm font-semibold">Total Orders</div>
+                      <div className="text-2xl font-bold">{analysisResult.summary.totalOrders}</div>
+                    </div>
+                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
+                      <div className="text-sm font-semibold">Total Items Ordered</div>
+                      <div className="text-2xl font-bold">{analysisResult.summary.totalItemsOrdered}</div>
+                    </div>
+                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
+                      <div className="text-sm font-semibold">Unique Items</div>
+                      <div className="text-2xl font-bold">{Object.keys(analysisResult.summary.itemFrequency).length}</div>
+                    </div>
+                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
+                      <div className="text-sm font-semibold">Most Active Room</div>
+                      <div className="text-2xl font-bold">{analysisResult.analysis.mostActiveRooms && analysisResult.analysis.mostActiveRooms[0] ? analysisResult.analysis.mostActiveRooms[0].roomNumber : 'N/A'}</div>
+                      <div className="text-sm text-amber-700">{analysisResult.analysis.mostActiveRooms && analysisResult.analysis.mostActiveRooms[0] ? `${analysisResult.analysis.mostActiveRooms[0].totalOrders} orders` : ''}</div>
+                    </div>
+                  </div>
+
+                  {/* Top items + simple bar chart */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Items</h3>
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          placeholder="Search top items..."
+                          value={topItemQuery}
+                          onChange={(e) => setTopItemQuery(e.target.value)}
+                          className="w-full px-4 py-2 rounded-lg border border-amber-200 bg-white text-amber-900 focus:outline-none"
+                        />
+                      </div>
+                      <ul className="space-y-2">
+                        {analysisResult.analysis.mostFrequentItems
+                          .filter(i => i.name.toLowerCase().includes(topItemQuery.toLowerCase()))
+                          .map(item => {
+                            const topRoom = perItemTopRoom[item.name] || { room: null, count: 0 };
+                            return (
+                              <li key={item.name} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
+                                <div>
+                                  <div className="font-medium text-amber-900">{item.name}</div>
+                                  <div className="text-sm text-amber-700">{item.daysOrdered} days · {item.roomsOrdered} rooms</div>
+                                  <div className="text-sm text-amber-700">Top room: <span className="font-semibold text-amber-900">{topRoom.room || 'N/A'}</span> {topRoom.count ? `(${topRoom.count} items)` : ''}</div>
+                                </div>
+                                <div className="text-amber-900 font-semibold">{item.orderCount}</div>
+                              </li>
+                            );
+                          })}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Items (Visual)</h3>
+                      <div className="p-4 bg-white rounded-lg border border-amber-100">
+                        {/* Chart for top items (Bar) */}
+                        <div>
+                          {(() => {
+                            const top = analysisResult.analysis.mostFrequentItems.slice(0,6);
+                            const labels = top.map(i => i.name);
+                            const values = top.map(i => i.orderCount);
+                            const colors = [
+                              '#F59E0B', '#F97316', '#FB923C', '#FCD34D', '#FDBA74', '#F97316'
+                            ];
+                            const barData = {
+                              labels,
+                              datasets: [
+                                {
+                                  label: 'Orders',
+                                  data: values,
+                                  backgroundColor: labels.map((_, idx) => colors[idx % colors.length])
+                                }
+                              ]
+                            };
+                            const barOptions = {
+                              maintainAspectRatio: false,
+                              plugins: { legend: { display: false } },
+                              scales: {
+                                x: { ticks: { color: '#92400E' } },
+                                y: { beginAtZero: true, ticks: { color: '#92400E' } }
+                              }
+                            };
+                            return (
+                              <div style={{ height: 180 }}>
+                                <Bar data={barData} options={barOptions} />
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pairings and peak days */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Common Pairings</h3>
+                      <ul className="space-y-2">
+                        {analysisResult.summary.commonPairings.slice(0,8).map(p => (
+                          <li key={p.pairing} className="p-2 rounded-lg bg-amber-50 border border-amber-100 flex justify-between">
+                            <div className="text-amber-900">{p.pairing}</div>
+                            <div className="font-semibold text-amber-900">{p.frequency}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Peak Ordering Days</h3>
+                      <div className="p-4 bg-white rounded-lg border border-amber-100">
+                        {(() => {
+                          const days = analysisResult.analysis.peakOrderingDays.slice().reverse();
+                          const labels = days.map(d => d.date);
+                          const values = days.map(d => d.orderCount);
+                          const lineData = {
+                            labels,
+                            datasets: [
+                              {
+                                label: 'Orders',
+                                data: values,
+                                borderColor: '#F59E0B',
+                                backgroundColor: 'rgba(245,158,11,0.2)',
+                                tension: 0.3,
+                                fill: true
+                              }
+                            ]
+                          };
+                          const lineOptions = { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#92400E' } }, y: { beginAtZero: true, ticks: { color: '#92400E' } } } };
+                          return (
+                            <div style={{ height: 160 }}>
+                              <Line data={lineData} options={lineOptions} />
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top rooms list */}
+                  <div className="mt-6">
+                    <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Rooms by Orders</h3>
+                    <div className="p-4 bg-white rounded-lg border border-amber-100">
+                      <ul className="space-y-2">
+                        {(analysisResult.analysis.mostActiveRooms || []).slice(0,10).map(r => (
+                          <li key={r.roomNumber} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
+                            <div className="text-amber-900">Room {r.roomNumber}</div>
+                            <div className="font-semibold text-amber-900">{r.totalOrders} orders</div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Patterns / Insights */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-amber-900 mb-3">Insights</h3>
+                    <ul className="list-disc pl-5 space-y-2 text-amber-800">
+                      {analysisResult.analysis.patterns.length === 0 ? (
+                        <li>No notable patterns detected.</li>
+                      ) : (
+                        analysisResult.analysis.patterns.map((p, i) => <li key={i}>{p}</li>)
+                      )}
+                    </ul>
+                  </div>
+
+                  {/* Recommendations Panel */}
+                  <div className="mt-8 pt-8 border-t-2 border-amber-200">
+                    <h2 className="text-2xl font-bold text-amber-900 mb-6 flex items-center">
+                      <svg className="w-6 h-6 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      Actionable Recommendations
+                    </h2>
+
+                    {!analysisResult.analysis.recommendations || analysisResult.analysis.recommendations.length === 0 ? (
+                      <div className="text-center py-8 text-amber-700 bg-amber-50 rounded-lg border border-amber-100">
+                        <p>No recommendations available yet. More data needed for insights.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {analysisResult.analysis.recommendations.map((rec, idx) => {
+                          const priorityColors = {
+                            'high': 'border-red-300 bg-red-50',
+                            'medium': 'border-yellow-300 bg-yellow-50',
+                            'low': 'border-blue-300 bg-blue-50'
+                          };
+                          const priorityBadgeColors = {
+                            'high': 'bg-red-500 text-white',
+                            'medium': 'bg-yellow-500 text-white',
+                            'low': 'bg-blue-500 text-white'
+                          };
+                          const typeIcons = {
+                            'top-item': '📈',
+                            'pairing': '🔗',
+                            'peak-day': '📅',
+                            'top-room': '🏨',
+                            'patterns': '🔍',
+                            'quick-wins': '⚡'
+                          };
+                          
+                          return (
+                            <div key={idx} className={`border-l-4 rounded-lg p-4 ${priorityColors[rec.priority] || 'border-gray-300 bg-gray-50'}`}>
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl">{typeIcons[rec.type] || '💡'}</span>
+                                  <div>
+                                    <h4 className="font-semibold text-amber-900 capitalize">
+                                      {rec.type.replace('-', ' ')}
+                                    </h4>
+                                    <p className="text-sm text-amber-700">{rec.reason}</p>
+                                  </div>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${priorityBadgeColors[rec.priority] || 'bg-gray-500 text-white'}`}>
+                                  {rec.priority}
+                                </span>
+                              </div>
+
+                              {/* Context fields */}
+                              <div className="text-sm text-amber-700 mb-3 space-y-1">
+                                {rec.item && <div><span className="font-semibold">Item:</span> {rec.item}</div>}
+                                {rec.pairing && <div><span className="font-semibold">Pairing:</span> {rec.pairing}</div>}
+                                {rec.room && <div><span className="font-semibold">Room:</span> {rec.room}</div>}
+                                {rec.date && <div><span className="font-semibold">Date:</span> {rec.date}</div>}
+                              </div>
+
+                              {/* Action items */}
+                              {rec.actions && rec.actions.length > 0 && (
+                                <div className="bg-white rounded px-3 py-2">
+                                  <p className="text-xs font-semibold text-amber-900 mb-2">Action Items:</p>
+                                  <ul className="space-y-1">
+                                    {rec.actions.slice(0, 5).map((action, actionIdx) => (
+                                      <li key={actionIdx} className="text-xs text-amber-700 flex items-start">
+                                        <span className="mr-2">→</span>
+                                        <span>{action}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-amber-200">
               <h2 className="text-3xl font-bold text-amber-900 mb-8 text-center">
