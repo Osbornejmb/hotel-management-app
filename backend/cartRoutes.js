@@ -274,4 +274,197 @@ router.delete('/:roomNumber/:itemIdx', async (req, res) => {
   }
 });
 
+// Upsell suggestions endpoint: analyze cart and recommend missing items
+router.post('/:roomNumber/upsell', async (req, res) => {
+  try {
+    const roomNumber = req.params.roomNumber;
+    const Food = require('./Food');
+
+    // Debug flag
+    const debug = req.query && (req.query.debug === 'true' || req.query.debug === '1');
+
+    // Get the cart
+    const cart = await Cart.findOne({ roomNumber });
+    if (!cart || !cart.items.length) {
+      return res.json({
+        showUpsell: false,
+        reason: 'empty_cart',
+        recommendations: []
+      });
+    }
+
+    // Analyze cart for food items and presence of snack/beverage/dessert
+    const cartItems = cart.items;
+    // hasFoodItems: any item not in the three upsell categories
+    // Use substring matching to be tolerant of categories like "snacks & sides", "beverage - wine", etc.
+    const hasFoodItems = cartItems.some(item => {
+      const c = (item.category || '').toLowerCase();
+      // if category contains any upsell keyword, it's not considered a "main food" here
+      const isUpsellCat = c.includes('bever') || c.includes('drink') || c.includes('dessert') || c.includes('snack');
+      return !isUpsellCat;
+    });
+
+    if (!hasFoodItems) {
+      // No main food items, no upsell needed
+      return res.json({
+        showUpsell: false,
+        reason: 'no_food_items',
+        recommendations: []
+      });
+    }
+
+    // Presence checks
+    const hasBeverages = cartItems.some(item => {
+      const c = (item.category || '').toLowerCase();
+      return c.includes('bever') || c.includes('drink');
+    });
+
+    const hasDesserts = cartItems.some(item => {
+      const c = (item.category || '').toLowerCase();
+      return c.includes('dessert');
+    });
+
+    const hasSnacks = cartItems.some(item => {
+      const c = (item.category || '').toLowerCase();
+      return c.includes('snack');
+    });
+
+    // If customer already has all three categories, no upsell needed
+    if (hasBeverages && hasDesserts && hasSnacks) {
+      return res.json({
+        showUpsell: false,
+        reason: 'has_all_three',
+        recommendations: []
+      });
+    }
+
+    // Fetch available items from database
+    const allFoods = await Food.find({ available: true });
+
+    // candidate pools
+    const beverageCandidates = allFoods.filter(food => {
+      const c = (food.category || '').toLowerCase();
+      return c.includes('bever') || c.includes('drink');
+    });
+
+    const dessertCandidates = allFoods.filter(food => {
+      const c = (food.category || '').toLowerCase();
+      return c.includes('dessert');
+    });
+
+    const snackCandidates = allFoods.filter(food => {
+      const c = (food.category || '').toLowerCase();
+      return c.includes('snack');
+    });
+
+    const candidateCounts = {
+      beverages: beverageCandidates.length,
+      desserts: dessertCandidates.length,
+      snacks: snackCandidates.length
+    };
+
+    // Build recommendations to include missing categories first. We will ensure the returned recommendations contain at least one item from the missing categories among {snack, beverages, desserts}.
+    const recommendations = [];
+    let upsellMessage = '';
+    let upsellHeading = 'You Might Have Forgotten Something!';
+
+    // Determine missing categories
+    const missing = [];
+    if (!hasBeverages) missing.push('beverages');
+    if (!hasDesserts) missing.push('desserts');
+    if (!hasSnacks) missing.push('snacks');
+
+    // If none missing (should be caught earlier), return no upsell
+    if (missing.length === 0) {
+      return res.json({ showUpsell: false, reason: 'nothing_missing', recommendations: [] });
+    }
+
+    // Helper to push candidates into recommendations (avoid duplicates and avoid items already in the cart)
+    const pushCandidates = (arr, type, max) => {
+      for (let i = 0; i < arr.length && recommendations.length < max; i++) {
+        const f = arr[i];
+        // avoid duplicates by _id
+        if (recommendations.find(r => String(r._id) === String(f._id))) continue;
+
+        // don't recommend an item that's already in the cart. Compare by _id if present, otherwise by name+price
+        const alreadyInCart = cartItems.some(ci => {
+          try {
+            if (ci._id && f._id && String(ci._id) === String(f._id)) return true;
+          } catch (e) { /* ignore */ }
+          return ci.name === f.name && Number(ci.price) === Number(f.price);
+        });
+        if (alreadyInCart) continue;
+
+        recommendations.push({ ...f.toObject(), recommendationType: type });
+      }
+    };
+
+    // Strategy:
+    // - If multiple categories missing, try to show at least one from each missing category (up to 3 total)
+    // - If only one category missing, show up to 3 items from that category
+    // Prioritize beverages first, then snacks, then desserts when multiple are missing.
+    const priorityOrder = ['beverages', 'snacks', 'desserts'];
+    const maxRecs = 3;
+
+    if (missing.length === 1) {
+      const only = missing[0];
+      upsellMessage = `Add ${only} to complete your meal!`;
+      if (only === 'beverages') pushCandidates(beverageCandidates, 'beverage', maxRecs);
+      if (only === 'snacks') pushCandidates(snackCandidates, 'snack', maxRecs);
+      if (only === 'desserts') pushCandidates(dessertCandidates, 'dessert', maxRecs);
+    } else {
+      // multiple missing: ensure at least one from each missing category
+      upsellMessage = 'Complete your meal with one of these additions!';
+      // First pass: add one from each missing category
+      for (const cat of priorityOrder) {
+        if (missing.includes(cat) && recommendations.length < maxRecs) {
+          if (cat === 'beverages' && beverageCandidates.length > 0) pushCandidates([beverageCandidates[0]], 'beverage', maxRecs);
+          if (cat === 'snacks' && snackCandidates.length > 0) pushCandidates([snackCandidates[0]], 'snack', maxRecs);
+          if (cat === 'desserts' && dessertCandidates.length > 0) pushCandidates([dessertCandidates[0]], 'dessert', maxRecs);
+        }
+      }
+
+      // Second pass: if we still have slots, fill from priority order with more candidates
+      if (recommendations.length < maxRecs) {
+        for (const cat of priorityOrder) {
+          if (recommendations.length >= maxRecs) break;
+          if (cat === 'beverages') pushCandidates(beverageCandidates, 'beverage', maxRecs);
+          if (cat === 'snacks') pushCandidates(snackCandidates, 'snack', maxRecs);
+          if (cat === 'desserts') pushCandidates(dessertCandidates, 'dessert', maxRecs);
+        }
+      }
+    }
+
+    // Trim to max 3 recommendations (safety)
+    const finalRecs = recommendations.slice(0, maxRecs);
+
+    // Return response (include debug info when requested)
+    const baseResponse = {
+      showUpsell: finalRecs.length > 0,
+      upsellHeading,
+      upsellMessage,
+      recommendations: finalRecs
+    };
+
+    if (debug) {
+      return res.json({
+        ...baseResponse,
+        debug: {
+          detected: { hasBeverages, hasDesserts, hasSnacks, hasFoodItems },
+          candidateCounts
+        }
+      });
+    }
+
+    return res.json(baseResponse);
+  } catch (err) {
+    console.error('Upsell error:', err);
+    res.status(500).json({ 
+      error: err.message,
+      showUpsell: false,
+      recommendations: []
+    });
+  }
+});
+
 module.exports = router;
