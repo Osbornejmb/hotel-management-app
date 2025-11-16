@@ -60,12 +60,11 @@ function FoodAndBeverages() {
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [upsellData, setUpsellData] = useState({});
   const [isUpsellLoading, setIsUpsellLoading] = useState(false);
-  const [pendingCheckout, setPendingCheckout] = useState(false);
+  const [, setPendingCheckout] = useState(false);
 
   // Order Confirmation Modal states
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [isConfirmationLoading, setIsConfirmationLoading] = useState(false);
-  const [upsellItemsToAdd, setUpsellItemsToAdd] = useState([]);
 
   // Food-specific states
   const [search, setSearch] = useState('');

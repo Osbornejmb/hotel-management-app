@@ -78,12 +78,11 @@ function FoodMaster() {
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [upsellData, setUpsellData] = useState({});
   const [isUpsellLoading, setIsUpsellLoading] = useState(false);
-  const [pendingCheckout, setPendingCheckout] = useState(false);
+  const [, setPendingCheckout] = useState(false);
 
   // Order Confirmation Modal states
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [isConfirmationLoading, setIsConfirmationLoading] = useState(false);
-  const [upsellItemsToAdd, setUpsellItemsToAdd] = useState([]);
   
   // Notification states
   const [showPopupNotification, setShowPopupNotification] = useState(() => {
