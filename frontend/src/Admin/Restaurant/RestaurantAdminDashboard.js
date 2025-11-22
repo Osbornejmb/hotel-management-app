@@ -972,6 +972,13 @@ function RestaurantAdminDashboard() {
   // analysis result for analytics tab
   const [analysisResult, setAnalysisResult] = React.useState(null);
   const [topItemQuery, setTopItemQuery] = React.useState('');
+  // Controls to collapse/expand long analytics lists to reduce scrolling
+  const [showAllTopItems, setShowAllTopItems] = React.useState(false);
+  const [showAllPairings, setShowAllPairings] = React.useState(false);
+  const [showAllPeakDays, setShowAllPeakDays] = React.useState(false);
+  const [showAllRooms, setShowAllRooms] = React.useState(false);
+  const [showAllLowPerformers, setShowAllLowPerformers] = React.useState(false);
+  const [showAllRecommendations, setShowAllRecommendations] = React.useState(false);
   const [orderFilter, setOrderFilter] = React.useState('pending');
   const [showCancelPopup, setShowCancelPopup] = React.useState(false);
   const [selectedOrder, setSelectedOrder] = React.useState(null);
@@ -1166,6 +1173,23 @@ function RestaurantAdminDashboard() {
     });
     return out;
   }, [perItemRoomCounts]);
+
+  // Build a searchable list of all items (not just the top N) for the Top Items search
+  const searchableItems = React.useMemo(() => {
+    if (!analysisResult || !analysisResult.summary) return [];
+    const freq = analysisResult.summary.itemFrequency || {};
+    // summary contains precomputed counts per item: itemsByDay and itemsByRoom
+    const itemsByDay = analysisResult.summary.itemsByDay || {};
+    const itemsByRoom = analysisResult.summary.itemsByRoom || {};
+    return Object.entries(freq).map(([name, count]) => {
+      return {
+        name,
+        orderCount: count,
+        daysOrdered: itemsByDay[name] || 0,
+        roomsOrdered: itemsByRoom[name] || 0
+      };
+    });
+  }, [analysisResult]);
 
   // Export the generated rawAnalysis as a PDF file download
   const handleExportPDF = React.useCallback(() => {
@@ -1723,30 +1747,34 @@ function RestaurantAdminDashboard() {
               ) : (
                 <div className="space-y-6">
                   {/* Summary cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
-                      <div className="text-sm font-semibold">Total Orders</div>
-                      <div className="text-2xl font-bold">{analysisResult.summary.totalOrders}</div>
+                  <div className="analytics-summary-wrapper">
+                    <div className="analytics-summary-sticky">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 analytics-grid">
+                        <div className="analytics-card">
+                      <div className="analytics-card-header">Total Orders</div>
+                      <div className="analytics-card-body">{analysisResult.summary.totalOrders}</div>
                     </div>
-                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
-                      <div className="text-sm font-semibold">Total Items Ordered</div>
-                      <div className="text-2xl font-bold">{analysisResult.summary.totalItemsOrdered}</div>
+                    <div className="analytics-card">
+                      <div className="analytics-card-header">Total Items Ordered</div>
+                      <div className="analytics-card-body">{analysisResult.summary.totalItemsOrdered}</div>
                     </div>
-                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
-                      <div className="text-sm font-semibold">Unique Items</div>
-                      <div className="text-2xl font-bold">{Object.keys(analysisResult.summary.itemFrequency).length}</div>
+                    <div className="analytics-card">
+                      <div className="analytics-card-header">Unique Items</div>
+                      <div className="analytics-card-body">{Object.keys(analysisResult.summary.itemFrequency).length}</div>
                     </div>
-                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-100 text-amber-900">
-                      <div className="text-sm font-semibold">Most Active Room</div>
-                      <div className="text-2xl font-bold">{analysisResult.analysis.mostActiveRooms && analysisResult.analysis.mostActiveRooms[0] ? analysisResult.analysis.mostActiveRooms[0].roomNumber : 'N/A'}</div>
-                      <div className="text-sm text-amber-700">{analysisResult.analysis.mostActiveRooms && analysisResult.analysis.mostActiveRooms[0] ? `${analysisResult.analysis.mostActiveRooms[0].totalOrders} orders` : ''}</div>
+                    <div className="analytics-card">
+                      <div className="analytics-card-header">Most Active Room</div>
+                      <div className="analytics-card-body small">{analysisResult.analysis.mostActiveRooms && analysisResult.analysis.mostActiveRooms[0] ? analysisResult.analysis.mostActiveRooms[0].roomNumber : 'N/A'}</div>
+                      <div className="analytics-card-sub">{analysisResult.analysis.mostActiveRooms && analysisResult.analysis.mostActiveRooms[0] ? `${analysisResult.analysis.mostActiveRooms[0].totalOrders} orders` : ''}</div>
+                    </div>
+                      </div>
                     </div>
                   </div>
 
                   {/* Top items + simple bar chart */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Items</h3>
+                      <div className="analytics-section top-items">
+                        <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Items</h3>
                       <div className="mb-3">
                         <input
                           type="text"
@@ -1757,9 +1785,10 @@ function RestaurantAdminDashboard() {
                         />
                       </div>
                       <ul className="space-y-2">
-                        {analysisResult.analysis.mostFrequentItems
-                          .filter(i => i.name.toLowerCase().includes(topItemQuery.toLowerCase()))
-                          .map(item => {
+                        {(() => {
+                          const filtered = searchableItems.filter(i => i.name.toLowerCase().includes(topItemQuery.toLowerCase()));
+                          const maxShow = showAllTopItems ? filtered.length : 8;
+                          return filtered.slice(0, maxShow).map(item => {
                             const topRoom = perItemTopRoom[item.name] || { room: null, count: 0 };
                             return (
                               <li key={item.name} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
@@ -1771,8 +1800,21 @@ function RestaurantAdminDashboard() {
                                 <div className="text-amber-900 font-semibold">{item.orderCount}</div>
                               </li>
                             );
-                          })}
+                          });
+                        })()}
                       </ul>
+                      {/* Toggle for more/less */}
+                      {searchableItems.filter(i => i.name.toLowerCase().includes(topItemQuery.toLowerCase())).length > 8 && (
+                        <div className="mt-2 text-center">
+                          <button
+                            className="px-4 py-2 rounded-lg bg-amber-100 text-amber-800 text-sm"
+                            onClick={() => setShowAllTopItems(prev => !prev)}
+                          >
+                            {showAllTopItems ? 'Show less' : `Show all (${searchableItems.filter(i => i.name.toLowerCase().includes(topItemQuery.toLowerCase())).length})`}
+                          </button>
+                        </div>
+                      )}
+                      
                     </div>
 
                     <div>
@@ -1799,14 +1841,18 @@ function RestaurantAdminDashboard() {
                             };
                             const barOptions = {
                               maintainAspectRatio: false,
-                              plugins: { legend: { display: false } },
+                              plugins: {
+                                legend: { display: false },
+                                tooltip: { enabled: true, mode: 'index', intersect: false }
+                              },
+                              layout: { padding: { top: 8, right: 8, left: 4, bottom: 4 } },
                               scales: {
-                                x: { ticks: { color: '#92400E' } },
-                                y: { beginAtZero: true, ticks: { color: '#92400E' } }
+                                x: { grid: { display: false }, ticks: { color: '#5b3e24' } },
+                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#5b3e24' } }
                               }
                             };
                             return (
-                              <div style={{ height: 180 }}>
+                              <div className="analytics-chart-container">
                                 <Bar data={barData} options={barOptions} />
                               </div>
                             );
@@ -1817,26 +1863,41 @@ function RestaurantAdminDashboard() {
                   </div>
 
                   {/* Pairings and peak days */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 analytics-sections-grid">
+                    <div className="analytics-section pairings">
                       <h3 className="text-xl font-semibold text-amber-900 mb-3">Common Pairings</h3>
                       <ul className="space-y-2">
-                        {analysisResult.summary.commonPairings.slice(0,8).map(p => (
-                          <li key={p.pairing} className="p-2 rounded-lg bg-amber-50 border border-amber-100 flex justify-between">
-                            <div className="text-amber-900">{p.pairing}</div>
-                            <div className="font-semibold text-amber-900">{p.frequency}</div>
-                          </li>
-                        ))}
+                        {(() => {
+                          const list = analysisResult.summary.commonPairings || [];
+                          const maxShow = showAllPairings ? list.length : 6;
+                          return list.slice(0, maxShow).map(p => (
+                            <li key={p.pairing} className="p-2 rounded-lg bg-amber-50 border border-amber-100 flex justify-between">
+                              <div className="text-amber-900">{p.pairing}</div>
+                              <div className="font-semibold text-amber-900">{p.frequency}</div>
+                            </li>
+                          ));
+                        })()}
                       </ul>
+                      {analysisResult.summary.commonPairings.length > 6 && (
+                        <div className="mt-2 text-center">
+                          <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllPairings(p => !p)} aria-expanded={showAllPairings} aria-label={showAllPairings ? 'Show fewer pairings' : 'Show all pairings'}>
+                            {showAllPairings ? 'Show less' : `Show all (${analysisResult.summary.commonPairings.length})`}
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    <div>
+                    <div className="analytics-section peak-days">
                       <h3 className="text-xl font-semibold text-amber-900 mb-3">Peak Ordering Days</h3>
                       <div className="p-4 bg-white rounded-lg border border-amber-100">
                         {(() => {
-                          const days = analysisResult.analysis.peakOrderingDays.slice().reverse();
-                          const labels = days.map(d => d.date);
-                          const values = days.map(d => d.orderCount);
+                          // Take the peak days (top by orderCount) and sort them chronologically
+                          const days = (analysisResult.analysis.peakOrderingDays || []).slice();
+                          days.sort((a, b) => new Date(a.date) - new Date(b.date)); // oldest -> newest
+                          const maxShow = showAllPeakDays ? days.length : Math.min(5, days.length);
+                          const daysToShow = days.slice(0, maxShow);
+                          const labels = daysToShow.map(d => d.date);
+                          const values = daysToShow.map(d => d.orderCount);
                           const lineData = {
                             labels,
                             datasets: [
@@ -1852,8 +1913,17 @@ function RestaurantAdminDashboard() {
                           };
                           const lineOptions = { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#92400E' } }, y: { beginAtZero: true, ticks: { color: '#92400E' } } } };
                           return (
-                            <div style={{ height: 160 }}>
-                              <Line data={lineData} options={lineOptions} />
+                            <div>
+                              <div style={{ height: 160 }}>
+                                <Line data={lineData} options={lineOptions} />
+                              </div>
+                              {days.length > maxShow && (
+                                <div className="mt-2 text-center">
+                                  <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllPeakDays(s => !s)} aria-expanded={showAllPeakDays} aria-label={showAllPeakDays ? 'Show fewer peak days' : 'Show all peak days'}>
+                                    {showAllPeakDays ? 'Show less' : `Show all (${days.length})`}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
@@ -1862,33 +1932,55 @@ function RestaurantAdminDashboard() {
                   </div>
 
                   {/* Top rooms list */}
-                  <div className="mt-6">
+                  <div className="mt-6 analytics-section top-rooms">
                     <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Rooms by Orders</h3>
                     <div className="p-4 bg-white rounded-lg border border-amber-100">
                       <ul className="space-y-2">
-                        {(analysisResult.analysis.mostActiveRooms || []).slice(0,10).map(r => (
-                          <li key={r.roomNumber} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
-                            <div className="text-amber-900">Room {r.roomNumber}</div>
-                            <div className="font-semibold text-amber-900">{r.totalOrders} orders</div>
-                          </li>
-                        ))}
+                        {(() => {
+                          const list = (analysisResult.analysis.mostActiveRooms || []);
+                          const maxShow = showAllRooms ? list.length : 6;
+                          return list.slice(0, maxShow).map(r => (
+                            <li key={r.roomNumber} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
+                              <div className="text-amber-900">Room {r.roomNumber}</div>
+                              <div className="font-semibold text-amber-900">{r.totalOrders} orders</div>
+                            </li>
+                          ));
+                        })()}
                       </ul>
+                      {(analysisResult.analysis.mostActiveRooms || []).length > 6 && (
+                        <div className="mt-2 text-center">
+                          <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllRooms(r => !r)} aria-expanded={showAllRooms} aria-label={showAllRooms ? 'Show fewer rooms' : 'Show all top rooms'}>
+                            {showAllRooms ? 'Show less' : `Show all (${(analysisResult.analysis.mostActiveRooms || []).length})`}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Low Performing Items */}
                   {analysisResult.analysis.lowPerformers && analysisResult.analysis.lowPerformers.length > 0 && (
-                    <div className="mt-6">
+                    <div className="mt-6 analytics-section low-performers">
                       <h3 className="text-xl font-semibold text-amber-900 mb-3">Low Performing Items</h3>
                       <div className="p-4 bg-white rounded-lg border border-amber-100">
                         <ul className="space-y-2">
-                          {analysisResult.analysis.lowPerformers.map(lp => (
-                            <li key={lp.name} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
-                              <div className="text-amber-900">{lp.name}</div>
-                              <div className="text-sm text-amber-700">{lp.orderCount} orders</div>
-                            </li>
-                          ))}
+                          {(() => {
+                            const list = analysisResult.analysis.lowPerformers || [];
+                            const maxShow = showAllLowPerformers ? list.length : 6;
+                            return list.slice(0, maxShow).map(lp => (
+                              <li key={lp.name} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
+                                <div className="text-amber-900">{lp.name}</div>
+                                <div className="text-sm text-amber-700">{lp.orderCount} orders</div>
+                              </li>
+                            ));
+                          })()}
                         </ul>
+                        {analysisResult.analysis.lowPerformers.length > 6 && (
+                          <div className="mt-2 text-center">
+                            <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllLowPerformers(s => !s)} aria-expanded={showAllLowPerformers} aria-label={showAllLowPerformers ? 'Show fewer low performing items' : 'Show all low performing items'}>
+                              {showAllLowPerformers ? 'Show less' : `Show all (${analysisResult.analysis.lowPerformers.length})`}
+                            </button>
+                          </div>
+                        )}
                         <div className="mt-4 text-sm text-amber-700">
                           Suggested actions: run promotions, bundle with popular items, check availability or consider menu changes.
                         </div>
@@ -1933,7 +2025,10 @@ function RestaurantAdminDashboard() {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {analysisResult.analysis.recommendations.map((rec, idx) => {
+                        {(() => {
+                          const list = analysisResult.analysis.recommendations || [];
+                          const maxShow = showAllRecommendations ? list.length : 6;
+                          return list.slice(0, maxShow).map((rec, idx) => {
                           const priorityColors = {
                             'high': 'border-red-300 bg-red-50',
                             'medium': 'border-yellow-300 bg-yellow-50',
@@ -1994,7 +2089,15 @@ function RestaurantAdminDashboard() {
                               )}
                             </div>
                           );
-                        })}
+                          });
+                        })()}
+                        {analysisResult.analysis.recommendations.length > 6 && (
+                          <div className="col-span-1 lg:col-span-2 text-center">
+                            <button className="px-4 py-2 rounded-md bg-amber-100 text-amber-800 analytics-toggle-btn" onClick={() => setShowAllRecommendations(s => !s)} aria-expanded={showAllRecommendations} aria-label={showAllRecommendations ? 'Show fewer recommendations' : 'Show all recommendations'}>
+                              {showAllRecommendations ? 'Show less' : `Show all recommendations (${analysisResult.analysis.recommendations.length})`}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

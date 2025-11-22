@@ -797,3 +797,106 @@
 .dashboard-header .logout-button {
   margin: 0;
 }
+
+/* Analytics specific styles: clearer cards, chart container, lists */
+.analytics-grid {
+  align-items: stretch;
+}
+.analytics-card {
+  background: #ffffff;
+  border: 1px solid rgba(92, 60, 30, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 6px 18px rgba(24, 24, 24, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.analytics-card-header {
+  font-size: 13px;
+  color: #6b4a2a;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.analytics-card-body {
+  font-size: 22px;
+  color: #2b1a0f;
+  font-weight: 800;
+}
+.analytics-card-body.small {
+  font-size: 18px;
+}
+.analytics-card-sub {
+  font-size: 12px;
+  color: #7b5a42;
+  margin-top: 6px;
+}
+.analytics-chart-container {
+  height: 180px;
+  width: 100%;
+}
+.analytics-summary-wrapper {
+  margin-bottom: 10px;
+}
+.analytics-summary-sticky {
+  position: sticky;
+  top: 76px; /* leaves space for header */
+  z-index: 30;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9));
+  padding: 12px 0;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(30,30,30,0.04);
+}
+.analytics-section {
+  margin-bottom: 8px;
+}
+.analytics-sections-grid .analytics-section {
+  min-height: 80px;
+}
+.analytics-toggle-btn {
+  border: 1px solid rgba(92,60,30,0.08);
+  background: #fffaf0;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.analytics-toggle-btn:hover {
+  background: #fff6e6;
+}
+.analytics-card:hover {
+  transform: translateY(-4px);
+  transition: transform 0.18s ease;
+}
+.analytics-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Slightly larger chart on wide screens */
+@media (min-width: 1024px) {
+  .analytics-chart-container { height: 220px; }
+}
+.analytics-list-item {
+  background: #fffdf7;
+  border: 1px solid rgba(245, 158, 11, 0.06);
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.analytics-recommendation-card {
+  border-left: 4px solid #f59e0b;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .analytics-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  .analytics-chart-container {
+    height: 160px;
+  }
+}
