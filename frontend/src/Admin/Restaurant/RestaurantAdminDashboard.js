@@ -684,13 +684,9 @@ function generateOrderAnalysisSummary(orders) {
 
   // Identify low-performing items for insights
   try {
-    const uniqueItemCount = Object.keys(summary.itemFrequency).length || 1;
-    const avgOrdersPerItem = summary.totalItemsOrdered / uniqueItemCount;
-    // Items with orders <= 20% of average (but at least 1) are considered low-performers
-    const threshold = Math.max(1, Math.floor(avgOrdersPerItem * 0.2));
+    // Deterministic selection: always return the lowest 10 items by orderCount
     const lowPerformers = Object.entries(summary.itemFrequency)
       .map(([name, count]) => ({ name, orderCount: count }))
-      .filter(i => i.orderCount <= threshold)
       .sort((a, b) => a.orderCount - b.orderCount)
       .slice(0, 10);
 
@@ -1746,6 +1742,49 @@ function RestaurantAdminDashboard() {
                 <div className="text-center py-12 text-gray-500">Loading analysis...</div>
               ) : (
                 <div className="space-y-6">
+                  {/* Visuals (moved to top) */}
+                  <div className="analytics-visuals-wrapper">
+                    <h3 className="text-xl font-semibold text-amber-900 mb-3">Visuals</h3>
+                    <div className="p-2 bg-white rounded-lg border border-amber-100 overflow-visible">
+                      {(() => {
+                        const top = (analysisResult.analysis.mostFrequentItems || []).slice(0, 8);
+                        const barLabels = top.map(i => i.name);
+                        const barValues = top.map(i => i.orderCount);
+                        const colors = ['#F59E0B', '#F97316', '#FB923C', '#FCD34D', '#FDBA74', '#F97316', '#FB923C', '#F59E0B'];
+                        const barData = { labels: barLabels, datasets: [{ label: 'Orders', data: barValues, backgroundColor: barLabels.map((_, idx) => colors[idx % colors.length]) }] };
+                        const barOptions = { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } }, layout: { padding: { top: 8, right: 8, left: 4, bottom: 4 } }, scales: { x: { grid: { display: false }, ticks: { color: '#5b3e24' } }, y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#5b3e24' } } } };
+
+                        const daysAll = (analysisResult.analysis.peakOrderingDays || []).slice();
+                        const daysToShowCount = showAllPeakDays ? daysAll.length : Math.min(10, daysAll.length);
+                        const daysToShow = daysAll.slice(0, daysToShowCount);
+                        const lineLabels = daysToShow.map(d => d.date);
+                        const lineValues = daysToShow.map(d => d.orderCount);
+                        const lineData = { labels: lineLabels, datasets: [{ label: 'Orders', data: lineValues, borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.18)', tension: 0.3, fill: true }] };
+                        const lineOptions = { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true } }, scales: { x: { ticks: { color: '#92400E' } }, y: { beginAtZero: true, ticks: { color: '#92400E' } } } };
+
+                        return (
+                          <div className="analytics-visuals-grid">
+                            <div className="analytics-chart-container analytics-large-chart">
+                              <div className="chart-title text-sm text-amber-800 font-semibold mb-2">Top Items (by orders)</div>
+                              <Bar data={barData} options={barOptions} />
+                            </div>
+
+                            <div className="analytics-chart-container analytics-large-chart">
+                              <div className="chart-title text-sm text-amber-800 font-semibold mb-2">Peak Ordering Days</div>
+                              <Line data={lineData} options={lineOptions} />
+                              {daysAll.length > daysToShow.length && (
+                                <div className="mt-2 text-center">
+                                  <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllPeakDays(s => !s)} aria-expanded={showAllPeakDays}>
+                                    {showAllPeakDays ? 'Show less' : `Show all (${daysAll.length})`}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
                   {/* Summary cards */}
                   <div className="analytics-summary-wrapper">
                     <div className="analytics-summary-sticky">
@@ -1771,8 +1810,8 @@ function RestaurantAdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Top items + simple bar chart */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Top items + Low performers (side-by-side) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div className="analytics-section top-items">
                         <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Items</h3>
                       <div className="mb-3">
@@ -1795,9 +1834,11 @@ function RestaurantAdminDashboard() {
                                 <div>
                                   <div className="font-medium text-amber-900">{item.name}</div>
                                   <div className="text-sm text-amber-700">{item.daysOrdered} days · {item.roomsOrdered} rooms</div>
-                                  <div className="text-sm text-amber-700">Top room: <span className="font-semibold text-amber-900">{topRoom.room || 'N/A'}</span> {topRoom.count ? `(${topRoom.count} items)` : ''}</div>
+                                  <div className="text-sm text-amber-700">Top room: <span className="font-semibold text-amber-900">{topRoom.room || 'N/A'}</span> {topRoom.count ? `(${topRoom.count} total item${topRoom.count === 1 ? '' : 's'} ordered)` : ''}</div>
                                 </div>
-                                <div className="text-amber-900 font-semibold">{item.orderCount}</div>
+                                <div className="text-amber-900 font-semibold">
+                                  {item.orderCount} <span className="text-sm text-amber-700 font-normal">orders</span>
+                                </div>
                               </li>
                             );
                           });
@@ -1817,46 +1858,34 @@ function RestaurantAdminDashboard() {
                       
                     </div>
 
-                    <div>
-                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Top Items (Visual)</h3>
+                    <div className="analytics-section low-performers">
+                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Least Performing Items</h3>
                       <div className="p-4 bg-white rounded-lg border border-amber-100">
-                        {/* Chart for top items (Bar) */}
-                        <div>
+                        <ul className="space-y-2">
                           {(() => {
-                            const top = analysisResult.analysis.mostFrequentItems.slice(0,6);
-                            const labels = top.map(i => i.name);
-                            const values = top.map(i => i.orderCount);
-                            const colors = [
-                              '#F59E0B', '#F97316', '#FB923C', '#FCD34D', '#FDBA74', '#F97316'
-                            ];
-                            const barData = {
-                              labels,
-                              datasets: [
-                                {
-                                  label: 'Orders',
-                                  data: values,
-                                  backgroundColor: labels.map((_, idx) => colors[idx % colors.length])
-                                }
-                              ]
-                            };
-                            const barOptions = {
-                              maintainAspectRatio: false,
-                              plugins: {
-                                legend: { display: false },
-                                tooltip: { enabled: true, mode: 'index', intersect: false }
-                              },
-                              layout: { padding: { top: 8, right: 8, left: 4, bottom: 4 } },
-                              scales: {
-                                x: { grid: { display: false }, ticks: { color: '#5b3e24' } },
-                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#5b3e24' } }
-                              }
-                            };
-                            return (
-                              <div className="analytics-chart-container">
-                                <Bar data={barData} options={barOptions} />
-                              </div>
-                            );
+                            const list = (analysisResult.analysis.lowPerformers || []).slice();
+                            // Ensure list is sorted least -> most (ascending by orderCount)
+                            list.sort((a, b) => a.orderCount - b.orderCount);
+                            const maxShow = showAllLowPerformers ? list.length : Math.min(10, list.length);
+                            return list.slice(0, maxShow).map(lp => (
+                              <li key={lp.name} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
+                                <div className="text-amber-900">{lp.name}</div>
+                                <div className="text-amber-900 font-semibold">
+                                  {lp.orderCount} <span className="text-sm text-amber-700 font-normal">orders</span>
+                                </div>
+                              </li>
+                            ));
                           })()}
+                        </ul>
+                        {analysisResult.analysis.lowPerformers.length > 10 && (
+                          <div className="mt-2 text-center">
+                            <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllLowPerformers(s => !s)} aria-expanded={showAllLowPerformers} aria-label={showAllLowPerformers ? 'Show fewer low order items' : 'Show all low order items'}>
+                              {showAllLowPerformers ? 'Show less' : `Show all (${analysisResult.analysis.lowPerformers.length})`}
+                            </button>
+                          </div>
+                        )}
+                        <div className="mt-4 text-sm text-amber-700">
+                          Suggested actions: run promotions, bundle with popular items, check availability or consider menu changes.
                         </div>
                       </div>
                     </div>
@@ -1891,32 +1920,20 @@ function RestaurantAdminDashboard() {
                       <h3 className="text-xl font-semibold text-amber-900 mb-3">Peak Ordering Days</h3>
                       <div className="p-4 bg-white rounded-lg border border-amber-100">
                         {(() => {
-                          // Take the peak days (top by orderCount) and sort them chronologically
                           const days = (analysisResult.analysis.peakOrderingDays || []).slice();
-                          days.sort((a, b) => new Date(a.date) - new Date(b.date)); // oldest -> newest
-                          const maxShow = showAllPeakDays ? days.length : Math.min(5, days.length);
-                          const daysToShow = days.slice(0, maxShow);
-                          const labels = daysToShow.map(d => d.date);
-                          const values = daysToShow.map(d => d.orderCount);
-                          const lineData = {
-                            labels,
-                            datasets: [
-                              {
-                                label: 'Orders',
-                                data: values,
-                                borderColor: '#F59E0B',
-                                backgroundColor: 'rgba(245,158,11,0.2)',
-                                tension: 0.3,
-                                fill: true
-                              }
-                            ]
-                          };
-                          const lineOptions = { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#92400E' } }, y: { beginAtZero: true, ticks: { color: '#92400E' } } } };
+                          // Sort newest -> oldest for list clarity
+                          days.sort((a, b) => new Date(b.date) - new Date(a.date));
+                          const maxShow = showAllPeakDays ? days.length : Math.min(6, days.length);
                           return (
                             <div>
-                              <div style={{ height: 160 }}>
-                                <Line data={lineData} options={lineOptions} />
-                              </div>
+                              <ul className="space-y-2">
+                                {days.slice(0, maxShow).map(d => (
+                                  <li key={d.date} className="p-2 rounded-lg bg-amber-50 border border-amber-100 flex justify-between">
+                                    <div className="text-amber-900">{d.date}</div>
+                                    <div className="font-semibold text-amber-900">{d.orderCount} orders</div>
+                                  </li>
+                                ))}
+                              </ul>
                               {days.length > maxShow && (
                                 <div className="mt-2 text-center">
                                   <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllPeakDays(s => !s)} aria-expanded={showAllPeakDays} aria-label={showAllPeakDays ? 'Show fewer peak days' : 'Show all peak days'}>
@@ -1957,48 +1974,9 @@ function RestaurantAdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Low Performing Items */}
-                  {analysisResult.analysis.lowPerformers && analysisResult.analysis.lowPerformers.length > 0 && (
-                    <div className="mt-6 analytics-section low-performers">
-                      <h3 className="text-xl font-semibold text-amber-900 mb-3">Low Performing Items</h3>
-                      <div className="p-4 bg-white rounded-lg border border-amber-100">
-                        <ul className="space-y-2">
-                          {(() => {
-                            const list = analysisResult.analysis.lowPerformers || [];
-                            const maxShow = showAllLowPerformers ? list.length : 6;
-                            return list.slice(0, maxShow).map(lp => (
-                              <li key={lp.name} className="flex justify-between items-center p-2 rounded-lg bg-amber-50 border border-amber-100">
-                                <div className="text-amber-900">{lp.name}</div>
-                                <div className="text-sm text-amber-700">{lp.orderCount} orders</div>
-                              </li>
-                            ));
-                          })()}
-                        </ul>
-                        {analysisResult.analysis.lowPerformers.length > 6 && (
-                          <div className="mt-2 text-center">
-                            <button className="px-3 py-1 rounded-md bg-amber-100 text-amber-800 text-sm analytics-toggle-btn" onClick={() => setShowAllLowPerformers(s => !s)} aria-expanded={showAllLowPerformers} aria-label={showAllLowPerformers ? 'Show fewer low performing items' : 'Show all low performing items'}>
-                              {showAllLowPerformers ? 'Show less' : `Show all (${analysisResult.analysis.lowPerformers.length})`}
-                            </button>
-                          </div>
-                        )}
-                        <div className="mt-4 text-sm text-amber-700">
-                          Suggested actions: run promotions, bundle with popular items, check availability or consider menu changes.
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  
 
-                  {/* Patterns / Insights */}
-                  <div>
-                    <h3 className="text-xl font-semibold text-amber-900 mb-3">Insights</h3>
-                    <ul className="list-disc pl-5 space-y-2 text-amber-800">
-                      {analysisResult.analysis.patterns.length === 0 ? (
-                        <li>No notable patterns detected.</li>
-                      ) : (
-                        analysisResult.analysis.patterns.map((p, i) => <li key={i}>{p}</li>)
-                      )}
-                    </ul>
-                  </div>
+                  {/* Insights removed — redundant with recommendations and patterns elsewhere */}
 
                   {/* Recommendations Panel */}
                   <div className="mt-8 pt-8 border-t-2 border-amber-200">

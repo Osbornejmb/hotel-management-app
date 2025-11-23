@@ -96,6 +96,39 @@ function FoodMaster() {
   });
   const [allOrders, setAllOrders] = useState([]);
   const [cancelledOrders, setCancelledOrders] = useState([]);
+  const [globalOrders, setGlobalOrders] = useState([]);
+
+  // Top-10 popular items computed the same way as RestaurantAdminDashboard:
+  // - For each order, expand combos into their components (if any)
+  // - Treat each item name as one occurrence per order (unique per order)
+  // - Count how many orders each item appears in (not total quantities)
+  const popularItemsSet = React.useMemo(() => {
+    const freq = {};
+    (globalOrders || []).forEach(order => {
+      if (!order || !order.items || order.items.length === 0) return;
+
+      // Build item names for this order, treating combo components individually
+      const itemNames = [];
+      (order.items || []).forEach(item => {
+        if (!item) return;
+        if (Array.isArray(item.comboContents) && item.comboContents.length > 0) {
+          item.comboContents.forEach(component => {
+            if (component && component.name) itemNames.push(component.name);
+          });
+        } else if (item.name) {
+          itemNames.push(item.name);
+        }
+      });
+
+      // Unique per order
+      const uniqueItems = [...new Set(itemNames)];
+      uniqueItems.forEach(name => {
+        freq[name] = (freq[name] || 0) + 1;
+      });
+    });
+
+    return new Set(Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name]) => name));
+  }, [globalOrders]);
   const [seenOrderStatuses, setSeenOrderStatuses] = useState(() => {
     const stored = localStorage.getItem('seenOrderStatuses');
     return stored ? JSON.parse(stored) : {};
@@ -422,8 +455,10 @@ function FoodMaster() {
       try {
         const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
         if (!res.ok) return;
-        const allOrders = await res.json();
-        const filtered = allOrders.filter(order => String(order.roomNumber) === String(roomNumber));
+        const serverOrders = await res.json();
+        // Keep a copy of global orders for popularity calculations
+        setGlobalOrders(serverOrders || []);
+        const filtered = (serverOrders || []).filter(order => String(order.roomNumber) === String(roomNumber));
         
         // Get all orders for this room
         const customerOrders = filtered.filter(order => 
@@ -1240,9 +1275,10 @@ function FoodMaster() {
               onClick={() => handleFoodClick(food)}
             >
               <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-1 shadow-xl">
-                <div className={`bg-white rounded-xl p-6 text-center group-hover:bg-amber-50 transition-colors duration-300 h-full flex flex-col ${
+                <div className={`bg-white rounded-xl p-6 text-center group-hover:bg-amber-50 transition-colors duration-300 h-full flex flex-col relative ${
                   food.available === false ? 'opacity-50' : ''
                 }`}>
+                  {/* Popular badge rendered inline with price; removed duplicate absolute badge */}
                   <div className="w-full h-48 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-200 transition-colors overflow-hidden">
                     {food.img ? (
                       <img 
@@ -1261,11 +1297,23 @@ function FoodMaster() {
                   <h3 className="text-xl font-bold text-amber-900 mb-2">{food.name}</h3>
                   <div className="flex justify-between items-center mt-auto">
                     <div className="text-2xl font-bold text-orange-600">₱{food.price ? food.price.toFixed(2) : '0.00'}</div>
-                    {food.available === false && (
-                      <div className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
-                        Unavailable
-                      </div>
-                    )}
+
+                    <div className="flex items-center space-x-3">
+                      {popularItemsSet.has(food.name) && (
+                        <div className="inline-flex items-center space-x-2 bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
+                          <svg className="w-5 h-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          <span>Popular Item</span>
+                        </div>
+                      )}
+
+                      {food.available === false && (
+                        <div className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">
+                          Unavailable
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
