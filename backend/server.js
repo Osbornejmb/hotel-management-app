@@ -19,6 +19,7 @@ const bookingRoutes = require("./bookingRoutes");
 const activityLogRoutes = require("./activityLogRoutes");
 const taskRoutes = require("./taskRoutes");
 const hotelAdNotifsRoutes = require("./hoteladnotifsRoutes");
+const analyticsRoutes = require("./analyticsRoutes");
 
 const app = express();
 // enable CORS with credentials support so frontend fetch(..., { credentials: 'include' }) works in dev
@@ -41,6 +42,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/activitylogs", activityLogRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/hoteladnotifs", hotelAdNotifsRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });

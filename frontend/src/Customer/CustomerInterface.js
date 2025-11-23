@@ -54,6 +54,8 @@ export default function CustomerInterface() {
   });
   
   const [allOrders, setAllOrders] = useState([]);
+  // allOrders holds orders for this customer; global analytics are fetched from server
+  
   const [cancelledOrders, setCancelledOrders] = useState([]);
 
   // Track seen order-status combinations
@@ -684,12 +686,26 @@ export default function CustomerInterface() {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const carouselPausedRef = useRef(false);
   const carouselContainerRef = useRef(null);
+  const analyticsRef = useRef(null); // store last-fetched analytics for ordering combos
   // Selected combo modal state
   const [selectedCombo, setSelectedCombo] = useState(null);
   const [showComboModal, setShowComboModal] = useState(false);
   const [comboQuantity, setComboQuantity] = useState(1);
-  const carouselNext = useCallback(() => setCarouselIndex(i => (i + 1) % carouselItems.length), [carouselItems.length]);
-  const carouselPrev = useCallback(() => setCarouselIndex(i => (i - 1 + carouselItems.length) % carouselItems.length), [carouselItems.length]);
+  const carouselNext = useCallback(() => {
+    setCarouselIndex(i => {
+      const len = carouselItems.length || 0;
+      if (len === 0) return i;
+      return (i + 1) % len;
+    });
+  }, [carouselItems.length]);
+
+  const carouselPrev = useCallback(() => {
+    setCarouselIndex(i => {
+      const len = carouselItems.length || 0;
+      if (len === 0) return i;
+      return (i - 1 + len) % len;
+    });
+  }, [carouselItems.length]);
 
   // autoplay for carousel (non-intrusive)
   useEffect(() => {
@@ -697,7 +713,7 @@ export default function CustomerInterface() {
       if (carouselPausedRef.current) return;
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       setCarouselIndex(i => (carouselItems.length ? (i + 1) % carouselItems.length : i));
-    }, 4500);
+    }, 3000);
     return () => clearInterval(t);
   }, [carouselItems.length]);
 
@@ -724,92 +740,326 @@ export default function CustomerInterface() {
     return () => { ignore = true; clearInterval(interval); };
   }, []);
 
-  // Build combos when foodItems update
+  // Build combos when foodItems or global analytics change
   useEffect(() => {
     if (!foodLoaded) return;
 
     const lower = (s = '') => (s || '').toString().toLowerCase();
 
-    const beverages = foodItems.filter(f => {
-      const c = lower(f.category);
-      return c.includes('bever') || c.includes('drink') || c.includes('juice') || c.includes('soda') || c.includes('tea') || c.includes('coffee');
+    // Helper to lookup food item by name (case-insensitive)
+    const foodByName = {};
+    foodItems.forEach(f => {
+      if (!f || !f.name) return;
+      foodByName[lower(f.name.trim())] = f;
     });
 
-    const desserts = foodItems.filter(f => lower(f.category).includes('dessert'));
-    const snacks = foodItems.filter(f => lower(f.category).includes('snack') || lower(f.category).includes('side'));
-    // Meals = everything that's not beverage/dessert/snack
-    const meals = foodItems.filter(f => {
-      const c = lower(f.category);
-      if (!c) return true;
-      if (c.includes('bever') || c.includes('drink') || c.includes('dessert') || c.includes('snack') || c.includes('side')) return false;
-      return true;
-    });
+    const buildFromPairings = (sortedPairs) => {
+      const pairCombos = [];
+      const maxCombos = 12; // increase to show more combos
+      const usedMealIds = new Set(); // track meal ids (or names) used across combos to ensure uniqueness
+      const topPairs = (sortedPairs || []).slice(0, 12).map(p => {
+        // p might be { pairing, frequency } or [pairKey, freq]
+        if (Array.isArray(p)) {
+          const [pairKey, freq] = p;
+          const [aName, bName] = pairKey.split(' + ').map(s => s.trim());
+          return { pairKey, freq, names: [aName, bName] };
+        }
+        const pairKey = p.pairing || '';
+        const freq = p.frequency || 0;
+        const [aName, bName] = pairKey.split(' + ').map(s => s.trim());
+        return { pairKey, freq, names: [aName, bName] };
+      });
 
-    const combos = [];
-    const maxCombos = 6;
+      const usedComboKeys = new Set();
+      for (let i = 0; i < topPairs.length && pairCombos.length < maxCombos; i++) {
+        for (let j = i + 1; j < topPairs.length && pairCombos.length < maxCombos; j++) {
+          const namesSet = new Set([...topPairs[i].names.map(n => lower(n)), ...topPairs[j].names.map(n => lower(n))]);
+          const namesArr = Array.from(namesSet);
+          const foods = namesArr.map(n => foodByName[n]).filter(Boolean);
+          if (foods.length < 2) continue;
 
-    // If we have all four categories, create combos combining one from each
-    if (meals.length && beverages.length && desserts.length && snacks.length) {
-      const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+          const categorize = (f) => {
+            const c = lower(f.category || '');
+            if (!c) return 'meal';
+            if (c.includes('bever') || c.includes('drink') || c.includes('juice') || c.includes('soda') || c.includes('tea') || c.includes('coffee')) return 'beverage';
+            if (c.includes('dessert')) return 'dessert';
+            if (c.includes('snack') || c.includes('side')) return 'snack';
+            return 'meal';
+          };
+
+          const byCategory = { meal: [], snack: [], beverage: [], dessert: [] };
+          foods.forEach(f => byCategory[categorize(f)].push(f));
+
+          const pickUnique = (arr, picked) => {
+            for (const it of arr) {
+              if (!picked.find(p => p.name === it.name)) return it;
+            }
+            return null;
+          };
+
+          const picked = [];
+          // Try to pick a meal that hasn't been used yet
+          let mealPick = null;
+          const mealCandidates = byCategory.meal.concat(foods).filter(Boolean);
+          for (const mc of mealCandidates) {
+            if (!mc || !mc.name) continue;
+            const mid = mc._id || lower(mc.name);
+            if (usedMealIds.has(mid)) continue;
+            if (!picked.find(p => p.name === mc.name)) { mealPick = mc; break; }
+          }
+          if (mealPick) picked.push(mealPick);
+          const snackPick = pickUnique(byCategory.snack, picked) || pickUnique(foods, picked);
+          if (snackPick) picked.push(snackPick);
+          const bevPick = pickUnique(byCategory.beverage, picked) || pickUnique(foods, picked);
+          if (bevPick) picked.push(bevPick);
+          const desPick = pickUnique(byCategory.dessert, picked) || pickUnique(foods, picked);
+          if (desPick) picked.push(desPick);
+
+          // Ensure combos always contain at least one meal (breakfast/lunch/dinner)
+          const mealsLocal = foodItems.filter(f => {
+            const c = lower(f.category || '');
+            if (!c) return true;
+            if (c.includes('bever') || c.includes('drink') || c.includes('juice') || c.includes('soda') || c.includes('tea') || c.includes('coffee')) return false;
+            if (c.includes('dessert') || c.includes('snack') || c.includes('side')) return false;
+            return true;
+          });
+
+          const hasMeal = picked.some(p => {
+            const c = lower(p.category || '');
+            return !c || (!c.includes('bever') && !c.includes('drink') && !c.includes('dessert') && !c.includes('snack') && !c.includes('side'));
+          });
+          if (!hasMeal && mealsLocal.length > 0) {
+            const extraMeal = mealsLocal.find(m => {
+              if (!m || !m.name) return false;
+              const mid = m._id || lower(m.name);
+              return !picked.find(p => p.name === m.name) && !usedMealIds.has(mid);
+            });
+            if (extraMeal) picked.unshift(extraMeal);
+          }
+
+          if (picked.length < 4) {
+            const remainingPool = foodItems.filter(f => !picked.find(p => p.name === f.name));
+            for (let r = 0; r < remainingPool.length && picked.length < 4; r++) picked.push(remainingPool[r]);
+          }
+
+          if (picked.length < 2) continue;
+
+          const comboNamesKey = picked.map(p => lower(p.name)).sort().join('|');
+          if (usedComboKeys.has(comboNamesKey)) continue;
+          usedComboKeys.add(comboNamesKey);
+
+          const price = picked.reduce((s, it) => s + (Number(it.price) || 0), 0);
+          // Prefer the meal's image as the combo picture
+          const mealInPicked = picked.find(p => {
+            const c = lower(p.category || '');
+            return !c || (!c.includes('bever') && !c.includes('drink') && !c.includes('dessert') && !c.includes('snack') && !c.includes('side'));
+          });
+          if (mealInPicked) usedMealIds.add(mealInPicked._id || lower(mealInPicked.name));
+          pairCombos.push({
+            id: `paircombo-${i}-${j}-${comboNamesKey}`,
+            title: picked.map(p => p.name).slice(0,4).join(' + '),
+            price: Math.round(price),
+            img: (mealInPicked && mealInPicked.img) || (picked[0] && picked[0].img) || '',
+            items: picked.slice(0,4).map(p => ({ name: p.name, qty: 1 })),
+            description: formatComboDescription(picked.slice(0,4), `(Popular: ${topPairs[i].freq} & ${topPairs[j].freq})`)
+          });
+        }
+      }
+
+      return pairCombos;
+    };
+
+    // helper: reorder combos by analytics (see below)
+
+    const reorderCombosByAnalytics = (items = [], analytics = null) => {
+      if (!analytics) return items;
+      const top = (analytics.summary && analytics.summary.mostFrequentItems) || (analytics.analysis && analytics.analysis.mostFrequentItems) || [];
+      const low = (analytics.summary && analytics.summary.lowPerformers) || (analytics.analysis && analytics.analysis.lowPerformers) || [];
+      const toName = x => (x && (x.name || x[0] || x)) || '';
+      const topNames = new Set((top || []).slice(0, 10).map(t => (toName(t) || '').toString().toLowerCase()));
+      const lowNames = new Set((low || []).slice(0, 12).map(t => (toName(t) || '').toString().toLowerCase()));
+
+      const includesAny = (combo, nameSet) => {
+        if (!combo || !combo.items) return false;
+        return combo.items.some(it => nameSet.has((it.name || '').toString().toLowerCase()));
+      };
+
+      const picked = [];
       const used = new Set();
-      for (let i = 0; i < Math.min(maxCombos, meals.length); i++) {
-        const meal = pickRandom(meals);
-        const bev = pickRandom(beverages);
-        const des = pickRandom(desserts);
-        const sn = pickRandom(snacks);
-        const key = `${meal._id || meal.name}|${bev._id || bev.name}|${des._id || des.name}|${sn._id || sn.name}`;
+
+      // First, up to 6 combos that include top items
+      for (const c of items) {
+        if (picked.length >= 6) break;
+        const key = c.id || JSON.stringify(c.items || c.title || '');
         if (used.has(key)) continue;
-        used.add(key);
-        const price = [meal, bev, des, sn].reduce((s, it) => s + (Number(it.price) || 0), 0);
-        combos.push({
-          id: `combo-${i}-${meal._id || meal.name}`,
-          title: `${meal.name} + ${bev.name} + ${des.name} + ${sn.name}`,
-          price: Math.round(price),
-          img: meal.img || bev.img || des.img || sn.img || '',
-          items: [
-            { name: meal.name, qty: 1 },
-            { name: bev.name, qty: 1 },
-            { name: des.name, qty: 1 },
-            { name: sn.name, qty: 1 }
-          ],
-          description: `${meal.name} with ${bev.name}, ${des.name} and ${sn.name}`
-        });
+        if (includesAny(c, topNames)) { picked.push(c); used.add(key); }
       }
-    }
 
-    // Fallback: if not enough categories, try to create combos from meals + beverages
-    if (combos.length === 0 && meals.length && beverages.length) {
-      const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-      for (let i = 0; i < Math.min(maxCombos, meals.length); i++) {
-        const meal = pickRandom(meals);
-        const bev = pickRandom(beverages);
-        const price = (Number(meal.price) || 0) + (Number(bev.price) || 0);
-        combos.push({
-          id: `combo-mealbev-${i}-${meal._id || meal.name}`,
-          title: `${meal.name} + ${bev.name}`,
-          price: Math.round(price),
-          img: meal.img || bev.img || '',
-          items: [{ name: meal.name, qty: 1 }, { name: bev.name, qty: 1 }],
-          description: `${meal.name} served with ${bev.name}`
-        });
+      // Then, up to 6 combos that include low-performers
+      for (const c of items) {
+        if (picked.length >= 12) break;
+        const key = c.id || JSON.stringify(c.items || c.title || '');
+        if (used.has(key)) continue;
+        if (includesAny(c, lowNames)) { picked.push(c); used.add(key); }
       }
-    }
 
-    // Final fallback: show individual popular items as single-item combos
-    if (combos.length === 0 && foodItems.length) {
-      const top = foodItems.slice(0, Math.min(6, foodItems.length));
-      combos.push(...top.map((f, i) => ({
-        id: `single-${i}-${f._id || f.name}`,
-        title: f.name,
-        price: Math.round(Number(f.price) || 0),
-        img: f.img || '',
-        items: [{ name: f.name, qty: 1 }],
-        description: f.details || f.description || ''
-      })));
-    }
+      // Fill remaining slots with other combos preserving original order
+      for (const c of items) {
+        if (picked.length >= 12) break;
+        const key = c.id || JSON.stringify(c.items || c.title || '');
+        if (used.has(key)) continue;
+        picked.push(c); used.add(key);
+      }
 
-    setCarouselItems(combos.slice(0, 6));
-    setCarouselIndex(0);
+      return picked;
+    };
+
+    const formatComboDescription = (items = [], extra = '') => {
+      const names = Array.from(new Set((items || []).map(it => (it && it.name ? it.name : '').toString()).filter(Boolean)));
+      if (names.length === 0) return extra || '';
+      if (names.length === 1) return `${names[0]}${extra ? ' ' + extra : ''}`;
+      if (names.length === 2) return `${names[0]} served with ${names[1]}${extra ? ' ' + extra : ''}`;
+      const last = names.pop();
+      return `${names.join(', ')} and ${last}${extra ? ' ' + extra : ''}`;
+    };
+
+    const tryUseAnalytics = async () => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/analytics/summary`);
+        const data = res.data;
+        analyticsRef.current = data;
+        const pairs = (data && data.summary && data.summary.commonPairings) || (data && data.analysis && data.analysis.mostCommonPairings) || [];
+        const pairCombos = buildFromPairings(pairs);
+        if (pairCombos && pairCombos.length > 0) {
+          const newItems = pairCombos.slice(0, 12);
+          const ordered = reorderCombosByAnalytics(newItems, data);
+          setCarouselItems(ordered);
+          setCarouselIndex(prev => {
+            const len = newItems.length || 0;
+            if (len === 0) return 0;
+            // keep previous index when possible, otherwise clamp to last
+            return prev < len ? prev : len - 1;
+          });
+          return true;
+        }
+      } catch (err) {
+        // ignore and fall back
+        // console.error('Failed to fetch analytics for combos', err);
+      }
+      return false;
+    };
+
+    (async () => {
+      const usedAnalytics = await tryUseAnalytics();
+      if (usedAnalytics) return;
+
+      // Fallback: previous random combo generation
+      const beverages = foodItems.filter(f => {
+        const c = lower(f.category || '');
+        return c.includes('bever') || c.includes('drink') || c.includes('juice') || c.includes('soda') || c.includes('tea') || c.includes('coffee');
+      });
+
+      const desserts = foodItems.filter(f => lower(f.category || '').includes('dessert'));
+      const snacks = foodItems.filter(f => lower(f.category || '').includes('snack') || lower(f.category || '').includes('side'));
+      const meals = foodItems.filter(f => {
+        const c = lower(f.category || '');
+        if (!c) return true;
+        if (c.includes('bever') || c.includes('drink') || c.includes('dessert') || c.includes('snack') || c.includes('side')) return false;
+        return true;
+      });
+
+      const combos = [];
+      const usedMealIds = new Set(); // ensure each meal item used at most once across combos
+      if (meals.length && beverages.length && desserts.length && snacks.length) {
+        const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const pickRandomUniqueMeal = (arr) => {
+          const pool = arr.filter(it => it && it.name && !usedMealIds.has(it._id || lower(it.name)));
+          if (pool.length === 0) return null;
+          return pool[Math.floor(Math.random() * pool.length)];
+        };
+        const used = new Set();
+        for (let i = 0; i < Math.min(12, meals.length); i++) {
+          const meal = pickRandomUniqueMeal(meals) || pickRandom(meals);
+          const bev = pickRandom(beverages);
+          const des = pickRandom(desserts);
+          const sn = pickRandom(snacks);
+          const key = `${meal._id || meal.name}|${bev._id || bev.name}|${des._id || des.name}|${sn._id || sn.name}`;
+          if (used.has(key)) continue;
+          used.add(key);
+          const price = [meal, bev, des, sn].reduce((s, it) => s + (Number(it.price) || 0), 0);
+          combos.push({
+            id: `combo-${i}-${meal._id || meal.name}`,
+            title: `${meal.name} + ${bev.name} + ${des.name} + ${sn.name}`,
+            price: Math.round(price),
+            img: meal.img || bev.img || des.img || sn.img || '',
+            items: [
+              { name: meal.name, qty: 1 },
+              { name: bev.name, qty: 1 },
+              { name: des.name, qty: 1 },
+              { name: sn.name, qty: 1 }
+            ],
+            description: formatComboDescription([{ name: meal.name }, { name: bev.name }, { name: des.name }, { name: sn.name }])
+          });
+          // mark meal used
+          if (meal && meal.name) usedMealIds.add(meal._id || lower(meal.name));
+        }
+      }
+
+      if (combos.length === 0 && meals.length && beverages.length) {
+        const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const pickRandomUniqueMeal = (arr) => {
+          const pool = arr.filter(it => it && it.name && !usedMealIds.has(it._id || lower(it.name)));
+          if (pool.length === 0) return null;
+          return pool[Math.floor(Math.random() * pool.length)];
+        };
+        for (let i = 0; i < Math.min(12, meals.length); i++) {
+          const meal = pickRandomUniqueMeal(meals) || pickRandom(meals);
+          const bev = pickRandom(beverages);
+          const price = (Number(meal.price) || 0) + (Number(bev.price) || 0);
+          combos.push({
+            id: `combo-mealbev-${i}-${meal._id || meal.name}`,
+            title: `${meal.name} + ${bev.name}`,
+            price: Math.round(price),
+            img: meal.img || bev.img || '',
+            items: [{ name: meal.name, qty: 1 }, { name: bev.name, qty: 1 }],
+            description: formatComboDescription([{ name: meal.name }, { name: bev.name }])
+          });
+          if (meal && meal.name) usedMealIds.add(meal._id || lower(meal.name));
+        }
+      }
+
+      if (combos.length === 0 && foodItems.length) {
+        // Final fallback: ensure single-item combos are meals where possible
+        const meals = foodItems.filter(f => {
+          const c = lower(f.category || '');
+          if (!c) return true;
+          if (c.includes('bever') || c.includes('drink') || c.includes('juice') || c.includes('soda') || c.includes('tea') || c.includes('coffee')) return false;
+          if (c.includes('dessert') || c.includes('snack') || c.includes('side')) return false;
+          return true;
+        });
+        const pool = meals.length ? meals : foodItems;
+        const top = pool.filter(f => f && f.name && !usedMealIds.has(f._id || lower(f.name))).slice(0, Math.min(12, pool.length));
+        combos.push(...top.map((f, i) => ({
+          id: `single-${i}-${f._id || f.name}`,
+          title: f.name,
+          price: Math.round(Number(f.price) || 0),
+          img: f.img || '',
+          items: [{ name: f.name, qty: 1 }],
+          description: formatComboDescription([{ name: f.name }]) || f.details || f.description || ''
+        })));
+        // mark single-item meals as used
+        top.forEach(f => { if (f && f.name) usedMealIds.add(f._id || lower(f.name)); });
+      }
+
+      const newItems = (combos || []).slice(0, 12);
+      const ordered = analyticsRef.current ? reorderCombosByAnalytics(newItems, analyticsRef.current) : newItems;
+      setCarouselItems(ordered);
+      setCarouselIndex(prev => {
+        const len = newItems.length || 0;
+        if (len === 0) return 0;
+        return prev < len ? prev : len - 1;
+      });
+    })();
   }, [foodItems, foodLoaded]);
 
   // keyboard navigation for carousel (left/right) — ignore when typing in inputs

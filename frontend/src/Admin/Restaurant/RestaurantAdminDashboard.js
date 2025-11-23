@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from 'axios';
 import LogoutButton from '../../Auth/LogoutButton';
 import './RestaurantAdminDashboard.css';
 // Charts
@@ -514,7 +515,7 @@ function MenuManager() {
 }
 
 // Generate dynamic summary and analysis of food orders
-function generateOrderAnalysisSummary(orders) {
+function generateOrderAnalysisSummary(orders, foods = null) {
   /**
    * Generates a comprehensive summary and analysis of food orders
    * @param {Array} orders - Array of order objects with items, roomNumber, checkedOutAt properties
@@ -550,6 +551,33 @@ function generateOrderAnalysisSummary(orders) {
   const roomOrderCounts = {};
   const dayOrderCounts = {};
 
+  // Prepare food lookup maps if foods provided
+  const foodsByImg = {};
+  const foodsByPriceCat = {};
+  const foodsByName = {};
+  if (Array.isArray(foods)) {
+    foods.forEach(f => {
+      if (!f) return;
+      if (f.img) foodsByImg[f.img] = f;
+      const key = `${f.price || ''}|${(f.category || '').toString().toLowerCase()}`;
+      if (!foodsByPriceCat[key]) foodsByPriceCat[key] = [];
+      foodsByPriceCat[key].push(f);
+      if (f.name) foodsByName[f.name.toString().toLowerCase()] = f;
+    });
+  }
+
+  const mapName = (raw) => {
+    if (!raw) return raw;
+    const name = (raw.name || raw).toString();
+    const lname = name.toLowerCase();
+    if (foodsByName[lname]) return foodsByName[lname].name;
+    if (raw.img && foodsByImg[raw.img]) return foodsByImg[raw.img].name;
+    const key = `${raw.price || ''}|${(raw.category || '').toString().toLowerCase()}`;
+    const list = foodsByPriceCat[key] || [];
+    if (list.length === 1) return list[0].name;
+    return name;
+  };
+
   // Process each order
   orders.forEach(order => {
     if (!order.items || order.items.length === 0) return;
@@ -573,13 +601,13 @@ function generateOrderAnalysisSummary(orders) {
       if (!item) return;
 
       if (Array.isArray(item.comboContents) && item.comboContents.length > 0) {
-        // Add component names (so components are counted individually in analytics)
+        // Add component names (map to current food names when possible)
         item.comboContents.forEach(component => {
-          if (component && component.name) itemNames.push(component.name);
+          if (component && component.name) itemNames.push(mapName(component));
         });
       } else if (item.name) {
-        // Regular single item
-        itemNames.push(item.name);
+        // Regular single item (map to current food name when possible)
+        itemNames.push(mapName(item));
       }
     });
     const uniqueItems = [...new Set(itemNames)];
@@ -1119,13 +1147,28 @@ function RestaurantAdminDashboard() {
 
   // Recompute analysis whenever orders change
   React.useEffect(() => {
-    try {
-      const result = generateOrderAnalysisSummary(orders);
-      setAnalysisResult(result);
-    } catch (e) {
-      console.error('Error generating order analysis:', e);
-      setAnalysisResult(null);
-    }
+    (async () => {
+      try {
+        let foods = null;
+        try {
+          const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/food`);
+          let all = [];
+          if (res.data && typeof res.data === 'object') {
+            Object.values(res.data).forEach(arr => { if (Array.isArray(arr)) all = all.concat(arr); });
+          }
+          foods = all;
+        } catch (err) {
+          // ignore food fetch errors and fall back to name-only mapping
+          foods = null;
+        }
+
+        const result = generateOrderAnalysisSummary(orders, foods);
+        setAnalysisResult(result);
+      } catch (e) {
+        console.error('Error generating order analysis:', e);
+        setAnalysisResult(null);
+      }
+    })();
   }, [orders]);
 
   // Compute per-item room counts (which room ordered an item the most)
