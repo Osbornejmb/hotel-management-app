@@ -1754,7 +1754,9 @@ function RestaurantAdminDashboard() {
                         const barData = { labels: barLabels, datasets: [{ label: 'Orders', data: barValues, backgroundColor: barLabels.map((_, idx) => colors[idx % colors.length]) }] };
                         const barOptions = { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: true, mode: 'index', intersect: false } }, layout: { padding: { top: 8, right: 8, left: 4, bottom: 4 } }, scales: { x: { grid: { display: false }, ticks: { color: '#5b3e24' } }, y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#5b3e24' } } } };
 
-                        const daysAll = (analysisResult.analysis.peakOrderingDays || []).slice();
+                        let daysAll = (analysisResult.analysis.peakOrderingDays || []).slice();
+                        // Sort oldest to newest (chronological)
+                        daysAll.sort((a, b) => new Date(a.date) - new Date(b.date));
                         const daysToShowCount = showAllPeakDays ? daysAll.length : Math.min(10, daysAll.length);
                         const daysToShow = daysAll.slice(0, daysToShowCount);
                         const lineLabels = daysToShow.map(d => d.date);
@@ -1921,8 +1923,8 @@ function RestaurantAdminDashboard() {
                       <div className="p-4 bg-white rounded-lg border border-amber-100">
                         {(() => {
                           const days = (analysisResult.analysis.peakOrderingDays || []).slice();
-                          // Sort newest -> oldest for list clarity
-                          days.sort((a, b) => new Date(b.date) - new Date(a.date));
+                          // Sort oldest -> newest (chronological)
+                          days.sort((a, b) => new Date(a.date) - new Date(b.date));
                           const maxShow = showAllPeakDays ? days.length : Math.min(6, days.length);
                           return (
                             <div>
