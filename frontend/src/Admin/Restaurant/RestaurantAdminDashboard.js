@@ -593,37 +593,40 @@ function generateOrderAnalysisSummary(orders, foods = null) {
     dayOrderCounts[orderDate] = (dayOrderCounts[orderDate] || 0) + 1;
     roomOrderCounts[roomNumber] = (roomOrderCounts[roomNumber] || 0) + 1;
 
-    // Extract unique item names in this order
-    // For analytics/top-items we want combo components counted individually.
-    // If an order item is a combo (item.comboContents), count its components instead of the combo product name.
-    const itemNames = [];
+    // Count quantities per item in this order (including combo components)
+    const orderItemCounts = {};
     (order.items || []).forEach(item => {
       if (!item) return;
 
       if (Array.isArray(item.comboContents) && item.comboContents.length > 0) {
-        // Add component names (map to current food names when possible)
+        // Sum quantities for components (map to current food names when possible)
         item.comboContents.forEach(component => {
-          if (component && component.name) itemNames.push(mapName(component));
+          if (!component || !component.name) return;
+          const name = mapName(component);
+          const qty = Number(component.quantity) || 1;
+          orderItemCounts[name] = (orderItemCounts[name] || 0) + qty;
         });
       } else if (item.name) {
-        // Regular single item (map to current food name when possible)
-        itemNames.push(mapName(item));
+        const name = mapName(item);
+        const qty = Number(item.quantity) || 1;
+        orderItemCounts[name] = (orderItemCounts[name] || 0) + qty;
       }
     });
-    const uniqueItems = [...new Set(itemNames)];
 
-    // Process each item
+    // Process each item (respecting quantities)
+    const uniqueItems = Object.keys(orderItemCounts);
     uniqueItems.forEach(itemName => {
-      // Track frequency
-      itemFrequency[itemName] = (itemFrequency[itemName] || 0) + 1;
+      const qty = orderItemCounts[itemName] || 0;
+      // Track frequency by total units sold (account for quantity)
+      itemFrequency[itemName] = (itemFrequency[itemName] || 0) + qty;
 
-      // Track by day
+      // Track by day (presence)
       if (!itemsByDay[itemName]) itemsByDay[itemName] = [];
       if (!itemsByDay[itemName].includes(orderDate)) {
         itemsByDay[itemName].push(orderDate);
       }
 
-      // Track by room
+      // Track by room (presence)
       if (!itemsByRoom[itemName]) itemsByRoom[itemName] = [];
       if (!itemsByRoom[itemName].includes(roomNumber)) {
         itemsByRoom[itemName].push(roomNumber);
@@ -631,11 +634,16 @@ function generateOrderAnalysisSummary(orders, foods = null) {
     });
 
     // Track common pairings (items that appear together)
+    // Track common pairings (items that appear together)
     if (uniqueItems.length > 1) {
+      // Weight pairings by the number of co-occurring units (min of the two quantities)
       for (let i = 0; i < uniqueItems.length; i++) {
         for (let j = i + 1; j < uniqueItems.length; j++) {
-          const pairing = [uniqueItems[i], uniqueItems[j]].sort().join(' + ');
-          pairingMap[pairing] = (pairingMap[pairing] || 0) + 1;
+          const a = uniqueItems[i];
+          const b = uniqueItems[j];
+          const pairing = [a, b].sort().join(' + ');
+          const weight = Math.min(orderItemCounts[a] || 0, orderItemCounts[b] || 0) || 1;
+          pairingMap[pairing] = (pairingMap[pairing] || 0) + weight;
         }
       }
     }
