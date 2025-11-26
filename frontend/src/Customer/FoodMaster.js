@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAddCartPopup } from './AddCartPopupContext';
+import { useCheckoutPopup } from './CheckoutPopupContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CheckoutUpsellModal from './CheckoutUpsellModal';
@@ -66,6 +68,8 @@ function FoodMaster() {
   const [foodData, setFoodData] = useState(initialFoodData);
   const [popup, setPopup] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
+  const showAddCartPopup = useAddCartPopup();
+  const showCheckoutPopup = useCheckoutPopup();
   
   // Enhanced Cart, Status, and Notification states from CustomerInterface
   const [showCart, setShowCart] = useState(false);
@@ -170,8 +174,9 @@ function FoodMaster() {
         // Always fetch the latest cart after adding
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
+        showAddCartPopup({ name: food.name, img: food.img, price: food.price, quantity });
       } catch (err) {
-        alert('Failed to add to cart. Please try again.');
+        showAddCartPopup({ name: food.name, img: food.img, price: food.price, quantity, error: true });
       }
     } else {
       // For local cart (no room number), check if item exists and update quantity
@@ -900,12 +905,12 @@ function FoodMaster() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     }
   };
@@ -959,13 +964,13 @@ function FoodMaster() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setShowConfirmationModal(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     } finally {
       setIsConfirmationLoading(false);

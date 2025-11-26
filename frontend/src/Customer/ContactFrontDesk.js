@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAddCartPopup } from './AddCartPopupContext';
+import { useCheckoutPopup } from './CheckoutPopupContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CheckoutUpsellModal from './CheckoutUpsellModal';
@@ -81,6 +83,8 @@ function ContactFrontDesk() {
     return stored ? JSON.parse(stored) : {};
   });
   const [orderStatusMap, setOrderStatusMap] = useState({});
+  const showAddCartPopup = useAddCartPopup();
+  const showCheckoutPopup = useCheckoutPopup();
 
   // Use the custom notification sound hook
   const { playNotificationSound } = useNotificationSound();
@@ -790,12 +794,12 @@ function ContactFrontDesk() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     }
   };
@@ -831,7 +835,7 @@ function ContactFrontDesk() {
       setShowConfirmationModal(true);
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add item to cart. Please try again.');
+      showAddCartPopup({ name: item.name, img: item.img, price: item.price, quantity, error: true });
     }
   };
 
@@ -849,13 +853,13 @@ function ContactFrontDesk() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setShowConfirmationModal(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     } finally {
       setIsConfirmationLoading(false);

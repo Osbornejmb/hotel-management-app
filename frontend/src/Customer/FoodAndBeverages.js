@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAddCartPopup } from './AddCartPopupContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CheckoutUpsellModal from './CheckoutUpsellModal';
 import OrderConfirmationModal from './OrderConfirmationModal';
+import { useCheckoutPopup } from './CheckoutPopupContext';
 
 // Custom hook to manage notification sounds (from CustomerInterface)
 const useNotificationSound = () => {
@@ -73,6 +75,8 @@ function FoodAndBeverages() {
   const [popup, setPopup] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
   const roomNumber = localStorage.getItem('customerRoomNumber');
+  const showAddCartPopup = useAddCartPopup();
+  const showCheckoutPopup = useCheckoutPopup();
 
   // COMPREHENSIVE NOTIFICATION SYSTEM FROM CUSTOMERINTERFACE
   const [showPopupNotification, setShowPopupNotification] = useState(() => {
@@ -147,8 +151,9 @@ function FoodAndBeverages() {
         await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/items`, foodWithImage);
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
+        showAddCartPopup({ name: food.name, img: food.img, price: food.price, quantity });
       } catch (err) {
-        alert('Failed to add to cart. Please try again.');
+        showAddCartPopup({ name: food.name, img: food.img, price: food.price, quantity, error: true });
       }
     } else {
       setCart((prev) => {
@@ -263,6 +268,13 @@ function FoodAndBeverages() {
       if (interval) clearInterval(interval);
     };
   }, [showStatus, roomNumber]);
+
+  // Listen for global 'openOrderStatus' event (from CheckoutPopupProvider "View Orders" button)
+  useEffect(() => {
+    const onOpenOrderStatus = () => setShowStatus(true);
+    window.addEventListener('openOrderStatus', onOpenOrderStatus);
+    return () => window.removeEventListener('openOrderStatus', onOpenOrderStatus);
+  }, []);
 
   // Cancel order using admin logic, with confirmation and no reason
   const cancelOrder = async (order) => {
@@ -791,12 +803,12 @@ function FoodAndBeverages() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     }
   };
@@ -850,13 +862,13 @@ function FoodAndBeverages() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setShowConfirmationModal(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     } finally {
       setIsConfirmationLoading(false);

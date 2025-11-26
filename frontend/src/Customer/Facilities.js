@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAddCartPopup } from './AddCartPopupContext';
 import { useNavigate } from 'react-router-dom';
 import './Facilities.css';
 import axios from 'axios';
 import CheckoutUpsellModal from './CheckoutUpsellModal';
 import OrderConfirmationModal from './OrderConfirmationModal';
+import { useCheckoutPopup } from './CheckoutPopupContext';
 
 // Custom hook to manage notification sounds
 const useNotificationSound = () => {
@@ -105,6 +107,8 @@ function Facilities() {
   // Order Confirmation Modal states
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [isConfirmationLoading, setIsConfirmationLoading] = useState(false);
+  const showAddCartPopup = useAddCartPopup();
+  const showCheckoutPopup = useCheckoutPopup();
   
   // Notification states
   const [showPopupNotification, setShowPopupNotification] = useState(() => {
@@ -340,6 +344,13 @@ function Facilities() {
       if (interval) clearInterval(interval);
     };
   }, [showStatus, roomNumber]);
+
+  // Listen for global 'openOrderStatus' event (from CheckoutPopupProvider "View Orders" button)
+  useEffect(() => {
+    const onOpenOrderStatus = () => setShowStatus(true);
+    window.addEventListener('openOrderStatus', onOpenOrderStatus);
+    return () => window.removeEventListener('openOrderStatus', onOpenOrderStatus);
+  }, []);
 
   // Fetch cancelled orders
   const fetchCancelledOrders = useCallback(async () => {
@@ -833,12 +844,12 @@ function Facilities() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     }
   };
@@ -874,7 +885,7 @@ function Facilities() {
       setShowConfirmationModal(true);
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add item to cart. Please try again.');
+      showAddCartPopup({ name: item.name, img: item.img, price: item.price, quantity, error: true });
     }
   };
 
@@ -892,13 +903,13 @@ function Facilities() {
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
       setCart([]);
-      alert('Checkout successful! Your order has been sent to the restaurant.');
+      showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
       setShowCart(false);
       setShowConfirmationModal(false);
       setPendingCheckout(false);
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Checkout failed. Please try again.');
+      showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
       setPendingCheckout(false);
     } finally {
       setIsConfirmationLoading(false);

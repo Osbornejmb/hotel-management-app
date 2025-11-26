@@ -2,12 +2,18 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { AddCartPopupProvider } from './Customer/AddCartPopupContext';
+import { CheckoutPopupProvider } from './Customer/CheckoutPopupContext';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <AddCartPopupProvider>
+      <CheckoutPopupProvider>
+        <App />
+      </CheckoutPopupProvider>
+    </AddCartPopupProvider>
   </React.StrictMode>
 );
 

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useAddCartPopup } from './AddCartPopupContext';
+import { useCheckoutPopup } from './CheckoutPopupContext';
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -691,6 +693,9 @@ export default function CustomerInterface() {
   const [selectedCombo, setSelectedCombo] = useState(null);
   const [showComboModal, setShowComboModal] = useState(false);
   const [comboQuantity, setComboQuantity] = useState(1);
+  // shared add-to-cart popup hook
+  const showAddCartPopup = useAddCartPopup();
+  const showCheckoutPopup = useCheckoutPopup();
   const carouselNext = useCallback(() => {
     setCarouselIndex(i => {
       const len = carouselItems.length || 0;
@@ -1101,15 +1106,17 @@ export default function CustomerInterface() {
     };
 
     // If roomNumber is present, persist to backend cart; otherwise update local cart
+
     if (roomNumber) {
       try {
         await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/items`, item);
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
         setCart(res.data?.items || []);
-        alert('Combo added to your cart');
+        showAddCartPopup(item);
       } catch (err) {
         console.error('Failed to add combo to cart', err);
-        alert('Failed to add combo to cart. Please try again.');
+        // fallback to an in-app error toast
+        showAddCartPopup({ ...item, error: true });
       } finally {
         handleCloseCombo();
       }
@@ -1125,7 +1132,7 @@ export default function CustomerInterface() {
         return [item, ...prev];
       });
       handleCloseCombo();
-      alert('Combo added to your cart');
+      showAddCartPopup(item);
     }
   };
 
@@ -1178,6 +1185,20 @@ export default function CustomerInterface() {
       cartCloseBtnRef.current.focus();
     }
   }, [showCart]);
+
+  // Listen for global 'openCart' event (from AddCartPopupProvider "View Cart" button)
+  useEffect(() => {
+    const onOpenCart = () => setShowCart(true);
+    window.addEventListener('openCart', onOpenCart);
+    return () => window.removeEventListener('openCart', onOpenCart);
+  }, []);
+
+  // Listen for global 'openOrderStatus' event (from CheckoutPopupProvider "View Orders" button)
+  useEffect(() => {
+    const onOpenOrderStatus = () => setShowStatus(true);
+    window.addEventListener('openOrderStatus', onOpenOrderStatus);
+    return () => window.removeEventListener('openOrderStatus', onOpenOrderStatus);
+  }, []);
 
   useEffect(() => {
     if (showStatus && statusCloseBtnRef.current) {
@@ -1296,6 +1317,8 @@ export default function CustomerInterface() {
           })}
         </div>
       )}
+
+      {/* popup is provided by AddCartPopupProvider */}
 
       {/* Header */}
       <header className="bg-gradient-to-r from-amber-900 to-amber-800 shadow-lg sticky top-0 z-40">
@@ -1478,7 +1501,7 @@ export default function CustomerInterface() {
             <div className="text-sm text-amber-700 bg-amber-200 px-3 py-1 rounded-full">Limited time</div>
           </div>
 
-          <div className="flex items-center gap-4 p-6">
+          <div className="flex items-center gap-3 p-3">
             <button
               aria-label="previous"
               onClick={carouselPrev}
@@ -1492,15 +1515,15 @@ export default function CustomerInterface() {
             <div className="flex-1 overflow-hidden">
               <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
                 {carouselItems.map(combo => (
-                  <div key={combo.id} className="flex-shrink-0 w-full px-4">
+                  <div key={combo.id} className="flex-shrink-0 w-full px-2">
                     <div
-                      className="flex items-center gap-6 p-4 cursor-pointer hover:shadow-lg rounded-lg"
+                      className="flex items-center gap-4 p-3 cursor-pointer hover:shadow-lg rounded-lg"
                       onClick={() => handleOpenCombo(combo)}
                     >
                       <img
                         src={combo.img}
                         alt={combo.title}
-                        className="w-40 h-28 object-cover rounded-xl shadow-md"
+                        className="w-56 h-40 md:w-64 md:h-44 object-cover rounded-xl shadow-md"
                       />
                       <div className="flex-1">
                         <div className="text-xl font-bold text-amber-900 mb-1">{combo.title}</div>
@@ -1514,7 +1537,7 @@ export default function CustomerInterface() {
               </div>
 
               {/* Dots Indicator */}
-              <div className="flex items-center justify-center gap-3 mt-6">
+              <div className="flex items-center justify-center gap-3 mt-4">
                 {carouselItems.map((_, idx) => (
                   <button
                     key={idx}
@@ -1680,20 +1703,21 @@ export default function CustomerInterface() {
               <div className="flex justify-center space-x-4">
                 <button
                   onClick={async () => {
-                    if (roomNumber && cart.length > 0) {
-                      setCheckoutLoading(true);
-                      try {
-                        await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-                        setCart([]);
-                        alert('Checkout successful! Your order has been sent to the restaurant.');
-                        setShowCart(false);
-                      } catch {
-                        alert('Checkout failed. Please try again.');
-                      } finally {
-                        setCheckoutLoading(false);
+                      if (roomNumber && cart.length > 0) {
+                        setCheckoutLoading(true);
+                        try {
+                          await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
+                          setCart([]);
+                          showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
+                          setShowCart(false);
+                        } catch (err) {
+                          console.error('Checkout failed', err);
+                          showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
+                        } finally {
+                          setCheckoutLoading(false);
+                        }
                       }
-                    }
-                  }}
+                    }}
                   disabled={cart.length === 0 || checkoutLoading}
                   className="px-8 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
