@@ -1,21 +1,46 @@
 import React, { useState, useEffect } from 'react';
 
-// Helper: fetch basic employee list (id + name + formatted id)
-async function fetchEmployeesBasic() {
+// Helper: fetch attendance records and group by employee
+async function fetchAttendanceRecords() {
   try {
-    const res = await fetch('/api/users');
+    const res = await fetch('/api/attendances');
     if (!res.ok) return [];
     const data = await res.json();
-    const onlyEmployees = data.filter(u => (u.role || '').toLowerCase() === 'employee');
-    return onlyEmployees.map(u => ({
-      id: u._id || u.id || u.username,
-      name: u.name || u.username,
-      formattedId: typeof u.employeeId === 'number' ? String(u.employeeId).padStart(4, '0') : (u._id || u.username)
-    }));
+    return data;
   } catch (err) {
-    console.error('fetchEmployeesBasic error', err);
+    console.error('fetchAttendanceRecords error', err);
     return [];
   }
+}
+
+// Helper: calculate payroll from attendance records
+function calculatePayrollFromAttendance(attendanceRecords) {
+  const employeeMap = {};
+  const hourlyRate = 95; // PHP per hour
+
+  attendanceRecords.forEach(record => {
+    if (!employeeMap[record.employeeId]) {
+      employeeMap[record.employeeId] = {
+        employeeId: record.employeeId,
+        employeeName: record.employeeName,
+        totalHours: 0,
+        records: []
+      };
+    }
+    employeeMap[record.employeeId].totalHours += record.totalHours || 0;
+    employeeMap[record.employeeId].records.push(record);
+  });
+
+  return Object.values(employeeMap).map(emp => ({
+    id: emp.employeeId,
+    employee: emp.employeeName,
+    employeeId: emp.employeeId,
+    totalHours: Math.round(emp.totalHours * 100) / 100,
+    amount: Math.round(emp.totalHours * hourlyRate * 100) / 100,
+    status: 'Unpaid',
+    action: 'Pay',
+    records: emp.records
+  }));
 }
 
 // Payment Modal Component
@@ -132,7 +157,7 @@ const PaymentModal = ({ isOpen, onClose, payroll, onConfirm }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ fontWeight: 500, color: '#2c3e50' }}>Amount:</span>
             <span style={{ fontWeight: 600, color: '#2c3e50', fontSize: '1.1rem' }}>
-              ${payroll?.amount}
+              ₱{payroll?.amount}
             </span>
           </div>
         </div>
@@ -329,19 +354,10 @@ const PayrollSection = () => {
 
   useEffect(() => {
     let mounted = true;
-    fetchEmployeesBasic().then(list => { 
+    fetchAttendanceRecords().then(attendanceData => { 
       if (mounted) {
-        setEmps(list);
-        const initialPayrolls = list.map((e, idx) => ({
-          id: e.formattedId,
-          employee: e.name,
-          periodStart: '8/01/2025',
-          periodEnd: '8/31/2025',
-          amount: '15,000',
-          status: idx % 2 === 0 ? 'Paid' : 'Unpaid',
-          action: idx % 2 === 0 ? 'View' : 'Pay'
-        }));
-        setPayrolls(initialPayrolls);
+        const calculatedPayrolls = calculatePayrollFromAttendance(attendanceData);
+        setPayrolls(calculatedPayrolls);
       }
     }).catch(() => {});
     return () => { mounted = false; };
@@ -389,23 +405,20 @@ const PayrollSection = () => {
   // Handle View button click
   const handleViewClick = (payroll) => {
     console.log('Viewing payroll details:', payroll);
-    alert(`Payroll Details:\n\nEmployee: ${payroll.employee}\nID: ${payroll.id}\nPeriod: ${payroll.periodStart} - ${payroll.periodEnd}\nAmount: $${payroll.amount}\nStatus: ${payroll.status}`);
+    alert(`Payroll Details:\n\nEmployee: ${payroll.employee}\nID: ${payroll.id}\nTotal Hours: ${payroll.totalHours} hrs\nHourly Rate: ₱95/hr\nAmount: ₱${payroll.amount}\nStatus: ${payroll.status}`);
   };
 
   // Handle Generate Payroll button click
   const handleGeneratePayroll = () => {
-    console.log('Generating new payroll...');
-    const newPayrolls = emps.map(e => ({
-      id: e.formattedId,
-      employee: e.name,
-      periodStart: new Date().toLocaleDateString(),
-      periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      amount: '15,000',
-      status: 'Unpaid',
-      action: 'Pay'
-    }));
-    setPayrolls(newPayrolls);
-    alert('New payroll generated successfully for all employees!');
+    console.log('Generating payroll from attendance records...');
+    fetchAttendanceRecords().then(attendanceData => {
+      const newPayrolls = calculatePayrollFromAttendance(attendanceData);
+      setPayrolls(newPayrolls);
+      alert(`Payroll generated successfully for ${newPayrolls.length} employees based on attendance records!`);
+    }).catch(err => {
+      console.error('Error generating payroll:', err);
+      alert('Error generating payroll. Please try again.');
+    });
   };
 
   // Handle Export button click
@@ -669,8 +682,8 @@ const PayrollSection = () => {
             }}>
               <th style={{ padding: '16px 12px' }}>ID</th>
               <th style={{ padding: '16px 12px' }}>Employee</th>
-              <th style={{ padding: '16px 12px' }}>Period Start</th>
-              <th style={{ padding: '16px 12px' }}>Period End</th>
+              <th style={{ padding: '16px 12px' }}>Total Hours</th>
+              <th style={{ padding: '16px 12px' }}>Hourly Rate</th>
               <th style={{ padding: '16px 12px' }}>Amount</th>
               <th style={{ padding: '16px 12px' }}>Status</th>
               <th style={{ padding: '16px 12px' }}>Action</th>
@@ -685,9 +698,9 @@ const PayrollSection = () => {
               }}>
                 <td style={{ padding: '16px 12px', fontWeight: 500 }}>{p.id}</td>
                 <td style={{ padding: '16px 12px' }}>{p.employee}</td>
-                <td style={{ padding: '16px 12px' }}>{p.periodStart}</td>
-                <td style={{ padding: '16px 12px' }}>{p.periodEnd}</td>
-                <td style={{ padding: '16px 12px', fontWeight: 600 }}>${p.amount}</td>
+                <td style={{ padding: '16px 12px' }}>{p.totalHours} hrs</td>
+                <td style={{ padding: '16px 12px' }}>₱95/hr</td>
+                <td style={{ padding: '16px 12px', fontWeight: 600 }}>₱{p.amount}</td>
                 <td style={{ padding: '16px 12px' }}>
                   <span style={{
                     color: p.status === 'Paid' ? '#2ecc71' : '#e74c3c',

@@ -14,6 +14,7 @@ const foodRoutes = require("./foodRoutes");
 const employeeRoutes = require("./employeeRoutes");
 const requestRoutes = require("./requestRoutes");
 const taskRoutes = require('./taskRoutes'); 
+const attendanceRoutes = require("./attendanceRoutes");
 const { sendEmployeeCredentials, testEmail } = require("./emailService"); 
 const notificationRoutes = require('./notificationRoutes');
 
@@ -63,6 +64,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use('/api/employee', employeeRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use('/api/attendance', attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Test email endpoint

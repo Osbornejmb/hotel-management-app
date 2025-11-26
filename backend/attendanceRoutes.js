@@ -60,4 +60,28 @@ router.post('/attendance', async (req, res) => {
   }
 });
 
+// GET all attendance records (for payroll calculation)
+router.get('/attendances', async (req, res) => {
+  try {
+    const attendanceRecords = await Attendance.find({});
+    return res.json(attendanceRecords);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// GET attendance records for a specific employee
+router.get('/attendances/:employeeId', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const attendanceRecords = await Attendance.find({ employeeId });
+    if (attendanceRecords.length === 0) {
+      return res.status(404).json({ error: 'No attendance records found for this employee' });
+    }
+    return res.json(attendanceRecords);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
