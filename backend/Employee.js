@@ -64,4 +64,5 @@ EmployeeSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model('Employee', EmployeeSchema);
+// Avoid OverwriteModelError when models are reloaded (e.g., in dev/hot-reload)
+module.exports = mongoose.models.Employee || mongoose.model('Employee', EmployeeSchema);

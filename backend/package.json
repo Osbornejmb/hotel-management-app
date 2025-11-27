@@ -4,7 +4,8 @@
   "description": "Backend for Hotel & Restaurant Management System",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:attendance": "node scripts/check_attendance.js"
   },
   "keywords": [],
   "author": "",

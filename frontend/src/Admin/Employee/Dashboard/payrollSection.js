@@ -351,6 +351,14 @@ const PayrollSection = () => {
   const [payrolls, setPayrolls] = useState([]);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [debugLogs, setDebugLogs] = useState([]);
+
+  const addDebug = (msg) => {
+    const time = new Date().toLocaleTimeString();
+    const entry = `${time} - ${msg}`;
+    console.log('[Payroll Debug]', entry);
+    setDebugLogs(prev => [entry, ...prev].slice(0, 30));
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -410,12 +418,15 @@ const PayrollSection = () => {
 
   // Handle Generate Payroll button click
   const handleGeneratePayroll = () => {
-    console.log('Generating payroll from attendance records...');
+    addDebug('Generate Payroll clicked — starting fetch of attendance records...');
     fetchAttendanceRecords().then(attendanceData => {
+      addDebug(`Fetched ${attendanceData.length} attendance record(s) from /api/attendances`);
       const newPayrolls = calculatePayrollFromAttendance(attendanceData);
       setPayrolls(newPayrolls);
+      addDebug(`Calculated ${newPayrolls.length} payroll entry(ies)`);
       alert(`Payroll generated successfully for ${newPayrolls.length} employees based on attendance records!`);
     }).catch(err => {
+      addDebug(`Error generating payroll: ${err && err.message ? err.message : String(err)}`);
       console.error('Error generating payroll:', err);
       alert('Error generating payroll. Please try again.');
     });
@@ -842,6 +853,23 @@ const PayrollSection = () => {
           </svg>
           Export
         </button>
+      </div>
+
+      {/* Debug Panel (visible for debugging) */}
+      <div style={{ marginTop: 18, background: '#f7f9fb', padding: 12, borderRadius: 8, fontSize: 13 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <strong>Debug Log</strong>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { setDebugLogs([]); }} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#95a5a6', color: 'white', cursor: 'pointer' }}>Clear</button>
+            <button onClick={() => { window.scrollTo(0, document.body.scrollHeight); }} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#3498db', color: 'white', cursor: 'pointer' }}>Scroll</button>
+          </div>
+        </div>
+        <div style={{ maxHeight: 160, overflowY: 'auto', borderTop: '1px solid #e6eef6', paddingTop: 8 }}>
+          {debugLogs.length === 0 && <div style={{ color: '#7f8c8d' }}>No debug messages yet. Click "Generate Payroll" to see fetch status.</div>}
+          {debugLogs.map((d, i) => (
+            <div key={i} style={{ padding: '6px 0', borderBottom: i === debugLogs.length - 1 ? 'none' : '1px dashed #e6eef6' }}>{d}</div>
+          ))}
+        </div>
       </div>
 
       {/* Payment Modal */}
