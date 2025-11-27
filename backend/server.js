@@ -24,13 +24,29 @@ const analyticsRoutes = require("./analyticsRoutes");
 
 const app = express();
 
-// Configure CORS for production and development
+// Configure CORS for production and development.
+// Normalize configured frontend URL (remove trailing slash) so we don't fail on minor mismatches.
+const rawFrontendUrl = process.env.FRONTEND_URL || '';
+const normalizedFrontendUrl = rawFrontendUrl.replace(/\/+$/, '');
+
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || '*'
-    : '*',
+  origin: function (origin, callback) {
+    // Allow non-browser requests (no origin)
+    if (!origin) return callback(null, true);
+
+    // In production, only allow the configured frontend origin (ignoring trailing slash differences)
+    if (process.env.NODE_ENV === 'production' && normalizedFrontendUrl) {
+      const incoming = origin.replace(/\/+$/, '');
+      if (incoming === normalizedFrontendUrl) return callback(null, true);
+      return callback(new Error('CORS: origin not allowed'), false);
+    }
+
+    // In development, allow all origins
+    return callback(null, true);
+  },
   credentials: true
 };
+
 app.use(cors(corsOptions));
 app.use(express.json());
 
