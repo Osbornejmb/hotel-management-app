@@ -23,8 +23,15 @@ const hotelAdNotifsRoutes = require("./hoteladnotifsRoutes");
 const analyticsRoutes = require("./analyticsRoutes");
 
 const app = express();
-// enable CORS with credentials support so frontend fetch(..., { credentials: 'include' }) works in dev
-app.use(cors({ origin: true, credentials: true }));
+
+// Configure CORS for production and development
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || '*'
+    : '*',
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use("/api/users", userRoutes);
