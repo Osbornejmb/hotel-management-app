@@ -1,6 +1,7 @@
 import React from 'react';
 import axios from 'axios';
 import LogoutButton from '../../Auth/LogoutButton';
+import CarouselManager from './CarouselManager';
 import './RestaurantAdminDashboard.css';
 // Charts
 import { Bar, Line } from 'react-chartjs-2';
@@ -1724,7 +1725,7 @@ function RestaurantAdminDashboard() {
         {/* Tabs */}
         <div className="flex justify-center mb-8">
           <div className="bg-white p-1 rounded-xl border border-amber-200 shadow-lg">
-            <div className="flex space-x-1">
+            <div className="flex space-x-1 flex-wrap">
               <button
                 className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
                   activeTab === 'orders' 
@@ -1744,6 +1745,16 @@ function RestaurantAdminDashboard() {
                 onClick={() => setActiveTab('menu')}
               >
                 Menu Management
+              </button>
+              <button
+                className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
+                  activeTab === 'carousel'
+                    ? 'bg-amber-500 text-white shadow-md'
+                    : 'text-amber-700 hover:bg-amber-100'
+                }`}
+                onClick={() => setActiveTab('carousel')}
+              >
+                Carousel
               </button>
               <button
                 className={`px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
@@ -1786,6 +1797,8 @@ function RestaurantAdminDashboard() {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'menu' ? (
             <MenuManager />
+          ) : activeTab === 'carousel' ? (
+            <CarouselManager />
           ) : activeTab === 'analytics' ? (
             <div className="bg-white rounded-2xl shadow-xl p-8 border border-amber-200">
               <h2 className="text-3xl font-bold text-amber-900 mb-6 text-center">Analytics & Visuals</h2>

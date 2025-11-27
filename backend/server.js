@@ -15,6 +15,7 @@ const checkoutRoutes = require("./checkoutRoutes");
 const foodRoutes = require("./foodRoutes");
 const requestRoutes = require("./requestRoutes");
 const bookingRoutes = require("./bookingRoutes");
+const carouselRoutes = require("./carouselRoutes");
 
 const activityLogRoutes = require("./activityLogRoutes");
 const taskRoutes = require("./taskRoutes");
@@ -35,6 +36,7 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/food", foodRoutes);
 app.use("/api/checkout", checkoutRoutes);
+app.use("/api/carousel", carouselRoutes);
 
 app.use("/api/requests", requestRoutes);
 app.use("/api/bookings", bookingRoutes);

@@ -684,6 +684,7 @@ export default function CustomerInterface() {
   // We'll load real food items from the API and build combos (meal + drink + dessert + snack)
   const [foodItems, setFoodItems] = useState([]);
   const [foodLoaded, setFoodLoaded] = useState(false);
+  const [adminCombos, setAdminCombos] = useState([]);
   const [carouselItems, setCarouselItems] = useState([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const carouselPausedRef = useRef(false);
@@ -742,6 +743,25 @@ export default function CustomerInterface() {
     };
     fetchFood();
     const interval = setInterval(fetchFood, 10_000);
+    return () => { ignore = true; clearInterval(interval); };
+  }, []);
+
+  // Fetch admin-managed combos from backend
+  useEffect(() => {
+    let ignore = false;
+    const fetchAdminCombos = async () => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/carousel/combos`);
+        if (ignore) return;
+        const adminCombosData = Array.isArray(res.data) ? res.data : res.data.data || [];
+        // Update state to trigger carousel rebuild
+        setAdminCombos(adminCombosData);
+      } catch (err) {
+        // Silently fail; carousel will use only auto-generated combos
+      }
+    };
+    fetchAdminCombos();
+    const interval = setInterval(fetchAdminCombos, 15_000);
     return () => { ignore = true; clearInterval(interval); };
   }, []);
 
@@ -955,6 +975,17 @@ export default function CustomerInterface() {
     };
 
     (async () => {
+      // Only show admin-managed combos
+      if (adminCombos.length > 0) {
+        setCarouselItems(adminCombos);
+        setCarouselIndex(prev => {
+          const len = adminCombos.length || 0;
+          if (len === 0) return 0;
+          return prev < len ? prev : len - 1;
+        });
+        return;
+      }
+
       const usedAnalytics = await tryUseAnalytics();
       if (usedAnalytics) return;
 
@@ -1058,14 +1089,15 @@ export default function CustomerInterface() {
 
       const newItems = (combos || []).slice(0, 12);
       const ordered = analyticsRef.current ? reorderCombosByAnalytics(newItems, analyticsRef.current) : newItems;
+      
       setCarouselItems(ordered);
       setCarouselIndex(prev => {
-        const len = newItems.length || 0;
+        const len = ordered.length || 0;
         if (len === 0) return 0;
         return prev < len ? prev : len - 1;
       });
     })();
-  }, [foodItems, foodLoaded]);
+  }, [foodItems, foodLoaded, adminCombos]);
 
   // keyboard navigation for carousel (left/right) — ignore when typing in inputs
   useEffect(() => {
