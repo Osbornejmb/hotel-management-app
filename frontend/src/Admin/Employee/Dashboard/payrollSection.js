@@ -345,7 +345,6 @@ const PaymentModal = ({ isOpen, onClose, payroll, onConfirm }) => {
 };
 
 const PayrollSection = () => {
-  const [emps, setEmps] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('unpaid');
   const [payrolls, setPayrolls] = useState([]);

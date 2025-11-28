@@ -18,6 +18,7 @@ import {
   ArcElement
 } from 'chart.js';
 // PDF export
+// eslint-disable-next-line
 import { jsPDF } from 'jspdf';
 
 ChartJS.register(

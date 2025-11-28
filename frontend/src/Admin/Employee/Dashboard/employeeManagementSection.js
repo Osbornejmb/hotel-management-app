@@ -20,9 +20,6 @@ const EmployeeManagementSection = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchEmployee, setSearchEmployee] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState([]);
-  const [updatePassword, setUpdatePassword] = useState('');
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [employeeDetails, setEmployeeDetails] = useState(null);
   const [submitting, setSubmitting] = useState(false); // New state for submission loading
 
   const handleChange = e => {
@@ -240,66 +237,21 @@ const EmployeeManagementSection = () => {
 
   const openModal = async (emp) => {
     setSelectedEmployee(emp);
-    setUpdatePassword('');
     setModalOpen(true);
-    setEmployeeDetails(null);
+    // setEmployeeDetails(null); // REMOVED - state variable deleted
     try {
       const res = await fetch(`/api/employee/${emp.id}/details`);
       if (!res.ok) throw new Error('Failed to fetch employee details');
-      const data = await res.json();
-      setEmployeeDetails(data);
+      // const data = await res.json();
+      // setEmployeeDetails(data); // REMOVED - state variable deleted
     } catch (err) {
-      setEmployeeDetails({ error: err.message });
+      // setEmployeeDetails({ error: err.message }); // REMOVED - state variable deleted
     }
   };
 
   const closeModal = () => {
     setModalOpen(false);
     setSelectedEmployee(null);
-    setUpdatePassword('');
-    setUpdateLoading(false);
-  };
-
-  // Update password function
-  const handleUpdatePassword = async () => {
-    if (!selectedEmployee || !updatePassword) {
-      setMessage({ type: 'error', text: 'Please enter a new password' });
-      return;
-    }
-
-    if (updatePassword.length < 6) {
-      setMessage({ type: 'error', text: 'Password must be at least 6 characters long' });
-      return;
-    }
-
-    setUpdateLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/employee/${selectedEmployee.id}/password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ password: updatePassword })
-      });
-
-      const data = await parseResponse(res);
-      const result = (typeof data === 'string') ? { message: data } : data;
-
-      setMessage({ type: 'success', text: result.message || 'Password updated successfully' });
-      setUpdatePassword('');
-      
-      // Close modal after successful update
-      setTimeout(() => {
-        closeModal();
-      }, 1500);
-      
-    } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update password' });
-    } finally {
-      setUpdateLoading(false);
-    }
   };
 
   const deleteEmployee = async (emp) => {

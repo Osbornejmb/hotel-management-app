@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.11.0",
     "client": "^0.0.1",
+    "jspdf": "^3.0.4",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
@@ -24,7 +25,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "postinstall": "node ./scripts/remove-bad-jspdf-map.js"
   },
   "eslintConfig": {
     "extends": [

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import '../styles/notificationBell.css';
 
@@ -12,8 +12,101 @@ const NotificationBar = () => {
   const refreshIntervalRef = useRef(null);
   const autoHideTimeoutRef = useRef(null);
 
+  const resetAutoHideTimer = useCallback(() => {
+    // Clear existing timeout
+    if (autoHideTimeoutRef.current) {
+      clearTimeout(autoHideTimeoutRef.current);
+    }
+    
+    // Set new timeout to hide after 10 seconds
+    autoHideTimeoutRef.current = setTimeout(() => {
+      setIsVisible(false);
+    }, 10000); // 10 seconds
+  }, []);
+
+  const fetchAllAndFilterUnreadLocal = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/notifications', {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const allNotifications = await response.json();
+        const unreadNotifications = allNotifications.filter(n => !n.isRead);
+        console.log('Filtered unread notifications:', unreadNotifications.length);
+        
+        setNotifications(unreadNotifications);
+        setUnreadCount(unreadNotifications.length);
+        
+        if (unreadNotifications.length > 0) {
+          setIsVisible(true);
+          resetAutoHideTimer();
+        } else {
+          setIsVisible(false);
+        }
+        
+        setCurrentIndex(prev => {
+          if (unreadNotifications.length > 0 && prev >= unreadNotifications.length) {
+            return 0;
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error in fallback fetch:', error);
+    }
+  }, [resetAutoHideTimer]);
+
+  const fetchUnreadNotificationsLocal = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      console.log('Fetching unread notifications from /api/notifications/unread...');
+      
+      const response = await fetch('http://localhost:5000/api/notifications/unread', {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched unread notifications:', data.length, data);
+        
+        setNotifications(data);
+        setUnreadCount(data.length);
+        
+        if (data.length > 0) {
+          setIsVisible(true);
+          resetAutoHideTimer();
+        } else {
+          setIsVisible(false);
+        }
+        
+        setCurrentIndex(prev => {
+          if (data.length > 0 && prev >= data.length) {
+            return 0;
+          }
+          return prev;
+        });
+      } else {
+        console.error('Failed to fetch unread notifications. Status:', response.status);
+        if (response.status === 404) {
+          console.log('Trying fallback to fetch all notifications and filter...');
+          await fetchAllAndFilterUnreadLocal();
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching unread notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [resetAutoHideTimer, fetchAllAndFilterUnreadLocal]);
+
   useEffect(() => {
-    // Initialize socket connection
     socketRef.current = io('http://localhost:5000');
 
     // Listen for new notifications
@@ -31,11 +124,10 @@ const NotificationBar = () => {
       resetAutoHideTimer();
     });
 
-    // Load existing unread notifications
-    fetchUnreadNotifications();
+    fetchUnreadNotificationsLocal();
 
     // Set up auto-refresh every 3 seconds
-    refreshIntervalRef.current = setInterval(fetchUnreadNotifications, 3000);
+    refreshIntervalRef.current = setInterval(fetchUnreadNotificationsLocal, 3000);
 
     return () => {
       if (socketRef.current) {
@@ -48,107 +140,11 @@ const NotificationBar = () => {
         clearTimeout(autoHideTimeoutRef.current);
       }
     };
-  }, []);
-
-  const resetAutoHideTimer = () => {
-    // Clear existing timeout
-    if (autoHideTimeoutRef.current) {
-      clearTimeout(autoHideTimeoutRef.current);
-    }
-    
-    // Set new timeout to hide after 10 seconds
-    autoHideTimeoutRef.current = setTimeout(() => {
-      if (unreadCount > 0) {
-        setIsVisible(false);
-      }
-    }, 10000); // 10 seconds
-  };
+  }, [resetAutoHideTimer, fetchUnreadNotificationsLocal]);
 
   const handleUserInteraction = () => {
     // Reset the auto-hide timer when user interacts
     resetAutoHideTimer();
-  };
-
-  const fetchUnreadNotifications = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Fetching unread notifications from /api/notifications/unread...');
-      
-      // Fetch only unread notifications
-      const response = await fetch('http://localhost:5000/api/notifications/unread', {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Fetched unread notifications:', data.length, data);
-        
-        setNotifications(data);
-        setUnreadCount(data.length);
-        
-        // Show the bar if there are unread notifications
-        if (data.length > 0) {
-          setIsVisible(true);
-          resetAutoHideTimer();
-        } else {
-          setIsVisible(false);
-        }
-        
-        // Reset current index if we have new data and current index is out of bounds
-        if (data.length > 0 && currentIndex >= data.length) {
-          setCurrentIndex(0);
-        }
-      } else {
-        console.error('Failed to fetch unread notifications. Status:', response.status);
-        // If the /unread endpoint doesn't exist, try fallback
-        if (response.status === 404) {
-          console.log('Trying fallback to fetch all notifications and filter...');
-          await fetchAllAndFilterUnread();
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching unread notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fallback method if /unread endpoint doesn't exist
-  const fetchAllAndFilterUnread = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/notifications', {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const allNotifications = await response.json();
-        const unreadNotifications = allNotifications.filter(n => !n.isRead);
-        console.log('Filtered unread notifications:', unreadNotifications.length);
-        
-        setNotifications(unreadNotifications);
-        setUnreadCount(unreadNotifications.length);
-        
-        // Show the bar if there are unread notifications
-        if (unreadNotifications.length > 0) {
-          setIsVisible(true);
-          resetAutoHideTimer();
-        } else {
-          setIsVisible(false);
-        }
-        
-        if (unreadNotifications.length > 0 && currentIndex >= unreadNotifications.length) {
-          setCurrentIndex(0);
-        }
-      }
-    } catch (error) {
-      console.error('Error in fallback fetch:', error);
-    }
   };
 
   const markAsRead = async (notificationId) => {

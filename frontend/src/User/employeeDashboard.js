@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const EmployeeDashboard = () => {
   const [selectedTask, setSelectedTask] = useState(null);
@@ -29,67 +29,8 @@ const EmployeeDashboard = () => {
     return { name: '', employeeId: '', id: '' };
   };
 
-  // Fetch tasks from API
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setLoading(true);
-        
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.error('No token found');
-          setLoading(false);
-          return;
-        }
-
-        // Get employee info from token
-        const employee = getEmployeeFromToken();
-        setEmployeeInfo(employee);
-
-        const response = await fetch(`${API_BASE_URL}/api/tasks`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch tasks');
-        }
-
-        const tasksData = await response.json();
-        
-        // Filter tasks to show only those assigned to the current employee AND not completed
-        const myTasks = tasksData.filter(task => {
-          const matchesName = task.assigned && 
-                             task.assigned.toLowerCase() === employee.name.toLowerCase();
-          const matchesId = task.employeeId && 
-                           task.employeeId.toString() === employee.employeeId?.toString();
-          const isNotCompleted = task.status !== 'COMPLETED';
-          return (matchesName || matchesId) && isNotCompleted;
-        });
-
-        console.log('Filtered tasks for dashboard:', {
-          employeeName: employee.name,
-          totalTasks: tasksData.length,
-          myTasks: myTasks.length
-        });
-
-        setTasks(myTasks);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        // Fallback to demo data
-        showDemoTasks();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTasks();
-  }, []);
-
   // Demo data fallback
-  const showDemoTasks = () => {
+  const showDemoTasks = useCallback(() => {
     const employee = getEmployeeFromToken();
     const demoTasks = [
       { 
@@ -148,7 +89,66 @@ const EmployeeDashboard = () => {
     });
 
     setTasks(filteredTasks);
-  };
+  }, []);
+
+  // Fetch tasks from API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No token found');
+          setLoading(false);
+          return;
+        }
+
+        // Get employee info from token
+        const employee = getEmployeeFromToken();
+        setEmployeeInfo(employee);
+
+        const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch tasks');
+        }
+
+        const tasksData = await response.json();
+        
+        // Filter tasks to show only those assigned to the current employee AND not completed
+        const myTasks = tasksData.filter(task => {
+          const matchesName = task.assigned && 
+                             task.assigned.toLowerCase() === employee.name.toLowerCase();
+          const matchesId = task.employeeId && 
+                           task.employeeId.toString() === employee.employeeId?.toString();
+          const isNotCompleted = task.status !== 'COMPLETED';
+          return (matchesName || matchesId) && isNotCompleted;
+        });
+
+        console.log('Filtered tasks for dashboard:', {
+          employeeName: employee.name,
+          totalTasks: tasksData.length,
+          myTasks: myTasks.length
+        });
+
+        setTasks(myTasks);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        // Fallback to demo data
+        showDemoTasks();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [showDemoTasks]);
 
   // Calculate stats based on filtered tasks
   const calculateStats = () => {

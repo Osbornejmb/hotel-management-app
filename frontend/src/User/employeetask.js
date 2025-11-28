@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const EmployeeTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -8,15 +8,6 @@ const EmployeeTasks = () => {
 
   // Use your backend URL
   const API_BASE_URL = 'http://localhost:5000';
-
-  useEffect(() => {
-    fetchEmployeeTasks();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchEmployeeTasks, 30000);
-    
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, []);
 
   // Get employee info from JWT token
   const getEmployeeFromToken = () => {
@@ -37,7 +28,67 @@ const EmployeeTasks = () => {
     return { name: '', employeeId: '', id: '' };
   };
 
-  const fetchEmployeeTasks = async () => {
+  const showFilteredDemoTasks = useCallback((employee) => {
+    // Demo data with different employees
+    const demoTasks = [
+      { 
+        id: 'T1001', 
+        assigned: 'Christian Malong', 
+        employeeId: '0001',
+        room: 'Lobby', 
+        type: 'CLEANING', 
+        status: 'NOT_STARTED', 
+        priority: 'HIGH', 
+        description: 'Deep cleaning of main lobby area',
+        jobTitle: 'Cleaner',
+        createdAt: new Date().toISOString(),
+        dueDate: '2025-01-15'
+      },
+      { 
+        id: 'T1002', 
+        assigned: 'Maria Santos',  // Different employee
+        employeeId: '0002',
+        room: '302', 
+        type: 'MAINTENANCE', 
+        status: 'IN_PROGRESS', 
+        priority: 'MEDIUM', 
+        description: 'Fix AC unit in room 302',
+        jobTitle: 'Maintenance',
+        createdAt: new Date().toISOString(),
+        dueDate: '2025-01-12'
+      },
+      { 
+        id: 'T1003', 
+        assigned: 'Juan Dela Cruz',  // Different employee
+        employeeId: '0003',
+        room: '205-206', 
+        type: 'HOUSEKEEPING', 
+        status: 'COMPLETED', 
+        priority: 'LOW', 
+        description: 'Change bedsheets and towels',
+        jobTitle: 'Housekeeping',
+        createdAt: new Date().toISOString(),
+        dueDate: '2025-01-10'
+      }
+    ];
+    
+    // Filter demo tasks by current employee
+    const filteredTasks = demoTasks.filter(task => {
+      const matchesName = task.assigned.toLowerCase() === employee.name?.toLowerCase();
+      const matchesId = task.employeeId === employee.employeeId?.toString();
+      return matchesName || matchesId;
+    });
+
+    console.log('Filtered demo tasks:', {
+      employeeName: employee.name,
+      employeeId: employee.employeeId,
+      filteredCount: filteredTasks.length
+    });
+
+    setTasks(filteredTasks);
+  }, []);
+
+  const fetchEmployeeTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -109,67 +160,17 @@ const EmployeeTasks = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showFilteredDemoTasks]);
 
-  const showFilteredDemoTasks = (employee) => {
-    // Demo data with different employees
-    const demoTasks = [
-      { 
-        id: 'T1001', 
-        assigned: 'Christian Malong', 
-        employeeId: '0001',
-        room: 'Lobby', 
-        type: 'CLEANING', 
-        status: 'NOT_STARTED', 
-        priority: 'HIGH', 
-        description: 'Deep cleaning of main lobby area',
-        jobTitle: 'Cleaner',
-        createdAt: new Date().toISOString(),
-        dueDate: '2025-01-15'
-      },
-      { 
-        id: 'T1002', 
-        assigned: 'Maria Santos',  // Different employee
-        employeeId: '0002',
-        room: '302', 
-        type: 'MAINTENANCE', 
-        status: 'IN_PROGRESS', 
-        priority: 'MEDIUM', 
-        description: 'Fix AC unit in room 302',
-        jobTitle: 'Maintenance',
-        createdAt: new Date().toISOString(),
-        dueDate: '2025-01-12'
-      },
-      { 
-        id: 'T1003', 
-        assigned: 'Juan Dela Cruz',  // Different employee
-        employeeId: '0003',
-        room: '205-206', 
-        type: 'HOUSEKEEPING', 
-        status: 'COMPLETED', 
-        priority: 'LOW', 
-        description: 'Change bedsheets and towels',
-        jobTitle: 'Housekeeping',
-        createdAt: new Date().toISOString(),
-        dueDate: '2025-01-10'
-      }
-    ];
+  useEffect(() => {
+    fetchEmployeeTasks();
     
-    // Filter demo tasks by current employee
-    const filteredTasks = demoTasks.filter(task => {
-      const matchesName = task.assigned.toLowerCase() === employee.name?.toLowerCase();
-      const matchesId = task.employeeId === employee.employeeId?.toString();
-      return matchesName || matchesId;
-    });
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchEmployeeTasks, 30000);
+    
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [fetchEmployeeTasks]);
 
-    console.log('Filtered demo tasks:', {
-      employeeName: employee.name,
-      employeeId: employee.employeeId,
-      filteredCount: filteredTasks.length
-    });
-
-    setTasks(filteredTasks);
-  };
 
   const updateTaskStatus = async (taskId, newStatus) => {
     try {

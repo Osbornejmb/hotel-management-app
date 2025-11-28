@@ -11,9 +11,8 @@ const ProfileSection = () => {
     hireDate: ''
   });
 
-  const [message, setMessage] = useState(null);
-
   useEffect(() => {
+    // Fetch user data only once on mount
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -25,13 +24,13 @@ const ProfileSection = () => {
         if (!res.ok) return;
         const data = await res.json();
         const updatedProfile = {
-          name: data.name || data.username || profile.name,
-          role: data.role || profile.role,
-          email: data.email || profile.email,
-          phone: data.phone || profile.phone,
-          id: data.id || data._id || profile.id,
-          position: data.position || data.job || profile.position,
-          hireDate: data.hireDate || profile.hireDate
+          name: data.name || data.username || 'Admin User',
+          role: data.role || 'Admin',
+          email: data.email || '',
+          phone: data.phone || '',
+          id: data.id || data._id || '',
+          position: data.position || data.job || '',
+          hireDate: data.hireDate || ''
         };
         setProfile(updatedProfile);
       } catch (err) {
@@ -85,19 +84,6 @@ const ProfileSection = () => {
           Profile Management
         </h2>
       </div>
-
-      {message && (
-        <div style={{
-          marginBottom: 24,
-          padding: "12px 16px",
-          borderRadius: 8,
-          background: message.type === 'error' ? '#f7e6e6' : '#f0e6d2',
-          color: message.type === 'error' ? '#6b3f1f' : '#6b3f1f',
-          border: `1px solid ${message.type === 'error' ? '#e7d4a3' : '#e9d8b7'}`
-        }}>
-          {message.text}
-        </div>
-      )}
 
       <div style={{
         background: '#fff',
