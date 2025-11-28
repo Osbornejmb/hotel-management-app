@@ -7,29 +7,61 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/users/login`,
-        { email, password }
-      );
-      const { token, role } = res.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+    const payload = { email, password };
 
-      if (role === 'restaurantAdmin') navigate('/admin/restaurant');
-      else if (role === 'hotelAdmin') navigate('/admin/hotel');
-      else setError('Unknown role');
+    // Helper to attempt a login endpoint and return res.data or throw
+    const attemptLogin = async (url) => {
+      const res = await axios.post(url, payload);
+      return res.data;
+    };
+
+    try {
+      let data;
+      try {
+        // First try the users login endpoint
+        data = await attemptLogin('http://localhost:5000/api/users/login');
+      } catch (firstErr) {
+        // If users login fails, try employee login
+        try {
+          data = await attemptLogin('http://localhost:5000/api/employee/login');
+        } catch (secondErr) {
+          // Prefer a clear message from the server responses if available
+          const msg = 
+            firstErr.response?.data?.error || 
+            secondErr.response?.data?.error || 
+            firstErr.message || 
+            'Login failed';
+          throw new Error(msg);
+        }
+      }
+
+      // Normalize response and store session info
+      const { token, role, username, name } = data;
+      if (token) localStorage.setItem('token', token);
+      if (role) localStorage.setItem('role', role);
+      if (username) localStorage.setItem('username', username);
+      if (name) localStorage.setItem('name', name);
+
+      // Redirect based on role
+      if (role === 'restaurantAdmin') {
+        navigate('/admin/restaurant');
+      } else if (role === 'hotelAdmin') {
+        navigate('/admin/hotel');
+      } else if (role === 'employeeAdmin') {
+        navigate('/admin/employee');
+      } else if (role === 'employee') {
+        navigate('/user/employeeMainDashboard');
+      } else {
+        setError('Unknown role');
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || err.message || 'Login failed');
     }
-      setLoading(false);
   };
 
   return (
@@ -37,7 +69,6 @@ function LoginPage() {
       <div className="login-header">
         <img src="/lumine_logo.png" alt="Lumine Logo" className="login-logo" />
       </div>
-
 
       <div className="login-box">
         <h3 className="login-role">Admin</h3>
@@ -49,7 +80,6 @@ function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             className="login-input"
-            disabled={loading}
           />
           <input
             type="password"
@@ -58,10 +88,9 @@ function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="login-input"
-            disabled={loading}
           />
-          <button type="submit" className="login-button" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+          <button type="submit" className="login-button">
+            Login
           </button>
         </form>
         {error && <p className="login-error">{error}</p>}

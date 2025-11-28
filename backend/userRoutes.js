@@ -1,4 +1,3 @@
-
 // backend/userRoutes.js
 // Express routes for User operations
 
@@ -6,6 +5,20 @@ const express = require('express');
 const router = express.Router();
 const User = require('./User');
 const jwt = require('jsonwebtoken');
+
+// Helper: find smallest vacant employeeId (number) starting from 1
+async function getNextEmployeeIdNumber() {
+  // fetch all assigned employeeIds, sort ascending
+  const usersWithId = await User.find({ employeeId: { $exists: true } }, { employeeId: 1 }).sort({ employeeId: 1 });
+  const ids = usersWithId.map(u => u.employeeId).filter(n => typeof n === 'number').sort((a, b) => a - b);
+  // find smallest missing positive integer
+  let expect = 1;
+  for (let id of ids) {
+    if (id > expect) break;
+    if (id === expect) expect++;
+  }
+  return expect;
+}
 // Login route - returns JWT and user role
 router.post('/login', async (req, res) => {
   try {
@@ -24,7 +37,7 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET || 'secretkey',
       { expiresIn: '1d' }
     );
-    res.json({ token, role: user.role });
+    res.json({ token, role: user.role, username: user.username, name: user.name });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -33,13 +46,22 @@ router.post('/login', async (req, res) => {
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, name, email, password, role, jobTitle, contact_number } = req.body;
     if (!username || !email || !password || !role) {
       return res.status(400).json({ error: 'All fields (username, email, password, role) are required.' });
     }
-    const user = new User({ username, email, password, role });
+    const userObj = { username, name, email, password, role };
+    if (contact_number) userObj.contact_number = contact_number;
+    // If registering an employee, auto-assign the next available employeeId (number)
+    if ((role || '').toLowerCase() === 'employee') {
+      const nextId = await getNextEmployeeIdNumber();
+      userObj.employeeId = nextId;
+      // accept optional jobTitle (sub-role) for employees
+      if (jobTitle) userObj.jobTitle = jobTitle;
+    }
+    const user = new User(userObj);
     await user.save();
-    res.status(201).json({ message: 'User registered successfully' });
+    res.status(201).json({ message: 'User registered successfully', employeeId: user.employeeId });
   } catch (err) {
     // Duplicate key error
     if (err.code === 11000) {
@@ -57,6 +79,17 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Endpoint to get the next suggested employee ID as zero-padded 4-digit string
+router.get('/next-employee-id', async (req, res) => {
+  try {
+    const next = await getNextEmployeeIdNumber();
+    const padded = String(next).padStart(4, '0');
+    res.json({ nextId: next, padded });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get all users (for testing/demo purposes)
 router.get('/', async (req, res) => {
   try {
@@ -67,22 +100,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Verify password for any hotelAdmin user
-router.post('/verify-hoteladmin-password', async (req, res) => {
+// Delete user by id
+router.delete('/:id', async (req, res) => {
   try {
-    const { password } = req.body;
-    if (!password) {
-      return res.status(400).json({ error: 'Password required.' });
-    }
-    // Find any hotelAdmin user
-    const admins = await User.find({ role: 'hotelAdmin' });
-    for (const admin of admins) {
-      const isMatch = await admin.comparePassword(password);
-      if (isMatch) {
-        return res.json({ valid: true });
-      }
-    }
-    return res.status(401).json({ valid: false, error: 'Invalid password.' });
+    const id = req.params.id;
+    const deleted = await User.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: 'User not found' });
+    res.json({ message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

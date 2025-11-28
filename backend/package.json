@@ -4,7 +4,8 @@
   "description": "Backend for Hotel & Restaurant Management System",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:attendance": "node scripts/check_attendance.js"
   },
   "keywords": [],
   "author": "",
@@ -12,12 +13,15 @@
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.19.0",
     "mongoose": "^8.18.1",
+    "nodemailer": "^7.0.9",
     "socket.io": "^4.8.1"
   }
 }
