@@ -9,26 +9,12 @@ const { sendEmployeeCredentials } = require('./emailService'); // Import email f
 const authenticateEmployee = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'Access denied. No token provided.' });
-    }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'changeme');
-    const employee = await Employee.findById(decoded.id).select('-password');
-  
-    if (!employee) {
-      return res.status(401).json({ error: 'Invalid token.' });
-    }
+    if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
-    req.employee = employee;
-    next();
-  };
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'changeme');
     const employee = await Employee.findById(decoded.id).select('-password');
-    
-    if (!employee) {
-      return res.status(401).json({ error: 'Invalid token.' });
-    }
+
+    if (!employee) return res.status(401).json({ error: 'Invalid token.' });
 
     req.employee = employee;
     next();
@@ -382,4 +368,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
->>>>>>> origin/MALONG
