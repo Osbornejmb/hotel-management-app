@@ -1,0 +1,8 @@
+{
+  "extends": "react-app",
+  "ignoreWarnings": [
+    {
+      "file": "**/node_modules/face-api.js/**"
+    }
+  ]
+}

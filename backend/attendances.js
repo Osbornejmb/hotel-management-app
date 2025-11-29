@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const attendanceSchema = new mongoose.Schema({
-  employeeId: {
+  cardId: {
     type: String,
     required: true
   },
-  employeeName: {
+  name: {
     type: String,
     required: true
   },
