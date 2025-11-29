@@ -48,6 +48,13 @@ const UserSchema = new mongoose.Schema({
     required: false,
     default: ''
   },
+  // store unique card IDs for employees
+  cardId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    required: false
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -36,6 +36,9 @@ const EmployeeSchema = new mongoose.Schema({
   // contact number storage
   contactNumber: { type: String, default: '' },
 
+  // card ID for employee identification
+  cardId: { type: String, unique: true, sparse: true, required: false },
+
   // status and timestamps
   status: { type: String, enum: ['active', 'inactive', 'terminated'], default: 'active' },
 
