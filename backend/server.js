@@ -1,4 +1,3 @@
-
 require("dotenv").config({ path: __dirname + "/.env" });
 const express = require("express");
 const mongoose = require("mongoose");
@@ -8,12 +7,13 @@ const { Server } = require('socket.io');
 const userRoutes = require("./userRoutes");
 const roomRoutes = require("./roomRoutes");
 const cartRoutes = require("./cartRoutes");
-const employeeRoutes = require("./employeeRoutes");
 const contactRoutes = require("./contactRoutes");
 const customerRoutes = require("./customerRoutes");
 const checkoutRoutes = require("./checkoutRoutes");
 const foodRoutes = require("./foodRoutes");
+const employeeRoutes = require("./employeeRoutes");
 const requestRoutes = require("./requestRoutes");
+<<<<<<< HEAD
 const bookingRoutes = require("./bookingRoutes");
 const carouselRoutes = require("./carouselRoutes");
 
@@ -61,19 +61,77 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+=======
+const taskRoutes = require('./taskRoutes');
+const attendanceRoutes = require("./attendanceRoutes");
+const { sendEmployeeCredentials, testEmail } = require("./emailService");
+const notificationRoutes = require('./notificationRoutes');
+
+const app = express();
+
+// Configure CORS for production and development.
+const rawFrontendUrls = process.env.FRONTEND_URL || '';
+const allowedOrigins = rawFrontendUrls
+  .split(',')
+  .map(url => url.trim().replace(/\/+$/, ''))
+  .filter(url => url);
+
+allowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000');
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    const incomingOrigin = origin.replace(/\/+$/, '');
+    if (allowedOrigins.includes(incomingOrigin)) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    return callback(new Error('CORS: origin not allowed'), false);
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+>>>>>>> origin/MALONG
 app.use(express.json());
 
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.io
+const io = socketIo(server, {
+  cors: {
+    origin: "http://localhost:3000", // Your frontend URL
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Join user to their room for personalized notifications
+  socket.on('join-user', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Make io accessible to other routes
+app.set('io', io);
+
+// Routes - include all routes from both branches
 app.use("/api/users", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/cart", cartRoutes);
-app.use("/api/employees", employeeRoutes);
 app.use("/api/contact", contactRoutes);
-// app.use("/api/reservations", reservationRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/food", foodRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/carousel", carouselRoutes);
-
+app.use('/api/employee', employeeRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/bookings", bookingRoutes);
 
@@ -81,9 +139,47 @@ app.use("/api/activitylogs", activityLogRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/hoteladnotifs", hotelAdNotifsRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use('/api/attendances', attendanceRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/notifications', notificationRoutes);
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+// Test email endpoint from other branch
+app.get("/api/test-email", async (req, res) => {
+  try {
+    console.log('Testing email configuration...');
+    const result = await testEmail();
+    if (result) {
+      res.json({ success: true, message: "Email test completed successfully" });
+    } else {
+      res.status(500).json({ success: false, message: "Email test failed" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+app.use('/api/employee', employeeRoutes);
+app.use("/api/requests", requestRoutes);
+app.use("/api/tasks", taskRoutes);
+// Mount attendance routes at both plural and singular for compatibility
+app.use('/api/attendances', attendanceRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/notifications', notificationRoutes);
+
+// Test email endpoint
+app.get("/api/test-email", async (req, res) => {
+  try {
+    console.log('Testing email configuration...');
+    const result = await testEmail();
+    if (result) {
+      res.json({ success: true, message: "Email test completed successfully" });
+    } else {
+      res.status(500).json({ success: false, message: "Email test failed" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+>>>>>>> origin/MALONG
 
 mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
@@ -171,4 +267,14 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+<<<<<<< HEAD
 server.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
+=======
+// Use server.listen instead of app.listen
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📧 Email User: ${process.env.EMAIL_USER ? 'Set' : 'Missing'}`);
+  console.log(`🔑 Email Password: ${process.env.EMAIL_PASSWORD ? 'Set' : 'Missing'}`);
+  console.log(`🔔 Socket.io server initialized`);
+});
+>>>>>>> origin/MALONG

@@ -10,6 +10,10 @@ const UserSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  name: {
+    type: String,
+    required: false
+  },
   email: {
     type: String,
     required: true,
@@ -21,9 +25,28 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['restaurantAdmin', 'hotelAdmin'],
+    enum: ['restaurantAdmin', 'hotelAdmin', 'employeeAdmin', 'employee'],
     default: 'restaurantAdmin',
     required: true
+  },
+  employeeId: {
+    type: Number,
+    unique: true,
+    sparse: true,
+    required: false
+  },
+  // jobTitle indicates the specific job/class for an employee (sub-role)
+  // Add new job classes here as needed, for example: 'Cleaner', 'Clerk', 'Maintenance', 'Manager'
+  jobTitle: {
+    type: String,
+    enum: ['Cleaner', 'Clerk', 'Maintenance', 'Manager', 'Staff'],
+    default: 'Staff'
+  },
+  // store contact number for employees and users
+  contact_number: {
+    type: String,
+    required: false,
+    default: ''
   },
   createdAt: {
     type: Date,

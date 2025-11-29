@@ -14,22 +14,59 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/users/login`,
-        { email, password }
-      );
-      const { token, role } = res.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+    const payload = { email, password };
 
-      if (role === 'restaurantAdmin') navigate('/admin/restaurant');
-      else if (role === 'hotelAdmin') navigate('/admin/hotel');
-      else setError('Unknown role');
+    // Helper to attempt a login endpoint and return res.data or throw
+    const attemptLogin = async (url) => {
+      const res = await axios.post(url, payload);
+      return res.data;
+    };
+
+    try {
+      let data;
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      try {
+        // First try the users login endpoint
+        data = await attemptLogin(`${apiBase}/api/users/login`);
+      } catch (firstErr) {
+        // If users login fails, try employee login
+        try {
+          data = await attemptLogin(`${apiBase}/api/employee/login`);
+        } catch (secondErr) {
+          // Prefer a clear message from the server responses if available
+          const msg =
+            firstErr.response?.data?.error ||
+            secondErr.response?.data?.error ||
+            firstErr.message ||
+            'Login failed';
+          throw new Error(msg);
+        }
+      }
+
+      // Normalize response and store session info
+      const { token, role, username, name } = data;
+      if (token) localStorage.setItem('token', token);
+      if (role) localStorage.setItem('role', role);
+      if (username) localStorage.setItem('username', username);
+      if (name) localStorage.setItem('name', name);
+
+      // Redirect based on role
+      if (role === 'restaurantAdmin') {
+        navigate('/admin/restaurant');
+      } else if (role === 'hotelAdmin') {
+        navigate('/admin/hotel');
+      } else if (role === 'employeeAdmin') {
+        navigate('/admin/employee');
+      } else if (role === 'employee') {
+        navigate('/user/employeeMainDashboard');
+      } else {
+        setError('Unknown role');
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
-    }
+      setError(err.response?.data?.error || err.message || 'Login failed');
+    } finally {
       setLoading(false);
+    }
   };
 
   return (
@@ -37,7 +74,6 @@ function LoginPage() {
       <div className="login-header">
         <img src="/lumine_logo.png" alt="Lumine Logo" className="login-logo" />
       </div>
-
 
       <div className="login-box">
         <h3 className="login-role">Admin</h3>
