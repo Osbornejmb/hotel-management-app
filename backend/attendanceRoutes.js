@@ -76,6 +76,30 @@ router.post('/attendance', async (req, res) => {
         clockIn: attendance.clockIn
       });
     } else if (!attendance.clockOut) {
+      // Check if 30 minutes have passed since clock-in
+      const clockInTime = new Date(attendance.clockIn);
+      const currentTime = new Date();
+      const minutesPassed = (currentTime - clockInTime) / (1000 * 60);
+      
+      console.log('=== COOLDOWN CHECK ===');
+      console.log('Clock-in time:', clockInTime);
+      console.log('Current time:', currentTime);
+      console.log('Time passed:', minutesPassed, 'minutes');
+      console.log('Cooldown required: 30 minutes');
+      console.log('========================');
+      
+      if (minutesPassed < 30) {
+        // Cooldown period not met
+        const remainingMinutes = Math.ceil(30 - minutesPassed);
+        console.log('Cooldown still in effect. Remaining:', remainingMinutes, 'minutes');
+        return res.status(400).json({ 
+          error: `Cooldown in effect. Please wait ${remainingMinutes} more minutes before clocking out.`,
+          status: 'cooldown',
+          minutesRemaining: remainingMinutes,
+          minutesPassed: minutesPassed
+        });
+      }
+      
       // Clock out - save image locally
       const clockOutImageFilename = saveImageLocally(image, cardId, 'clockout');
       
@@ -91,8 +115,13 @@ router.post('/attendance', async (req, res) => {
         totalHours: attendance.totalHours
       });
     } else {
-      // Already clocked out, prevent duplicate clock-ins
-      return res.status(400).json({ error: 'Employee has already clocked out for today.' });
+      // Already clocked out, show next available clock-in time (same as clock-in time for next day)
+      return res.status(400).json({ 
+        error: 'Employee has already clocked out for today.',
+        status: 'already-clocked-out',
+        clockOutTime: attendance.clockOut,
+        clockInTime: attendance.clockIn
+      });
     }
   } catch (err) {
     console.error('Error in attendance route:', err);
