@@ -17,31 +17,79 @@ const Attendance = () => {
     return "Good Evening";
   };
 
-  // Simple face detection using edge detection
+  // Simple, lenient face detection - not overly strict
   const detectFace = (canvas) => {
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    // Convert to grayscale and find edges (simple skin tone detection)
-    let skinPixels = 0;
+    let facePixels = 0;
+    // Broader skin tone detection - lenient thresholds
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
 
-      // Detect skin tone ranges (basic face detection)
-      // Skin tones typically have R > G > B with specific ranges
-      if (r > 95 && g > 40 && b > 20 && r > b && r > g && (r - g) > 15) {
-        skinPixels++;
+      // Lenient skin tone detection (not overly strict)
+      if (r > 75 && g > 25 && b > 5 && r > b && (r - g) > 8) {
+        facePixels++;
       }
     }
 
-    // Calculate percentage of skin-like pixels
-    const skinPercentage = (skinPixels / (canvas.width * canvas.height)) * 100;
+    // Lenient threshold - 2-55% of pixels
+    const facePercentage = (facePixels / (canvas.width * canvas.height)) * 100;
+    return facePercentage > 2 && facePercentage < 55;
+  };
 
-    // If we detect between 5-40% skin tone, likely a face is present
-    return skinPercentage > 5 && skinPercentage < 40;
+  // Save image to local storage (IndexedDB)
+  const saveImageLocally = async (imageBlob) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${cardId}_${timestamp}.jpg`;
+        const imageData = {
+          filename,
+          data: reader.result,
+          timestamp: new Date().toISOString()
+        };
+
+        // Store in localStorage and IndexedDB
+        try {
+          // Try to store in IndexedDB for larger images
+          const request = indexedDB.open('AttendanceDB', 1);
+          request.onsuccess = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('photos')) {
+              db.close();
+              const request2 = indexedDB.open('AttendanceDB', 2);
+              request2.onupgradeneeded = (e) => {
+                e.target.result.createObjectStore('photos', { autoIncrement: true });
+              };
+              request2.onsuccess = () => {
+                const db2 = request2.target.result;
+                const tx = db2.transaction('photos', 'readwrite');
+                tx.objectStore('photos').add(imageData);
+                db2.close();
+                resolve(filename);
+              };
+            } else {
+              const tx = db.transaction('photos', 'readwrite');
+              tx.objectStore('photos').add(imageData);
+              db.close();
+              resolve(filename);
+            }
+          };
+          request.onerror = () => {
+            resolve(filename);
+          };
+        } catch (err) {
+          console.error('Error saving to IndexedDB:', err);
+          resolve(filename);
+        }
+      };
+      reader.readAsDataURL(imageBlob);
+    });
   };
 
   // Start camera
@@ -53,6 +101,12 @@ const Attendance = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setShowCamera(true);
+        // Auto-capture after 2 seconds
+        setTimeout(() => {
+          if (showCamera) {
+            capturePhotoAuto();
+          }
+        }, 2000);
       }
     } catch (err) {
       console.error('Error accessing camera:', err);
@@ -61,8 +115,8 @@ const Attendance = () => {
     }
   };
 
-  // Capture photo with face detection
-  const capturePhoto = async () => {
+  // Auto-capture photo with face detection
+  const capturePhotoAuto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     try {
@@ -70,11 +124,8 @@ const Attendance = () => {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
 
-      // Set canvas dimensions
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
-      // Draw video frame to canvas
       ctx.drawImage(video, 0, 0);
 
       // Detect face
@@ -86,19 +137,60 @@ const Attendance = () => {
         return;
       }
 
-      // Get image data
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
-
-      // Close camera
-      closeCamera();
-
-      // Send to server with attendance
-      await submitAttendance(imageData);
+      // Convert canvas to blob and save
+      canvas.toBlob(async (blob) => {
+        const filename = await saveImageLocally(blob);
+        console.log('Image saved locally:', filename);
+        
+        closeCamera();
+        
+        // Process attendance (mock - no backend)
+        processAttendance();
+      }, 'image/jpeg', 0.8);
     } catch (err) {
       console.error('Error capturing photo:', err);
       setMessage('Error capturing photo. Please try again.');
       setTimeout(() => setMessage(''), 3000);
     }
+  };
+
+  // Manual capture for testing
+  const capturePhotoManual = async () => {
+    await capturePhotoAuto();
+  };
+
+  // Process attendance locally (mock)
+  const processAttendance = () => {
+    setLoading(true);
+    
+    // Simulate attendance processing
+    setTimeout(() => {
+      // Mock employee data
+      const mockName = 'Employee ' + cardId;
+      const isClockedOut = Math.random() > 0.5; // Random for demo
+      
+      if (isClockedOut) {
+        setMessage(`Thank You, ${mockName}`);
+        setDetails({
+          label: 'Clocked Out',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          total: (Math.random() * 8 + 7).toFixed(2) // Mock 7-15 hours
+        });
+      } else {
+        setMessage(`${getGreeting()}, ${mockName}`);
+        setDetails({
+          label: 'Clocked In',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+      }
+
+      setLoading(false);
+      setCardId('');
+      setTimeout(() => {
+        setMessage('');
+        setDetails(null);
+      }, 4000);
+    }, 500);
   };
 
   // Close camera
@@ -108,48 +200,6 @@ const Attendance = () => {
       tracks.forEach(track => track.stop());
     }
     setShowCamera(false);
-  };
-
-  // Submit attendance with image
-  const submitAttendance = async (imageData) => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardId, image: imageData })
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.status === 'clocked-in') {
-          setMessage(`${getGreeting()}, ${data.name}`);
-          setDetails({
-            label: 'Clocked In',
-            time: new Date(data.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-minute' })
-          });
-        } else if (data.status === 'clocked-out') {
-          setMessage(`Thank You, ${data.name}`);
-          setDetails({
-            label: 'Clocked Out',
-            time: new Date(data.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            total: data.totalHours.toFixed(2)
-          });
-        }
-      } else {
-        setMessage(data.error || 'An error occurred.');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setMessage('Failed to connect to server.');
-    } finally {
-      setLoading(false);
-      setCardId('');
-      setTimeout(() => {
-        setMessage('');
-        setDetails(null);
-      }, 4000);
-    }
   };
 
   // Handle card ID submission
@@ -294,7 +344,7 @@ const Attendance = () => {
           }}
         >
           <h2 style={{ color: '#fff', marginBottom: '30px', fontSize: '1.8rem' }}>
-            Take Your Photo
+            Capturing Photo...
           </h2>
 
           {/* Video frame */}
@@ -326,7 +376,7 @@ const Attendance = () => {
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '20px' }}>
             <button
-              onClick={capturePhoto}
+              onClick={capturePhotoManual}
               style={{
                 padding: '15px 40px',
                 fontSize: '1.1rem',
@@ -348,7 +398,7 @@ const Attendance = () => {
                 e.target.style.transform = 'scale(1)';
               }}
             >
-              Capture
+              Capture Now
             </button>
             <button
               onClick={() => {
