@@ -207,7 +207,7 @@ router.post('/', async (req, res) => {
     // Ensure department is present (schema may require it) - use provided or fallback
     const department = (body.department && String(body.department).trim() !== '') ? body.department : 'General';
 
-    // determine numeric employeeId
+    // Determine numeric employeeId
     let employeeId = (typeof body.employeeId === 'number') ? body.employeeId : undefined;
     if (employeeId === undefined) {
       const last = await Employee.findOne({ employeeId: { $exists: true, $ne: null } })
@@ -249,6 +249,7 @@ router.post('/', async (req, res) => {
       password: password,
       role: body.role || 'employee',
       employeeId,
+      cardId: body.idCard, // Use card ID provided by frontend
       employeeCode: body.employeeCode || undefined,
       jobTitle: body.jobTitle,
       contactNumber: body.contactNumber || body.contact || '',
@@ -266,7 +267,8 @@ router.post('/', async (req, res) => {
       name: name,
       username: username,
       password: password,
-      employeeId: employeeId
+      employeeId: employeeId,
+      cardId: body.idCard // Include card ID in the email
     });
 
     if (emailResult.success) {
@@ -274,6 +276,7 @@ router.post('/', async (req, res) => {
         message: 'Employee created successfully and credentials email sent!', 
         id: doc._id, 
         employeeId: doc.employeeId,
+        cardId: doc.cardId, // Include card ID in the response
         emailSent: true
       });
     } else {
@@ -282,6 +285,7 @@ router.post('/', async (req, res) => {
         message: `Employee created successfully! /@ Email failed: ${emailResult.error}`,
         id: doc._id,
         employeeId: doc.employeeId,
+        cardId: doc.cardId, // Include card ID in the response
         emailSent: false,
         manualPassword: password, // Include password in response for manual sharing
         emailError: emailResult.error

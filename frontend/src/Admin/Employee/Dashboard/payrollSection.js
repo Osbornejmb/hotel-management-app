@@ -351,14 +351,6 @@ const PayrollSection = () => {
   const [payrolls, setPayrolls] = useState([]);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [debugLogs, setDebugLogs] = useState([]);
-
-  const addDebug = (msg) => {
-    const time = new Date().toLocaleTimeString();
-    const entry = `${time} - ${msg}`;
-    console.log('[Payroll Debug]', entry);
-    setDebugLogs(prev => [entry, ...prev].slice(0, 30));
-  };
 
   useEffect(() => {
     let mounted = true;
@@ -392,17 +384,14 @@ const PayrollSection = () => {
 
   const displayedPayrolls = filteredPayrolls.slice(0, 6);
 
-  // Handle Pay button click - opens modal
   const handlePayClick = (payroll) => {
     setSelectedPayroll(payroll);
     setShowPaymentModal(true);
   };
 
-  // Handle payment confirmation
   const handlePaymentConfirm = async () => {
     if (!selectedPayroll) return;
 
-    // Update the payroll status to Paid
     setPayrolls(prev => prev.map(p => 
       p.id === selectedPayroll.id ? { ...p, status: 'Paid', action: 'View' } : p
     ));
@@ -410,29 +399,22 @@ const PayrollSection = () => {
     console.log(`Payment processed for payroll ID: ${selectedPayroll.id}`);
   };
 
-  // Handle View button click
   const handleViewClick = (payroll) => {
     console.log('Viewing payroll details:', payroll);
     alert(`Payroll Details:\n\nEmployee: ${payroll.employee}\nID: ${payroll.id}\nTotal Hours: ${payroll.totalHours} hrs\nHourly Rate: ₱95/hr\nAmount: ₱${payroll.amount}\nStatus: ${payroll.status}`);
   };
 
-  // Handle Generate Payroll button click
   const handleGeneratePayroll = () => {
-    addDebug('Generate Payroll clicked — starting fetch of attendance records...');
     fetchAttendanceRecords().then(attendanceData => {
-      addDebug(`Fetched ${attendanceData.length} attendance record(s) from /api/attendances`);
       const newPayrolls = calculatePayrollFromAttendance(attendanceData);
       setPayrolls(newPayrolls);
-      addDebug(`Calculated ${newPayrolls.length} payroll entry(ies)`);
       alert(`Payroll generated successfully for ${newPayrolls.length} employees based on attendance records!`);
     }).catch(err => {
-      addDebug(`Error generating payroll: ${err && err.message ? err.message : String(err)}`);
       console.error('Error generating payroll:', err);
       alert('Error generating payroll. Please try again.');
     });
   };
 
-  // Handle Export button click
   const handleExportClick = () => {
     if (filteredPayrolls.length === 0) {
       alert('No payroll records to export.');
@@ -466,12 +448,10 @@ const PayrollSection = () => {
     alert(`Exported ${filteredPayrolls.length} payroll records successfully!`);
   };
 
-  // Handle Search Clear
   const handleClearSearch = () => {
     setSearchTerm('');
   };
 
-  // Get counts for tabs
   const paidCount = payrolls.filter(p => p.status === 'Paid').length;
   const unpaidCount = payrolls.filter(p => p.status === 'Unpaid').length;
   const allCount = payrolls.length;
@@ -853,23 +833,6 @@ const PayrollSection = () => {
           </svg>
           Export
         </button>
-      </div>
-
-      {/* Debug Panel (visible for debugging) */}
-      <div style={{ marginTop: 18, background: '#f7f9fb', padding: 12, borderRadius: 8, fontSize: 13 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <strong>Debug Log</strong>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { setDebugLogs([]); }} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#95a5a6', color: 'white', cursor: 'pointer' }}>Clear</button>
-            <button onClick={() => { window.scrollTo(0, document.body.scrollHeight); }} style={{ padding: '6px 10px', borderRadius: 6, border: 'none', background: '#3498db', color: 'white', cursor: 'pointer' }}>Scroll</button>
-          </div>
-        </div>
-        <div style={{ maxHeight: 160, overflowY: 'auto', borderTop: '1px solid #e6eef6', paddingTop: 8 }}>
-          {debugLogs.length === 0 && <div style={{ color: '#7f8c8d' }}>No debug messages yet. Click "Generate Payroll" to see fetch status.</div>}
-          {debugLogs.map((d, i) => (
-            <div key={i} style={{ padding: '6px 0', borderBottom: i === debugLogs.length - 1 ? 'none' : '1px dashed #e6eef6' }}>{d}</div>
-          ))}
-        </div>
       </div>
 
       {/* Payment Modal */}

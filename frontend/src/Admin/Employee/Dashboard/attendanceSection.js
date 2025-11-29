@@ -1,45 +1,39 @@
 import React, { useState, useEffect } from 'react';
 
 
-// Helper: fetch basic employee list (id + name + formatted id)
-async function fetchEmployeesBasic() {
+// Updated Helper: fetch attendance records from database
+async function fetchAttendanceRecords() {
   try {
-    const res = await fetch('/api/users');
+    const res = await fetch('/api/attendances');
     if (!res.ok) return [];
     const data = await res.json();
-    const onlyEmployees = data.filter(u => (u.role || '').toLowerCase() === 'employee');
-    return onlyEmployees.map(u => ({
-      id: u._id || u.id || u.username,
-      name: u.name || u.username,
-      formattedId: typeof u.employeeId === 'number' ? String(u.employeeId).padStart(4, '0') : (u._id || u.username)
+    return data.map(record => ({
+      date: new Date(record.date).toLocaleDateString(),
+      employee: record.employeeName,
+      employeeId: record.employeeId,
+      timeIn: new Date(record.clockIn).toLocaleTimeString(),
+      timeOut: new Date(record.clockOut).toLocaleTimeString(),
+      hours: `${record.totalHours.toFixed(2)} Hrs`,
+      status: record.totalHours < 8 ? 'Incomplete' : 'Complete'
     }));
   } catch (err) {
-    console.error('fetchEmployeesBasic error', err);
+    console.error('fetchAttendanceRecords error', err);
     return [];
   }
 }
 
 const AttendanceSection = () => {
-  const [emps, setEmps] = useState([]);
   const [dateFilter, setDateFilter] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState('');
+  const [logs, setLogs] = useState([]);
 
   useEffect(() => {
     let mounted = true;
-    fetchEmployeesBasic().then(list => { if (mounted) setEmps(list); }).catch(() => {});
+    fetchAttendanceRecords().then(records => {
+      if (mounted) setLogs(records);
+    }).catch(() => {});
     return () => { mounted = false; };
   }, []);
-
-  // small fake logs using actual employees (one per employee)
-  const logs = emps.map((e, idx) => ({
-    date: new Date().toLocaleDateString(),
-    employee: e.name,
-    employeeId: e.formattedId,
-    timeIn: '7:30 AM',
-    timeOut: '3:30 PM',
-    hours: '8Hrs',
-    status: idx % 4 === 0 ? 'Late' : idx % 5 === 0 ? 'Early Departure' : 'Present'
-  }));
 
   // Filter logs based on date and employee
   const filteredLogs = logs.filter(log => {
