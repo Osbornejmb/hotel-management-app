@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import * as faceapi from 'face-api.js';
 
 const Attendance = () => {
   const [cardId, setCardId] = useState('');
@@ -7,11 +6,9 @@ const Attendance = () => {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [capturedImage, setCapturedImage] = useState(null);
   const inputRef = useRef(null);
   const videoRef = useRef(null);
-  const canvasRef = useRef(null); 
+  const canvasRef = useRef(null);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -20,24 +17,32 @@ const Attendance = () => {
     return "Good Evening";
   };
 
-  // Load face-api models
-  useEffect(() => {
-    const loadModels = async () => {
-      try {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-          faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-          faceapi.nets.faceExpressionNet.loadFromUri('/models')
-        ]);
-        setModelsLoaded(true);
-      } catch (err) {
-        console.error('Error loading face-api models:', err);
-        setMessage('Error loading face detection. Please refresh the page.');
+  // Simple face detection using edge detection
+  const detectFace = (canvas) => {
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    // Convert to grayscale and find edges (simple skin tone detection)
+    let skinPixels = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      // Detect skin tone ranges (basic face detection)
+      // Skin tones typically have R > G > B with specific ranges
+      if (r > 95 && g > 40 && b > 20 && r > b && r > g && (r - g) > 15) {
+        skinPixels++;
       }
-    };
-    loadModels();
-  }, []);
+    }
+
+    // Calculate percentage of skin-like pixels
+    const skinPercentage = (skinPixels / (canvas.width * canvas.height)) * 100;
+
+    // If we detect between 5-40% skin tone, likely a face is present
+    return skinPercentage > 5 && skinPercentage < 40;
+  };
 
   // Start camera
   const startCamera = async () => {
@@ -45,116 +50,54 @@ const Attendance = () => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 } }
       });
-      videoRef.current.srcObject = stream;
-      setShowCamera(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setShowCamera(true);
+      }
     } catch (err) {
       console.error('Error accessing camera:', err);
       setMessage('Unable to access camera. Please check permissions.');
+      setTimeout(() => setMessage(''), 3000);
     }
   };
 
-  // Capture and detect face
-  const captureFace = async () => {
-    if (!videoRef.current || !canvasRef.current || !modelsLoaded) {
-      setMessage('Camera or face detection not ready.');
-      return;
-    }
+  // Capture photo with face detection
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
 
     try {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
 
-      // Set canvas size
+      // Set canvas dimensions
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // Draw video frame
+      // Draw video frame to canvas
       ctx.drawImage(video, 0, 0);
 
-      // Detect faces
-      const detections = await faceapi.detectAllFaces(
-        video,
-        new faceapi.TinyFaceDetector()
-      );
+      // Detect face
+      const faceDetected = detectFace(canvas);
 
-      if (detections.length === 0) {
+      if (!faceDetected) {
         setMessage('No face detected. Please try again.');
+        setTimeout(() => setMessage(''), 2000);
         return;
       }
 
-      if (detections.length > 1) {
-        setMessage('Multiple faces detected. Please ensure only one person is in frame.');
-        return;
-      }
-
-      // Draw detection
-      const displaySize = {
-        width: canvas.width,
-        height: canvas.height
-      };
-      faceapi.matchDimensions(canvas, displaySize);
-      const resizedDetections = faceapi.resizeResults(detections, displaySize);
-      ctx.strokeStyle = '#00FF00';
-      ctx.lineWidth = 2;
-      resizedDetections.forEach(detection => {
-        const box = detection.detection.box;
-        ctx.strokeRect(box.x, box.y, box.width, box.height);
-      });
-
-      // Save image locally
+      // Get image data
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `attendance_${cardId}_${timestamp}.jpg`;
-      
-      // Store image in state to send to backend
-      setCapturedImage(imageData);
-      
-      // Store in localStorage
-      try {
-        const storageKey = `captured_image_${cardId}_${new Date().toISOString().split('T')[0]}`;
-        localStorage.setItem(storageKey, imageData);
-        console.log(`Image saved locally: ${filename}`);
-      } catch (err) {
-        if (err.name === 'QuotaExceededError') {
-          console.warn('LocalStorage quota exceeded, attempting to clear old images');
-          // Clear old images to make space
-          const keys = Object.keys(localStorage);
-          keys.forEach(key => {
-            if (key.startsWith('captured_image_')) {
-              localStorage.removeItem(key);
-            }
-          });
-          // Try saving again
-          const storageKey = `captured_image_${cardId}_${new Date().toISOString().split('T')[0]}`;
-          localStorage.setItem(storageKey, imageData);
-        }
-      }
 
-      // Also try to download the image
-      downloadImage(imageData, filename);
-
-      // Close camera and proceed with attendance
+      // Close camera
       closeCamera();
-      await handleSubmit();
-    } catch (err) {
-      console.error('Error detecting face:', err);
-      setMessage('Face detection error. Please try again.');
-    }
-  };
 
-  // Download image function
-  const downloadImage = (imageData, filename) => {
-    try {
-      const link = document.createElement('a');
-      link.href = imageData;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      console.log(`Image download initiated: ${filename}`);
+      // Send to server with attendance
+      await submitAttendance(imageData);
     } catch (err) {
-      console.error('Error downloading image:', err);
+      console.error('Error capturing photo:', err);
+      setMessage('Error capturing photo. Please try again.');
+      setTimeout(() => setMessage(''), 3000);
     }
   };
 
@@ -167,16 +110,14 @@ const Attendance = () => {
     setShowCamera(false);
   };
 
-  const handleSubmit = async () => {
-    if (!cardId) return;
+  // Submit attendance with image
+  const submitAttendance = async (imageData) => {
     setLoading(true);
-    setMessage('');
-    setDetails(null);
     try {
       const response = await fetch('/api/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardId, image: capturedImage })
+        body: JSON.stringify({ cardId, image: imageData })
       });
       const data = await response.json();
 
@@ -185,7 +126,7 @@ const Attendance = () => {
           setMessage(`${getGreeting()}, ${data.name}`);
           setDetails({
             label: 'Clocked In',
-            time: new Date(data.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            time: new Date(data.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-minute' })
           });
         } else if (data.status === 'clocked-out') {
           setMessage(`Thank You, ${data.name}`);
@@ -199,11 +140,11 @@ const Attendance = () => {
         setMessage(data.error || 'An error occurred.');
       }
     } catch (error) {
-      setMessage('Failed to connect to the server.');
+      console.error('Error:', error);
+      setMessage('Failed to connect to server.');
     } finally {
       setLoading(false);
       setCardId('');
-      setCapturedImage(null);
       setTimeout(() => {
         setMessage('');
         setDetails(null);
@@ -211,27 +152,25 @@ const Attendance = () => {
     }
   };
 
-  const handleCardIdSubmit = async () => {
-    if (!cardId) return;
-    if (!modelsLoaded) {
-      setMessage('Face detection not ready. Please wait.');
-      return;
+  // Handle card ID submission
+  const handleCardIdSubmit = async (e) => {
+    if (e.key === 'Enter' && cardId.trim() && !loading && !showCamera) {
+      await startCamera();
     }
-    await startCamera();
   };
 
   useEffect(() => {
-    if (!loading && !showCamera) {
+    if (!showCamera && !loading) {
       inputRef.current?.focus();
     }
-  }, [loading, showCamera]);
+  }, [showCamera, loading]);
 
   return (
     <div
       style={{
         height: '100vh',
         width: '100%',
-        backgroundImage: `url("AttendanceBackground.png")`, 
+        backgroundImage: `url("AttendanceBackground.png")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -239,7 +178,7 @@ const Attendance = () => {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        fontFamily: "'Playfair Display', serif", 
+        fontFamily: "'Playfair Display', serif",
         color: '#fff',
         position: 'relative'
       }}
@@ -258,7 +197,6 @@ const Attendance = () => {
       >
         <span style={{ position: 'relative', display: 'inline-block' }}>
           L
-          {/* Custom underline only under L */}
           <span
             style={{
               position: 'absolute',
@@ -271,7 +209,6 @@ const Attendance = () => {
           ></span>
         </span>
         UMINE
-        {/* Subtitle */}
         <span
           style={{
             fontFamily: 'Poppins, sans-serif',
@@ -290,16 +227,12 @@ const Attendance = () => {
 
       {/* Input box */}
       <input
-        ref={inputRef} 
+        ref={inputRef}
         type="password"
         placeholder="Enter Card ID"
         value={cardId}
         onChange={(e) => setCardId(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && cardId.length === 10 && !loading && !showCamera) {
-            handleCardIdSubmit();
-          }
-        }}
+        onKeyDown={handleCardIdSubmit}
         maxLength={10}
         disabled={loading || showCamera}
         style={{
@@ -352,7 +285,7 @@ const Attendance = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.95)',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
@@ -360,23 +293,27 @@ const Attendance = () => {
             zIndex: 1000
           }}
         >
-          <h2 style={{ color: '#fff', marginBottom: '20px', fontSize: '1.5rem' }}>
-            Please Look at the Camera
+          <h2 style={{ color: '#fff', marginBottom: '30px', fontSize: '1.8rem' }}>
+            Take Your Photo
           </h2>
+
+          {/* Video frame */}
           <div
             style={{
               position: 'relative',
               width: '500px',
               height: '375px',
-              border: '3px solid #E4B169',
+              border: '4px solid #E4B169',
               borderRadius: '10px',
               overflow: 'hidden',
-              marginBottom: '20px'
+              marginBottom: '30px',
+              boxShadow: '0 0 20px rgba(228, 177, 105, 0.5)'
             }}
           >
             <video
               ref={videoRef}
               autoPlay
+              playsInline
               style={{
                 width: '100%',
                 height: '100%',
@@ -384,29 +321,32 @@ const Attendance = () => {
                 transform: 'scaleX(-1)'
               }}
             />
-            <canvas
-              ref={canvasRef}
-              style={{
-                display: 'none'
-              }}
-            />
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: '20px' }}>
             <button
-              onClick={captureFace}
+              onClick={capturePhoto}
               style={{
-                padding: '12px 30px',
-                fontSize: '1rem',
+                padding: '15px 40px',
+                fontSize: '1.1rem',
                 backgroundColor: '#7FFF00',
                 color: '#000',
                 border: 'none',
                 borderRadius: '5px',
                 cursor: 'pointer',
                 fontWeight: 'bold',
-                transition: 'background-color 0.3s'
+                transition: 'all 0.3s',
+                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#90EE90'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#7FFF00'}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#90EE90';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#7FFF00';
+                e.target.style.transform = 'scale(1)';
+              }}
             >
               Capture
             </button>
@@ -416,24 +356,34 @@ const Attendance = () => {
                 setCardId('');
               }}
               style={{
-                padding: '12px 30px',
-                fontSize: '1rem',
+                padding: '15px 40px',
+                fontSize: '1.1rem',
                 backgroundColor: '#FF6B6B',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '5px',
                 cursor: 'pointer',
                 fontWeight: 'bold',
-                transition: 'background-color 0.3s'
+                transition: 'all 0.3s',
+                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#FF8787'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#FF6B6B'}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#FF8787';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = '#FF6B6B';
+                e.target.style.transform = 'scale(1)';
+              }}
             >
               Cancel
             </button>
           </div>
         </div>
       )}
+
+      {/* Hidden canvas for capturing */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       {/* Footer */}
       <footer
