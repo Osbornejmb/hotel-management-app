@@ -62,6 +62,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/food", foodRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use('/api/employee', employeeRoutes);
+app.use('/api/employees', employeeRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/tasks", taskRoutes);
 // Mount attendance routes at both plural and singular for compatibility
