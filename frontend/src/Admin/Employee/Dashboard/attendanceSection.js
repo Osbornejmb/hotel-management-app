@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 // Updated Helper: fetch attendance records from database
 async function fetchAttendanceRecords() {
   try {
-    const res = await fetch('/api/attendances');
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.map(record => ({
       date: new Date(record.date).toLocaleDateString(),
-      employee: record.employeeName,
-      employeeId: record.employeeId,
+      employee: record.name,
+      cardId: record.cardId,
       timeIn: new Date(record.clockIn).toLocaleTimeString(),
       timeOut: new Date(record.clockOut).toLocaleTimeString(),
       hours: `${record.totalHours.toFixed(2)} Hrs`,
@@ -40,7 +41,7 @@ const AttendanceSection = () => {
     const matchesDate = !dateFilter || log.date.includes(dateFilter);
     const matchesEmployee = !employeeFilter || 
                            log.employee.toLowerCase().includes(employeeFilter.toLowerCase()) ||
-                           log.employeeId.toLowerCase().includes(employeeFilter.toLowerCase());
+                           log.cardId.toLowerCase().includes(employeeFilter.toLowerCase());
     
     return matchesDate && matchesEmployee;
   });
@@ -56,13 +57,13 @@ const AttendanceSection = () => {
   // Handle Export button click
   const handleExportClick = () => {
     // Create CSV content
-    const headers = ['Date', 'Employee', 'Employee ID', 'Time-In', 'Time-Out', 'Hours', 'Status'];
+    const headers = ['Date', 'Employee', 'Card ID', 'Time-In', 'Time-Out', 'Hours', 'Status'];
     const csvContent = [
       headers.join(','),
       ...filteredLogs.map(log => [
         log.date,
         `"${log.employee}"`, 
-        log.employeeId,
+        log.cardId,
         log.timeIn,
         log.timeOut,
         log.hours,
@@ -90,7 +91,7 @@ const AttendanceSection = () => {
     console.log('View/Edit record:', log);
     
     // For demo purposes, show an alert with the record details
-    alert(`Editing Record:\n\nDate: ${log.date}\nEmployee: ${log.employee}\nID: ${log.employeeId}\nTime-In: ${log.timeIn}\nTime-Out: ${log.timeOut}\nStatus: ${log.status}`);
+    alert(`Editing Record:\n\nDate: ${log.date}\nEmployee: ${log.employee}\nCard ID: ${log.cardId}\nTime-In: ${log.timeIn}\nTime-Out: ${log.timeOut}\nStatus: ${log.status}`);
     
   };
 
@@ -316,7 +317,7 @@ const AttendanceSection = () => {
                 <td style={{ padding: '16px 12px', fontWeight: 500 }}>{log.date}</td>
                 <td style={{ padding: '16px 12px' }}>
                   <div>{log.employee}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>ID: {log.employeeId}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>Card ID: {log.cardId}</div>
                 </td>
                 <td style={{ padding: '16px 12px', fontWeight: 500 }}>{log.timeIn}</td>
                 <td style={{ padding: '16px 12px', fontWeight: 500 }}>{log.timeOut}</td>

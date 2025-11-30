@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 // Helper: fetch total employees
 async function fetchTotalEmployees() {
   try {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     const res = await fetch(`${apiBase}/api/employee`);
     if (!res.ok) return 0;
     const data = await res.json();
@@ -17,7 +17,7 @@ async function fetchTotalEmployees() {
 // Helper: fetch present employees today
 async function fetchPresentToday() {
   try {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return 0;
     const data = await res.json();
@@ -33,7 +33,7 @@ async function fetchPresentToday() {
 // Helper: fetch payroll status
 async function fetchPayrollStatus() {
   try {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     const res = await fetch(`${apiBase}/api/payrolls`);
     if (!res.ok) return { paid: 0, unpaid: 0, total: 0 };
     const data = await res.json();
