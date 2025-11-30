@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAddCartPopup } from './AddCartPopupContext';
 import { useCheckoutPopup } from './CheckoutPopupContext';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 // Custom hook to manage notification sounds
@@ -1231,6 +1231,20 @@ export default function CustomerInterface() {
     window.addEventListener('openOrderStatus', onOpenOrderStatus);
     return () => window.removeEventListener('openOrderStatus', onOpenOrderStatus);
   }, []);
+
+  // Support navigation-based open (when another page navigates here with state)
+  const location = useLocation();
+  useEffect(() => {
+    if (!location || !location.state) return;
+    if (location.state.openCart) {
+      setShowCart(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    if (location.state.openStatus) {
+      setShowStatus(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     if (showStatus && statusCloseBtnRef.current) {

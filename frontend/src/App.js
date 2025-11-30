@@ -14,6 +14,7 @@ import Facilities from "./Customer/Facilities";
 import FoodAndBeverages from "./Customer/FoodAndBeverages";
 import FoodMaster from "./Customer/FoodMaster";
 import ContactFrontDesk from "./Customer/ContactFrontDesk";
+import GlobalPopupBridge from './GlobalPopupBridge';
 import HotelAdminRooms from "./Admin/Hotel/HotelAdminRooms";
 import HotelAdminHousekeeping from "./Admin/Hotel/HotelAdminHousekeeping";
 import HotelAdminMaintenance from "./Admin/Hotel/HotelAdminMaintenance";
@@ -22,6 +23,7 @@ import HotelAdminBookingHistory from "./Admin/Hotel/HotelAdminBookingHistory";
 function App() {
   return (
     <Router>
+      <GlobalPopupBridge />
       <Routes>
         <Route path="/" element={<Home />} />
   <Route path="/login" element={<LoginPage />} />
