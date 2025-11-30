@@ -3,12 +3,20 @@ import { Calendar, User, Home, List, CreditCard, LogOut, X } from 'lucide-react'
 import LogoutButton from '../Auth/LogoutButton';
 
 const MobileSidebar = ({ activePage, setActivePage, isMobile, isOpen, setOpen }) => {
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'logHistory', label: 'Log History', icon: Calendar },
-    { id: 'tasks', label: 'Tasks', icon: List },
-    { id: 'payroll', label: 'Payroll', icon: CreditCard },
-    { id: 'profile', label: 'Profile', icon: User },
+  const navIcons = {
+    dashboard: Home,
+    logHistory: Calendar,
+    tasks: List,
+    payroll: CreditCard,
+    profile: User,
+  };
+
+  const sections = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'logHistory', label: 'Log History' },
+    { key: 'tasks', label: 'Tasks' },
+    { key: 'payroll', label: 'Payroll' },
+    { key: 'profile', label: 'Profile' },
   ];
 
   const sidebarStyle = {
@@ -99,21 +107,34 @@ const MobileSidebar = ({ activePage, setActivePage, isMobile, isOpen, setOpen })
 
         {/* Sidebar buttons */}
         <nav style={{ width: '100%' }}>
-          {menuItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => handleSectionClick(id)}
-              className={`flex items-center w-full rounded-lg text-left transition-colors duration-200 ${
-                activePage === id
-                  ? 'bg-[#d2aa3a] text-[#2f1b0a] font-semibold'
-                  : 'text-white hover:bg-[rgba(255,255,255,0.1)]'
-              }`}
-              style={{ padding: '10px 12px', marginBottom: 12, border: 'none' }}
-            >
-              <Icon size={18} style={{ marginRight: 12 }} />
-              <span>{label}</span>
-            </button>
-          ))}
+          {sections.map(sec => {
+            const Icon = navIcons[sec.key] || '•';
+            return (
+              <button
+                key={sec.key}
+                className={`sidebar-btn ${activePage === sec.key ? 'active' : ''}`}
+                onClick={() => handleSectionClick(sec.key)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  marginBottom: 12,
+                  border: 'none',
+                  borderRadius: 8,
+                  fontWeight: 500,
+                  color: '#fff',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: activePage === sec.key ? '#a57c2b' : '#4b2b17',
+                  transition: 'background 140ms ease'
+                }}
+              >
+                <Icon size={18} style={{ marginRight: 12 }} />
+                {sec.label}
+              </button>
+            )
+          })}
         </nav>
 
         {/* Logout */}
