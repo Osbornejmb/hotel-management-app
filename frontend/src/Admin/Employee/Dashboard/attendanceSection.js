@@ -9,8 +9,8 @@ async function fetchAttendanceRecords() {
     const data = await res.json();
     return data.map(record => ({
       date: new Date(record.date).toLocaleDateString(),
-      employee: record.employeeName,
-      employeeId: record.employeeId,
+      employee: record.name || record.employeeName,
+      employeeId: record.cardId || record.employeeId,
       timeIn: new Date(record.clockIn).toLocaleTimeString(),
       timeOut: new Date(record.clockOut).toLocaleTimeString(),
       hours: `${record.totalHours.toFixed(2)} Hrs`,
@@ -56,7 +56,7 @@ const AttendanceSection = () => {
   // Handle Export button click
   const handleExportClick = () => {
     // Create CSV content
-    const headers = ['Date', 'Employee', 'Employee ID', 'Time-In', 'Time-Out', 'Hours', 'Status'];
+    const headers = ['Date', 'Employee', 'Card ID', 'Time-In', 'Time-Out', 'Hours', 'Status'];
     const csvContent = [
       headers.join(','),
       ...filteredLogs.map(log => [
@@ -90,7 +90,7 @@ const AttendanceSection = () => {
     console.log('View/Edit record:', log);
     
     // For demo purposes, show an alert with the record details
-    alert(`Editing Record:\n\nDate: ${log.date}\nEmployee: ${log.employee}\nID: ${log.employeeId}\nTime-In: ${log.timeIn}\nTime-Out: ${log.timeOut}\nStatus: ${log.status}`);
+    alert(`Editing Record:\n\nDate: ${log.date}\nEmployee: ${log.employee}\nCard ID: ${log.employeeId}\nTime-In: ${log.timeIn}\nTime-Out: ${log.timeOut}\nStatus: ${log.status}`);
     
   };
 
@@ -316,7 +316,7 @@ const AttendanceSection = () => {
                 <td style={{ padding: '16px 12px', fontWeight: 500 }}>{log.date}</td>
                 <td style={{ padding: '16px 12px' }}>
                   <div>{log.employee}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>ID: {log.employeeId}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>Card ID: {log.employeeId}</div>
                 </td>
                 <td style={{ padding: '16px 12px', fontWeight: 500 }}>{log.timeIn}</td>
                 <td style={{ padding: '16px 12px', fontWeight: 500 }}>{log.timeOut}</td>

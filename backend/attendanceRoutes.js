@@ -6,8 +6,8 @@ const mongoose = require('mongoose');
 const Employee = require('./employee'); // Employee model
 // Attendance
 const AttendanceSchema = new mongoose.Schema({
-  employeeId: String,
-  employeeName: String,
+  cardId: String,
+  name: String,
   clockIn: Date,
   clockOut: Date,
   totalHours: Number,
@@ -25,29 +25,29 @@ function getDateString() {
 }
 
 router.post('/', async (req, res) => {
-  const { employeeId } = req.body;
-  if (!employeeId) return res.status(400).json({ error: 'employeeId required' });
+  const { cardId } = req.body;
+  if (!cardId) return res.status(400).json({ error: 'cardId required' });
 
-  // Find employee
-  const employee = await Employee.findOne({ employeeId });
+  // Find employee by cardId
+  const employee = await Employee.findOne({ cardId });
   if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
   const today = getDateString();
   // Find latest attendance for today
-  let attendance = await Attendance.findOne({ employeeId, date: today }).sort({ clockIn: -1 });
+  let attendance = await Attendance.findOne({ cardId, date: today }).sort({ clockIn: -1 });
 
   if (!attendance || (attendance && attendance.clockOut)) {
     // Clock in (first time today or after clocking out)
     attendance = new Attendance({
-      employeeId,
-      employeeName: employee.employeeName,
+      cardId,
+      name: employee.name,
       clockIn: new Date(),
       date: today
     });
     await attendance.save();
     return res.json({
       status: 'clocked-in',
-      employeeName: employee.employeeName,
+      name: employee.name,
       clockIn: attendance.clockIn
     });
   } else if (!attendance.clockOut) {
@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
     await attendance.save();
     return res.json({
       status: 'clocked-out',
-      employeeName: employee.employeeName,
+      name: employee.name,
       clockOut: attendance.clockOut,
       totalHours: attendance.totalHours
     });
@@ -75,8 +75,8 @@ router.get('/', async (req, res) => {
       const obj = rec.toObject ? rec.toObject() : rec;
       return {
         _id: obj._id,
-        employeeId: String(obj.employeeId || ''),
-        employeeName: obj.employeeName || '',
+        cardId: String(obj.cardId || ''),
+        name: obj.name || '',
         clockIn: obj.clockIn || null,
         clockOut: obj.clockOut || null,
         totalHours: typeof obj.totalHours === 'number' ? obj.totalHours : Number(obj.totalHours) || 0,
@@ -91,10 +91,10 @@ router.get('/', async (req, res) => {
 });
 
 // GET attendance records for a specific employee
-router.get('/:employeeId', async (req, res) => {
+router.get('/:cardId', async (req, res) => {
   try {
-    const { employeeId } = req.params;
-    const attendanceRecords = await Attendance.find({ employeeId });
+    const { cardId } = req.params;
+    const attendanceRecords = await Attendance.find({ cardId });
     if (attendanceRecords.length === 0) {
       return res.status(404).json({ error: 'No attendance records found for this employee' });
     }
@@ -104,8 +104,8 @@ router.get('/:employeeId', async (req, res) => {
       const obj = rec.toObject ? rec.toObject() : rec;
       return {
         _id: obj._id,
-        employeeId: String(obj.employeeId || ''),
-        employeeName: obj.employeeName || '',
+        cardId: String(obj.cardId || ''),
+        name: obj.name || '',
         clockIn: obj.clockIn || null,
         clockOut: obj.clockOut || null,
         totalHours: typeof obj.totalHours === 'number' ? obj.totalHours : Number(obj.totalHours) || 0,

@@ -19,22 +19,28 @@ function calculatePayrollFromAttendance(attendanceRecords) {
   const hourlyRate = 95; // PHP per hour
 
   attendanceRecords.forEach(record => {
-    if (!employeeMap[record.employeeId]) {
-      employeeMap[record.employeeId] = {
-        employeeId: record.employeeId,
-        employeeName: record.employeeName,
+    const id = record.cardId || record.employeeId;
+    const name = record.name || record.employeeName;
+    
+    // Skip records with no ID
+    if (!id) return;
+    
+    if (!employeeMap[id]) {
+      employeeMap[id] = {
+        cardId: id,
+        name: name || 'Unknown',
         totalHours: 0,
         records: []
       };
     }
-    employeeMap[record.employeeId].totalHours += record.totalHours || 0;
-    employeeMap[record.employeeId].records.push(record);
+    employeeMap[id].totalHours += record.totalHours || 0;
+    employeeMap[id].records.push(record);
   });
 
   return Object.values(employeeMap).map(emp => ({
-    id: emp.employeeId,
-    employee: emp.employeeName,
-    employeeId: emp.employeeId,
+    id: emp.cardId,
+    employee: emp.name,
+    employeeId: emp.cardId,
     totalHours: Math.round(emp.totalHours * 100) / 100,
     amount: Math.round(emp.totalHours * hourlyRate * 100) / 100,
     status: 'Unpaid',
@@ -147,7 +153,7 @@ const PaymentModal = ({ isOpen, onClose, payroll, onConfirm }) => {
             <span style={{ fontWeight: 600 }}>{payroll?.employee}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontWeight: 500, color: '#2c3e50' }}>Employee ID:</span>
+            <span style={{ fontWeight: 500, color: '#2c3e50' }}>Card ID:</span>
             <span style={{ fontWeight: 600 }}>{payroll?.id}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -372,8 +378,8 @@ const PayrollSection = () => {
 
   // Filter payrolls based on search term and active tab
   const filteredPayrolls = sortedPayrolls.filter(payroll => {
-    const matchesSearch = payroll.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payroll.employee.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (payroll.id && payroll.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (payroll.employee && payroll.employee.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesTab = 
       activeTab === 'all' || 
       (activeTab === 'paid' && payroll.status === 'Paid') ||
@@ -421,7 +427,7 @@ const PayrollSection = () => {
       return;
     }
 
-    const headers = ['Employee ID', 'Employee Name', 'Period Start', 'Period End', 'Amount', 'Status'];
+    const headers = ['Card ID', 'Name', 'Period Start', 'Period End', 'Amount', 'Status'];
     const csvContent = [
       headers.join(','),
       ...filteredPayrolls.map(payroll => [
@@ -492,7 +498,7 @@ const PayrollSection = () => {
           <div style={{ display: 'flex', flex: 1, gap: 8 }}>
             <input
               type="text"
-              placeholder="Enter employee ID or name..."
+              placeholder="Enter card ID or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
@@ -687,8 +693,8 @@ const PayrollSection = () => {
                 transition: 'background 0.2s ease',
                 backgroundColor: p.status === 'Unpaid' ? '#fffbfb' : 'transparent'
               }}>
-                <td style={{ padding: '16px 12px', fontWeight: 500 }}>{p.id}</td>
-                <td style={{ padding: '16px 12px' }}>{p.employee}</td>
+                <td style={{ padding: '16px 12px', fontWeight: 500 }}>{p.id || '-'}</td>
+                <td style={{ padding: '16px 12px' }}>{p.employee || 'Unknown'}</td>
                 <td style={{ padding: '16px 12px' }}>{p.totalHours} hrs</td>
                 <td style={{ padding: '16px 12px' }}>₱95/hr</td>
                 <td style={{ padding: '16px 12px', fontWeight: 600 }}>₱{p.amount}</td>
