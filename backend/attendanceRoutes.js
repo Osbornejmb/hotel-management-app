@@ -3,7 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 // Employee
-const Employee = require('./employee'); // Employee model
+const Employee = require('./Employee'); // Employee model (use correct filename casing)
 // Attendance
 const AttendanceSchema = new mongoose.Schema({
   employeeId: String,
