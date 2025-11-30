@@ -999,6 +999,7 @@ const statusSteps = [
 ];
 
 function RestaurantAdminDashboard() {
+  const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const [orders, setOrders] = React.useState([]);
   const [cancelledOrders, setCancelledOrders] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState('orders');
@@ -1030,7 +1031,7 @@ function RestaurantAdminDashboard() {
 
   const fetchOrders = React.useCallback(async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/all`);
+      const res = await fetch(`${apiBase}/api/cart/orders/all`);
       const data = await res.json();
       // Ensure FIFO: sort orders by createdAt (or checkedOutAt as fallback) ascending so oldest appear first
       const sorted = (data || []).slice().sort((a, b) => {
@@ -1048,7 +1049,7 @@ function RestaurantAdminDashboard() {
 
   const fetchCancelledOrders = React.useCallback(async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cart/orders/cancelled`);
+      const res = await fetch(`${apiBase}/api/cart/orders/cancelled`);
       const data = await res.json();
       // Ensure FIFO for cancelled orders as well (oldest cancelled order first)
       const sortedCancelled = (data || []).slice().sort((a, b) => {
@@ -1160,7 +1161,7 @@ function RestaurantAdminDashboard() {
       try {
         let foods = null;
         try {
-          const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/food`);
+          const res = await axios.get(`${apiBase}/api/food`);
           let all = [];
           if (res.data && typeof res.data === 'object') {
             Object.values(res.data).forEach(arr => { if (Array.isArray(arr)) all = all.concat(arr); });
