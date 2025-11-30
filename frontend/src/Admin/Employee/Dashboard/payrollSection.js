@@ -3,18 +3,27 @@ import React, { useState, useEffect } from 'react';
 // Helper: fetch attendance records and group by employee
 async function fetchAttendanceRecords() {
   try {
+    console.log('[payrollSection] Fetching from /api/attendances');
     const res = await fetch('/api/attendances');
-    if (!res.ok) return [];
+    
+    if (!res.ok) {
+      console.error('[payrollSection] API error:', res.statusText);
+      return [];
+    }
+    
     const data = await res.json();
+    console.log('[payrollSection] Raw data received:', data);
     return data;
   } catch (err) {
-    console.error('fetchAttendanceRecords error', err);
+    console.error('[payrollSection] fetchAttendanceRecords error', err);
     return [];
   }
 }
 
 // Helper: calculate payroll from attendance records
 function calculatePayrollFromAttendance(attendanceRecords) {
+  console.log('[payrollSection] calculatePayrollFromAttendance input:', attendanceRecords);
+  
   const employeeMap = {};
   const hourlyRate = 95; // PHP per hour
 
@@ -22,8 +31,13 @@ function calculatePayrollFromAttendance(attendanceRecords) {
     const id = record.cardId || record.employeeId;
     const name = record.name || record.employeeName;
     
+    console.log('[payrollSection] Processing record - id:', id, 'name:', name, 'totalHours:', record.totalHours);
+    
     // Skip records with no ID
-    if (!id) return;
+    if (!id) {
+      console.log('[payrollSection] Skipping record with no ID');
+      return;
+    }
     
     if (!employeeMap[id]) {
       employeeMap[id] = {
@@ -37,7 +51,7 @@ function calculatePayrollFromAttendance(attendanceRecords) {
     employeeMap[id].records.push(record);
   });
 
-  return Object.values(employeeMap).map(emp => ({
+  const result = Object.values(employeeMap).map(emp => ({
     id: emp.cardId,
     employee: emp.name,
     employeeId: emp.cardId,
@@ -47,6 +61,9 @@ function calculatePayrollFromAttendance(attendanceRecords) {
     action: 'Pay',
     records: emp.records
   }));
+  
+  console.log('[payrollSection] calculatePayrollFromAttendance output:', result);
+  return result;
 }
 
 // Payment Modal Component

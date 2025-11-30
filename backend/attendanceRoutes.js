@@ -73,10 +73,14 @@ router.get('/', async (req, res) => {
     // Normalize records to ensure frontend receives consistent types
     const normalized = attendanceRecords.map(rec => {
       const obj = rec.toObject ? rec.toObject() : rec;
+      // Support both old and new schema formats
+      const cardId = obj.cardId || obj.employeeId || '';
+      const name = obj.name || obj.employeeName || '';
+      
       return {
         _id: obj._id,
-        cardId: String(obj.cardId || ''),
-        name: obj.name || '',
+        cardId: String(cardId),
+        name: name,
         clockIn: obj.clockIn || null,
         clockOut: obj.clockOut || null,
         totalHours: typeof obj.totalHours === 'number' ? obj.totalHours : Number(obj.totalHours) || 0,
@@ -94,7 +98,12 @@ router.get('/', async (req, res) => {
 router.get('/:cardId', async (req, res) => {
   try {
     const { cardId } = req.params;
-    const attendanceRecords = await Attendance.find({ cardId });
+    // Try to find by cardId first, then by employeeId (for backwards compatibility)
+    let attendanceRecords = await Attendance.find({ cardId });
+    if (attendanceRecords.length === 0) {
+      attendanceRecords = await Attendance.find({ employeeId: cardId });
+    }
+    
     if (attendanceRecords.length === 0) {
       return res.status(404).json({ error: 'No attendance records found for this employee' });
     }
@@ -102,10 +111,14 @@ router.get('/:cardId', async (req, res) => {
     // Normalize similar to GET /
     const normalized = attendanceRecords.map(rec => {
       const obj = rec.toObject ? rec.toObject() : rec;
+      // Support both old and new schema formats
+      const id = obj.cardId || obj.employeeId || '';
+      const name = obj.name || obj.employeeName || '';
+      
       return {
         _id: obj._id,
-        cardId: String(obj.cardId || ''),
-        name: obj.name || '',
+        cardId: String(id),
+        name: name,
         clockIn: obj.clockIn || null,
         clockOut: obj.clockOut || null,
         totalHours: typeof obj.totalHours === 'number' ? obj.totalHours : Number(obj.totalHours) || 0,

@@ -4,20 +4,35 @@ import React, { useState, useEffect } from 'react';
 // Updated Helper: fetch attendance records from database
 async function fetchAttendanceRecords() {
   try {
+    console.log('[attendanceSection] Fetching from /api/attendances');
     const res = await fetch('/api/attendances');
-    if (!res.ok) return [];
+    console.log('[attendanceSection] Response status:', res.status);
+    
+    if (!res.ok) {
+      console.error('[attendanceSection] API error:', res.statusText);
+      return [];
+    }
+    
     const data = await res.json();
-    return data.map(record => ({
-      date: record.date || new Date().toLocaleDateString(),
-      employee: record.name || record.employeeName,
-      employeeId: record.cardId || record.employeeId,
-      timeIn: record.clockIn ? new Date(record.clockIn).toLocaleTimeString() : '-',
-      timeOut: record.clockOut ? new Date(record.clockOut).toLocaleTimeString() : '-',
-      hours: record.totalHours ? `${record.totalHours.toFixed(2)} Hrs` : '0.00 Hrs',
-      status: record.totalHours ? (record.totalHours < 8 ? 'Incomplete' : 'Complete') : 'No Data'
-    }));
+    console.log('[attendanceSection] Raw data received:', data);
+    
+    const mapped = data.map(record => {
+      console.log('[attendanceSection] Processing record:', record);
+      return {
+        date: record.date || new Date().toLocaleDateString(),
+        employee: record.name || record.employeeName || 'Unknown',
+        employeeId: record.cardId || record.employeeId || 'N/A',
+        timeIn: record.clockIn ? new Date(record.clockIn).toLocaleTimeString() : '-',
+        timeOut: record.clockOut ? new Date(record.clockOut).toLocaleTimeString() : '-',
+        hours: record.totalHours ? `${record.totalHours.toFixed(2)} Hrs` : '0.00 Hrs',
+        status: record.totalHours ? (record.totalHours < 8 ? 'Incomplete' : 'Complete') : 'No Data'
+      };
+    });
+    
+    console.log('[attendanceSection] Mapped records:', mapped);
+    return mapped;
   } catch (err) {
-    console.error('fetchAttendanceRecords error', err);
+    console.error('[attendanceSection] fetchAttendanceRecords error', err);
     return [];
   }
 }
