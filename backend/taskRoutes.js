@@ -92,6 +92,21 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/tasks/employees/list - get all employees for task assignment
+// NOTE: This route MUST come before /:taskId route to avoid route collision
+router.get('/employees/list', async (req, res) => {
+  try {
+    const employees = await Employee.find({ role: 'employee' })
+      .select('name employeeId jobTitle department')
+      .sort({ name: 1 });
+
+    res.json(employees);
+  } catch (error) {
+    console.error('Get employees error:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch employees' });
+  }
+});
+
 // GET /api/tasks/:taskId - get single task by ID
 router.get('/:taskId', async (req, res) => {
   try {
@@ -291,20 +306,6 @@ router.delete('/:taskId', async (req, res) => {
   } catch (error) {
     console.error('Delete task error:', error);
     res.status(500).json({ error: error.message || 'Failed to delete task' });
-  }
-});
-
-// GET /api/tasks/employees - get all employees for task assignment
-router.get('/employees/list', async (req, res) => {
-  try {
-    const employees = await Employee.find({ role: 'employee' })
-      .select('name employeeId jobTitle department')
-      .sort({ name: 1 });
-
-    res.json(employees);
-  } catch (error) {
-    console.error('Get employees error:', error);
-    res.status(500).json({ error: error.message || 'Failed to fetch employees' });
   }
 });
 

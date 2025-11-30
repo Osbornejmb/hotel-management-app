@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const EmployeeManagementSection = () => {
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
   const [employees, setEmployees] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ 
@@ -68,7 +69,7 @@ const EmployeeManagementSection = () => {
       const datePart = `${month}${day}${year}`;
       
       // Fetch existing employees to determine the next sequential number
-      const res = await fetch('/api/employee');
+      const res = await fetch(`${API_BASE_URL}/api/employee`);
       const data = await parseResponse(res);
       const existingEmployees = Array.isArray(data) ? data : [];
       
@@ -149,7 +150,7 @@ const EmployeeManagementSection = () => {
   };
 
   try {
-    const res = await fetch('/api/employee', {
+    const res = await fetch(`${API_BASE_URL}/api/employee`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -225,7 +226,7 @@ const EmployeeManagementSection = () => {
   const fetchEmployees = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/employee');
+      const res = await fetch(`${API_BASE_URL}/api/employee`);
       const data = await parseResponse(res); // expect array of Employee documents
       const mapped = (Array.isArray(data) ? data : []).map(u => {
         // Use employeeCode as the primary ID if available, otherwise fall back
@@ -265,7 +266,7 @@ const EmployeeManagementSection = () => {
     setModalOpen(true);
     setEmployeeDetails(null);
     try {
-      const res = await fetch(`/api/employee/${emp.id}/details`);
+      const res = await fetch(`${API_BASE_URL}/api/employee/${emp.id}/details`);
       if (!res.ok) throw new Error('Failed to fetch employee details');
       const data = await res.json();
       setEmployeeDetails(data);
@@ -296,7 +297,7 @@ const EmployeeManagementSection = () => {
     setUpdateLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/employee/${selectedEmployee.id}/password`, {
+      const res = await fetch(`${API_BASE_URL}/api/employee/${selectedEmployee.id}/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -332,7 +333,7 @@ const EmployeeManagementSection = () => {
     if (!confirmDelete) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/employee/${emp.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/employee/${emp.id}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
