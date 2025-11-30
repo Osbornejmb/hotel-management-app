@@ -257,11 +257,9 @@ router.post('/', async (req, res) => {
     console.log(`Attempting to send credentials to ${body.email}...`);
     const emailResult = await sendEmployeeCredentials({
       email: body.email,
-      name: name,
       username: username,
-      password: password,
-      employeeId: employeeId,
-      cardId: body.idCard // Include card ID in the email
+      id: employeeId,
+      password: password
     });
 
     if (emailResult.success) {
@@ -270,20 +268,19 @@ router.post('/', async (req, res) => {
         message: 'Employee created successfully and credentials email sent!', 
         id: doc._id, 
         employeeId: doc.employeeId,
-        cardId: doc.cardId, // Include card ID in the response
+        cardId: doc.cardId,
         emailSent: true
       });
     } else {
       // Employee was saved but email failed
-      console.error(`Email failed for ${body.email}: ${emailResult.error}`);
+      console.error(`Email failed for ${body.email}: ${emailResult.message}`);
       res.status(201).json({
-        message: `Employee created successfully! /@ Email failed: ${emailResult.error}`,
+        message: `Employee created successfully! Email failed: ${emailResult.message}`,
         id: doc._id,
         employeeId: doc.employeeId,
-        cardId: doc.cardId, // Include card ID in the response
+        cardId: doc.cardId,
         emailSent: false,
-        manualPassword: password, // Include password in response for manual sharing
-        emailError: emailResult.error
+        manualPassword: password
       });
     }
 
