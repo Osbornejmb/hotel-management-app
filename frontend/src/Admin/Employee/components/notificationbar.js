@@ -14,7 +14,8 @@ const NotificationBar = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io('http://localhost:5000');
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    socketRef.current = io(apiBase);
 
     // Listen for new notifications
     socketRef.current.on('new-notification', (notification) => {
@@ -75,7 +76,8 @@ const NotificationBar = () => {
       console.log('Fetching unread notifications from /api/notifications/unread...');
       
       // Fetch only unread notifications
-      const response = await fetch('http://localhost:5000/api/notifications/unread', {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiBase}/api/notifications/unread`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -120,7 +122,8 @@ const NotificationBar = () => {
   // Fallback method if /unread endpoint doesn't exist
   const fetchAllAndFilterUnread = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/notifications', {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiBase}/api/notifications`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -154,7 +157,8 @@ const NotificationBar = () => {
   const markAsRead = async (notificationId) => {
     try {
       console.log('Marking notification as read:', notificationId);
-      const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiBase}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
@@ -192,7 +196,8 @@ const NotificationBar = () => {
   const markAllAsRead = async () => {
     try {
       console.log('Marking all notifications as read');
-      const response = await fetch('http://localhost:5000/api/notifications/mark-all-read', {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiBase}/api/notifications/mark-all-read`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'

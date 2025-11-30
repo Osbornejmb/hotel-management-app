@@ -277,7 +277,7 @@ const EmployeeProfile = () => {
                 <div className="text-xs text-gray-500">Login URL</div>
                 <div className="font-medium">
                   <a href={credentials?.loginUrl} className="text-blue-600 hover:text-blue-800">
-                    {credentials?.loginUrl || 'http://localhost:5000'}
+                    {credentials?.loginUrl || (process.env.REACT_APP_API_URL || 'http://localhost:5000')}
                   </a>
                 </div>
               </div>

@@ -28,9 +28,10 @@ app.use(express.json());
 const server = http.createServer(app);
 
 // Initialize Socket.io
+const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", // Your frontend URL
+    origin: allowedOrigin,
     methods: ["GET", "POST"]
   }
 });
