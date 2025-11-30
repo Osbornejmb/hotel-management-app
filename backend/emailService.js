@@ -17,8 +17,10 @@ try {
     },
   });
   console.log('✅ Nodemailer transporter created.');
+  console.log(`📧 Configured email: ${process.env.EMAIL_USER}`);
 } catch (err) {
   console.error('❌ Failed to create transporter:', err && err.message ? err.message : err);
+  transporter = null;
 }
 
 // Verify transporter before sending emails   
@@ -78,21 +80,41 @@ const sendEmployeeCredentials = async (employeeData) => {
 
   // Validate required fields
   if (!email || !name) {
+    console.error('❌ Missing required fields: email or name');
     return { success: false, error: 'Email and name are required' };
   }
 
   // Check if environment variables are set
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    console.error('❌ Email credentials not configured');
+    console.error('❌ Email credentials not configured in environment');
     return { 
       success: false, 
       error: 'Email service not configured. Please check environment variables.' 
     };
   }
 
+  // Check if transporter exists
+  if (!transporter) {
+    console.error('❌ Transporter is not initialized. Attempting to create...');
+    try {
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      });
+      console.log('✅ Transporter recreated successfully');
+    } catch (err) {
+      console.error('❌ Failed to recreate transporter:', err.message);
+      return { success: false, error: 'Email transporter could not be initialized' };
+    }
+  }
+
   // Check transporter before sending
   const isTransporterReady = await verifyTransporter();
   if (!isTransporterReady) {
+    console.error('❌ Transporter verification failed');
     return { success: false, error: 'Email transporter is not ready. Check your email configuration and credentials.' };
   }
 
@@ -155,8 +177,9 @@ const sendEmployeeCredentials = async (employeeData) => {
   };
 
   try {
+    console.log(`📤 Attempting to send credentials email to ${email}...`);
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Credentials email sent to ${email}`);
+    console.log(`✅ Credentials email sent successfully to ${email}`);
     console.log(`📧 Message ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
@@ -166,11 +189,13 @@ const sendEmployeeCredentials = async (employeeData) => {
     let userFriendlyError = 'Failed to send email. Please try again.';
     
     if (error.code === 'EAUTH') {
-      userFriendlyError = 'Email authentication failed. Please check email credentials (use App Password, not regular password).';
+      userFriendlyError = 'Email authentication failed. Check that you\'re using an App Password for Gmail (not your regular password).';
     } else if (error.code === 'EENVELOPE') {
       userFriendlyError = 'Invalid email address. Please check the recipient email.';
     } else if (error.code === 'ECONNECTION') {
       userFriendlyError = 'Cannot connect to email service. Please check your internet connection.';
+    } else if (error.message && error.message.includes('Invalid login')) {
+      userFriendlyError = 'Email login failed. Verify your email credentials and app password.';
     }
     
     return { 

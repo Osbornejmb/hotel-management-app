@@ -251,8 +251,10 @@ router.post('/', async (req, res) => {
     });
 
     await doc.save();
+    console.log(`Employee ${name} (ID: ${employeeId}) saved successfully`);
 
     // Send email with credentials
+    console.log(`Attempting to send credentials to ${body.email}...`);
     const emailResult = await sendEmployeeCredentials({
       email: body.email,
       name: name,
@@ -263,6 +265,7 @@ router.post('/', async (req, res) => {
     });
 
     if (emailResult.success) {
+      console.log(`Email sent successfully to ${body.email}`);
       res.status(201).json({ 
         message: 'Employee created successfully and credentials email sent!', 
         id: doc._id, 
@@ -272,6 +275,7 @@ router.post('/', async (req, res) => {
       });
     } else {
       // Employee was saved but email failed
+      console.error(`Email failed for ${body.email}: ${emailResult.error}`);
       res.status(201).json({
         message: `Employee created successfully! /@ Email failed: ${emailResult.error}`,
         id: doc._id,
