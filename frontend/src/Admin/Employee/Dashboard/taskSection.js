@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 // Helper: fetch basic employee list (id + name + formatted id)
 async function fetchEmployeesBasic() {
   try {
-    const res = await fetch("/api/employee");
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/employee`);
     if (!res.ok) return [];
     const data = await res.json();
     const onlyEmployees = data.filter(
@@ -27,7 +28,8 @@ async function fetchEmployeesBasic() {
 // Helper: fetch tasks from API
 async function fetchTasksFromAPI() {
   try {
-    const res = await fetch("/api/tasks");
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/tasks`);
     if (!res.ok) return [];
     const data = await res.json();
     return data;
@@ -674,7 +676,8 @@ const TasksSection = () => {
   // Handle Create New Task - UPDATED for real API
   const handleCreateTask = async (newTask) => {
     try {
-      const response = await fetch("/api/tasks", {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiBase}/api/tasks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

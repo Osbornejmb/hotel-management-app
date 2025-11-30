@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 // Helper: fetch total employees
 async function fetchTotalEmployees() {
   try {
-    const res = await fetch("/api/employee");
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/employee`);
     if (!res.ok) return 0;
     const data = await res.json();
     return Array.isArray(data) ? data.length : 0;
@@ -16,7 +17,8 @@ async function fetchTotalEmployees() {
 // Helper: fetch present employees today
 async function fetchPresentToday() {
   try {
-    const res = await fetch("/api/attendances");
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return 0;
     const data = await res.json();
     const today = new Date().toDateString();
@@ -31,7 +33,8 @@ async function fetchPresentToday() {
 // Helper: fetch payroll status
 async function fetchPayrollStatus() {
   try {
-    const res = await fetch("/api/payrolls");
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/payrolls`);
     if (!res.ok) return { paid: 0, unpaid: 0, total: 0 };
     const data = await res.json();
     const paid = data.filter((p) => p.status === "Paid").length;
@@ -47,7 +50,8 @@ async function fetchPayrollStatus() {
 // Helper: fetch pending tasks
 async function fetchPendingTasks() {
   try {
-    const res = await fetch("/api/tasks");
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/tasks`);
     if (!res.ok) return 0;
     const data = await res.json();
     const pending = data.filter((task) => task.status === "pending" || task.status === "Pending");
@@ -61,7 +65,8 @@ async function fetchPendingTasks() {
 // Helper: fetch recent logs
 async function fetchRecentLogs() {
   try {
-    const res = await fetch("/api/attendances");
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.slice(0, 5).map((log) => ({

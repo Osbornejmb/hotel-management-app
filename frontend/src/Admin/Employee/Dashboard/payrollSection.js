@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 // Helper: fetch attendance records and group by employee
 async function fetchAttendanceRecords() {
   try {
-    const res = await fetch('/api/attendances');
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return [];
     const data = await res.json();
     return data;
