@@ -6,8 +6,10 @@ const mongoose = require('mongoose');
 const Employee = require('./Employee'); // Employee model (use correct filename casing)
 // Attendance
 const AttendanceSchema = new mongoose.Schema({
-  employeeId: String,
-  employeeName: String,
+  cardId: String,          // Employee card ID
+  name: String,            // Employee name
+  employeeId: String,      // Keep for backward compatibility
+  employeeName: String,    // Keep for backward compatibility
   clockIn: Date,
   clockOut: Date,
   totalHours: Number,
@@ -34,11 +36,13 @@ router.post('/', async (req, res) => {
 
   const today = getDateString();
   // Find latest attendance for today
-  let attendance = await Attendance.findOne({ employeeId, date: today }).sort({ clockIn: -1 });
+  let attendance = await Attendance.findOne({ cardId: employee.cardId, date: today }).sort({ clockIn: -1 });
 
   if (!attendance || (attendance && attendance.clockOut)) {
     // Clock in (first time today or after clocking out)
     attendance = new Attendance({
+      cardId: employee.cardId,
+      name: employee.name || employee.employeeName,
       employeeId,
       employeeName: employee.employeeName,
       clockIn: new Date(),
@@ -47,7 +51,8 @@ router.post('/', async (req, res) => {
     await attendance.save();
     return res.json({
       status: 'clocked-in',
-      employeeName: employee.employeeName,
+      name: employee.name || employee.employeeName,
+      cardId: employee.cardId,
       clockIn: attendance.clockIn
     });
   } else if (!attendance.clockOut) {
@@ -57,7 +62,8 @@ router.post('/', async (req, res) => {
     await attendance.save();
     return res.json({
       status: 'clocked-out',
-      employeeName: employee.employeeName,
+      name: employee.name || employee.employeeName,
+      cardId: employee.cardId,
       clockOut: attendance.clockOut,
       totalHours: attendance.totalHours
     });
@@ -75,6 +81,8 @@ router.get('/', async (req, res) => {
       const obj = rec.toObject ? rec.toObject() : rec;
       return {
         _id: obj._id,
+        cardId: String(obj.cardId || obj.employeeId || ''),
+        name: obj.name || obj.employeeName || '',
         employeeId: String(obj.employeeId || ''),
         employeeName: obj.employeeName || '',
         clockIn: obj.clockIn || null,
@@ -104,6 +112,8 @@ router.get('/:employeeId', async (req, res) => {
       const obj = rec.toObject ? rec.toObject() : rec;
       return {
         _id: obj._id,
+        cardId: String(obj.cardId || obj.employeeId || ''),
+        name: obj.name || obj.employeeName || '',
         employeeId: String(obj.employeeId || ''),
         employeeName: obj.employeeName || '',
         clockIn: obj.clockIn || null,
