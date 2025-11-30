@@ -78,8 +78,6 @@ const EmployeeDashboard = () => {
         setTasks(myTasks);
       } catch (error) {
         console.error('Error fetching tasks:', error);
-        // Fallback to demo data
-        showDemoTasks();
       } finally {
         setLoading(false);
       }
@@ -87,68 +85,6 @@ const EmployeeDashboard = () => {
 
     fetchTasks();
   }, []);
-
-  // Demo data fallback
-  const showDemoTasks = () => {
-    const employee = getEmployeeFromToken();
-    const demoTasks = [
-      { 
-        id: 'T1001', 
-        title: 'Clean Lobby Area',
-        assigned: 'Christian Malong', 
-        employeeId: '0001',
-        room: 'Lobby', 
-        type: 'CLEANING', 
-        status: 'NOT_STARTED', 
-        priority: 'HIGH', 
-        description: 'Deep cleaning of main lobby area',
-        jobTitle: 'Cleaner',
-        assignedDate: '2025-01-15',
-        assignedTime: '09:00 AM',
-        createdAt: new Date().toISOString()
-      },
-      { 
-        id: 'T1002', 
-        title: 'Fix AC Unit',
-        assigned: 'Maria Santos', 
-        employeeId: '0002',
-        room: '302', 
-        type: 'MAINTENANCE', 
-        status: 'IN_PROGRESS', 
-        priority: 'MEDIUM', 
-        description: 'Fix AC unit in room 302',
-        jobTitle: 'Maintenance',
-        assignedDate: '2025-01-12',
-        assignedTime: '10:30 AM',
-        createdAt: new Date().toISOString()
-      },
-      { 
-        id: 'T1004', 
-        title: 'Clean Swimming Pool',
-        assigned: 'Christian Malong', 
-        employeeId: '0001',
-        room: 'Pool', 
-        type: 'CLEANING', 
-        status: 'IN_PROGRESS', 
-        priority: 'MEDIUM', 
-        description: 'Clean swimming pool area',
-        jobTitle: 'Cleaner',
-        assignedDate: '2025-01-14',
-        assignedTime: '02:00 PM',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    
-    // Filter demo tasks by current employee AND not completed
-    const filteredTasks = demoTasks.filter(task => {
-      const matchesName = task.assigned.toLowerCase() === employee.name?.toLowerCase();
-      const matchesId = task.employeeId === employee.employeeId?.toString();
-      const isNotCompleted = task.status !== 'COMPLETED';
-      return (matchesName || matchesId) && isNotCompleted;
-    });
-
-    setTasks(filteredTasks);
-  };
 
   // Calculate stats based on filtered tasks
   const calculateStats = () => {

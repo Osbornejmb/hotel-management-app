@@ -1,110 +1,112 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const EmployeePayroll = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('January 2024');
-  const [downloading, setDownloading] = useState(false);
+  const [payrollData, setPayrollData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState('');
 
-  const payrollData = [
-    {
-      id: 1,
-      period: 'January 2024',
-      totalHours: '160',
-      grossPay: '$4,800.00',
-      overtime: '$600.00',
-      deductions: '$980.50',
-      netPay: '$4,419.50',
-      paymentDate: '2024-02-01',
-      status: 'Paid'
-    },
-    {
-      id: 2,
-      period: 'December 2023',
-      totalHours: '152',
-      grossPay: '$4,560.00',
-      overtime: '$450.00',
-      deductions: '$920.25',
-      netPay: '$4,089.75',
-      paymentDate: '2024-01-01',
-      status: 'Paid'
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+
+  const getEmployeeFromToken = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return { employeeId: payload.employeeId };
+      }
+    } catch (error) {
+      console.error('Error decoding token:', error);
     }
-  ];
+    return { employeeId: '' };
+  };
+
+  useEffect(() => {
+    const fetchPayrollData = async () => {
+      try {
+        setLoading(true);
+        const employee = getEmployeeFromToken();
+        if (!employee.employeeId) {
+          throw new Error('Employee ID not found in token.');
+        }
+
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch attendance data');
+        }
+
+        const attendanceData = await response.json();
+        
+        // NOTE: Gross pay, deductions, and net pay are using dummy data.
+        // The backend does not currently support these calculations.
+        const processedPayroll = attendanceData.reduce((acc, entry) => {
+          const period = new Date(entry.date).toLocaleString('default', { month: 'long', year: 'numeric' });
+          if (!acc[period]) {
+            acc[period] = {
+              id: period,
+              period: period,
+              totalHours: 0,
+              grossPay: 0,
+              deductions: 0,
+              netPay: 0,
+              paymentDate: 'N/A',
+              status: 'Processed'
+            };
+          }
+          acc[period].totalHours += entry.totalHours || 0;
+          return acc;
+        }, {});
+
+        const payrollArray = Object.values(processedPayroll).map(periodData => {
+          // Dummy calculations for monetary values
+          const grossPay = periodData.totalHours * 30; // Assuming $30/hr
+          const deductions = grossPay * 0.2; // Assuming 20% deductions
+          const netPay = grossPay - deductions;
+
+          return {
+            ...periodData,
+            totalHours: periodData.totalHours.toFixed(2),
+            grossPay: `$${grossPay.toFixed(2)}`,
+            overtime: `$0.00`, // Overtime not calculated
+            deductions: `$${deductions.toFixed(2)}`,
+            netPay: `$${netPay.toFixed(2)}`,
+          };
+        });
+
+        setPayrollData(payrollArray);
+        if (payrollArray.length > 0) {
+          setSelectedPeriod(payrollArray[0].period);
+        }
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayrollData();
+  }, []);
 
   const currentPayroll = payrollData.find(item => item.period === selectedPeriod) || payrollData[0];
 
-  const handleDownloadPayslip = async () => {
-    setDownloading(true);
-    
-    // Simulate download delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    try {
-      // Create payslip content
-      const payslipContent = `
-HOTEL MANAGEMENT SYSTEM
-EMPLOYEE PAYSLIP
-=================================
+  if (loading) {
+    return <div className="p-4">Loading payroll data...</div>;
+  }
 
-PAYROLL PERIOD: ${currentPayroll.period}
-EMPLOYEE: John Doe
-EMPLOYEE ID: EMP001
-DEPARTMENT: Housekeeping
-POSITION: Room Attendant
-
----------------------------------
-EARNINGS
----------------------------------
-Basic Hours: ${currentPayroll.totalHours} hours
-Hourly Rate: $30.00/hr
-Gross Pay: ${currentPayroll.grossPay}
-Overtime: ${currentPayroll.overtime}
-
----------------------------------
-DEDUCTIONS
----------------------------------
-Federal Tax: $650.25
-State Tax: $120.50
-Insurance: $180.75
-Other: $29.00
-Total Deductions: ${currentPayroll.deductions}
-
----------------------------------
-SUMMARY
----------------------------------
-TOTAL EARNINGS: ${currentPayroll.grossPay}
-TOTAL DEDUCTIONS: ${currentPayroll.deductions}
-NET PAY: ${currentPayroll.netPay}
-
-Payment Date: ${currentPayroll.paymentDate}
-Status: ${currentPayroll.status}
-
-Generated on: ${new Date().toLocaleDateString()}
-=================================
-      `.trim();
-
-      // Create a Blob with the content
-      const blob = new Blob([payslipContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create download link
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `payslip-${currentPayroll.period.replace(' ', '-').toLowerCase()}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up
-      URL.revokeObjectURL(url);
-      
-      console.log('Payslip downloaded successfully for:', currentPayroll.period);
-      
-    } catch (error) {
-      console.error('Error downloading payslip:', error);
-      alert('Failed to download payslip. Please try again.');
-    } finally {
-      setDownloading(false);
-    }
-  };
+  if (error) {
+    return <div className="p-4">Error: {error}</div>;
+  }
+  
+  if (!currentPayroll) {
+    return <div className="p-4">No payroll data available for this employee.</div>
+  }
 
   return (
     <div className="p-4">
@@ -163,29 +165,6 @@ Generated on: ${new Date().toLocaleDateString()}
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="mt-6 flex">
-        <button 
-          onClick={handleDownloadPayslip}
-          disabled={downloading}
-          className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-            downloading 
-              ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-              : 'bg-green-500 text-white hover:bg-green-600'
-          }`}
-        >
-          {downloading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Downloading...
-            </>
-          ) : (
-            <>
-              📥 Download Payslip
-            </>
-          )}
-        </button>
       </div>
     </div>
   );

@@ -72,10 +72,7 @@ const EmployeeTasks = () => {
       });
 
       if (!tasksResponse.ok) {
-        // If tasks endpoint fails, show demo data filtered by employee
-        console.log('Tasks API failed, using filtered demo data');
-        showFilteredDemoTasks(employee);
-        return;
+        throw new Error('Failed to fetch tasks');
       }
 
       const allTasks = await tasksResponse.json();
@@ -103,72 +100,10 @@ const EmployeeTasks = () => {
 
     } catch (err) {
       console.error('Error fetching employee tasks:', err);
-      // Fallback to filtered demo data
-      const employee = getEmployeeFromToken();
-      showFilteredDemoTasks(employee);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const showFilteredDemoTasks = (employee) => {
-    // Demo data with different employees
-    const demoTasks = [
-      { 
-        id: 'T1001', 
-        assigned: 'Christian Malong', 
-        employeeId: '0001',
-        room: 'Lobby', 
-        type: 'CLEANING', 
-        status: 'NOT_STARTED', 
-        priority: 'HIGH', 
-        description: 'Deep cleaning of main lobby area',
-        jobTitle: 'Cleaner',
-        createdAt: new Date().toISOString(),
-        dueDate: '2025-01-15'
-      },
-      { 
-        id: 'T1002', 
-        assigned: 'Maria Santos',  // Different employee
-        employeeId: '0002',
-        room: '302', 
-        type: 'MAINTENANCE', 
-        status: 'IN_PROGRESS', 
-        priority: 'MEDIUM', 
-        description: 'Fix AC unit in room 302',
-        jobTitle: 'Maintenance',
-        createdAt: new Date().toISOString(),
-        dueDate: '2025-01-12'
-      },
-      { 
-        id: 'T1003', 
-        assigned: 'Juan Dela Cruz',  // Different employee
-        employeeId: '0003',
-        room: '205-206', 
-        type: 'HOUSEKEEPING', 
-        status: 'COMPLETED', 
-        priority: 'LOW', 
-        description: 'Change bedsheets and towels',
-        jobTitle: 'Housekeeping',
-        createdAt: new Date().toISOString(),
-        dueDate: '2025-01-10'
-      }
-    ];
-    
-    // Filter demo tasks by current employee
-    const filteredTasks = demoTasks.filter(task => {
-      const matchesName = task.assigned.toLowerCase() === employee.name?.toLowerCase();
-      const matchesId = task.employeeId === employee.employeeId?.toString();
-      return matchesName || matchesId;
-    });
-
-    console.log('Filtered demo tasks:', {
-      employeeName: employee.name,
-      employeeId: employee.employeeId,
-      filteredCount: filteredTasks.length
-    });
-
-    setTasks(filteredTasks);
   };
 
   const updateTaskStatus = async (taskId, newStatus) => {
