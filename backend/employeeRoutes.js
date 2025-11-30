@@ -253,39 +253,37 @@ router.post('/', async (req, res) => {
     await doc.save();
     console.log(`Employee ${name} (ID: ${employeeId}) saved successfully`);
 
-    // Send email with credentials
-    console.log(`Attempting to send credentials to ${body.email}...`);
-    const emailResult = await sendEmployeeCredentials({
-      email: body.email,
-      name: name,
-      username: username,
-      password: password,
-      employeeId: employeeId,
-      cardId: body.idCard // Include card ID in the email
-    });
-
-    if (emailResult.success) {
-      console.log(`Email sent successfully to ${body.email}`);
-      res.status(201).json({ 
-        message: 'Employee created successfully and credentials email sent!', 
-        id: doc._id, 
-        employeeId: doc.employeeId,
-        cardId: doc.cardId, // Include card ID in the response
-        emailSent: true
+    // Send email with credentials (non-blocking)
+    let emailResult = { success: false, message: 'Email not attempted' };
+    try {
+      console.log(`Attempting to send credentials to ${body.email}...`);
+      emailResult = await sendEmployeeCredentials({
+        email: body.email,
+        username: username,
+        id: employeeId,
+        password: password
       });
-    } else {
-      // Employee was saved but email failed
-      console.error(`Email failed for ${body.email}: ${emailResult.error}`);
-      res.status(201).json({
-        message: `Employee created successfully! /@ Email failed: ${emailResult.error}`,
-        id: doc._id,
-        employeeId: doc.employeeId,
-        cardId: doc.cardId, // Include card ID in the response
-        emailSent: false,
-        manualPassword: password, // Include password in response for manual sharing
-        emailError: emailResult.error
-      });
+      
+      if (emailResult.success) {
+        console.log(`✅ Email sent successfully to ${body.email}`);
+      } else {
+        console.warn(`⚠️ Email failed for ${body.email}: ${emailResult.message}`);
+      }
+    } catch (emailErr) {
+      console.error(`⚠️ Email service error: ${emailErr.message}`);
+      emailResult = { success: false, message: emailErr.message };
     }
+
+    // Always return success if employee was saved, regardless of email status
+    res.status(201).json({ 
+      message: 'Employee created successfully!',
+      id: doc._id, 
+      employeeId: doc.employeeId,
+      cardId: doc.cardId,
+      emailSent: emailResult.success,
+      emailMessage: emailResult.message,
+      generatedPassword: password
+    });
 
   } catch (err) {
     console.error('POST /api/employee error', err);
