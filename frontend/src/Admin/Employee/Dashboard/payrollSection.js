@@ -19,22 +19,28 @@ function calculatePayrollFromAttendance(attendanceRecords) {
   const hourlyRate = 95; // PHP per hour
 
   attendanceRecords.forEach(record => {
-    if (!employeeMap[record.employeeId]) {
-      employeeMap[record.employeeId] = {
-        employeeId: record.employeeId,
-        employeeName: record.employeeName,
+    const id = record.cardId || record.employeeId;
+    const name = record.name || record.employeeName;
+    
+    // Skip records with no ID
+    if (!id) return;
+    
+    if (!employeeMap[id]) {
+      employeeMap[id] = {
+        cardId: id,
+        name: name || 'Unknown',
         totalHours: 0,
         records: []
       };
     }
-    employeeMap[record.employeeId].totalHours += record.totalHours || 0;
-    employeeMap[record.employeeId].records.push(record);
+    employeeMap[id].totalHours += record.totalHours || 0;
+    employeeMap[id].records.push(record);
   });
 
   return Object.values(employeeMap).map(emp => ({
-    id: emp.employeeId,
-    employee: emp.employeeName,
-    employeeId: emp.employeeId,
+    id: emp.cardId,
+    employee: emp.name,
+    employeeId: emp.cardId,
     totalHours: Math.round(emp.totalHours * 100) / 100,
     amount: Math.round(emp.totalHours * hourlyRate * 100) / 100,
     status: 'Unpaid',
@@ -379,8 +385,8 @@ const PayrollSection = () => {
 
   // Filter payrolls based on search term and active tab
   const filteredPayrolls = sortedPayrolls.filter(payroll => {
-    const matchesSearch = payroll.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payroll.employee.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (payroll.id && payroll.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (payroll.employee && payroll.employee.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesTab = 
       activeTab === 'all' || 
       (activeTab === 'paid' && payroll.status === 'Paid') ||
@@ -706,8 +712,8 @@ const PayrollSection = () => {
                 transition: 'background 0.2s ease',
                 backgroundColor: p.status === 'Unpaid' ? '#fffbfb' : 'transparent'
               }}>
-                <td style={{ padding: '16px 12px', fontWeight: 500 }}>{p.id}</td>
-                <td style={{ padding: '16px 12px' }}>{p.employee}</td>
+                <td style={{ padding: '16px 12px', fontWeight: 500 }}>{p.id || '-'}</td>
+                <td style={{ padding: '16px 12px' }}>{p.employee || 'Unknown'}</td>
                 <td style={{ padding: '16px 12px' }}>{p.totalHours} hrs</td>
                 <td style={{ padding: '16px 12px' }}>₱95/hr</td>
                 <td style={{ padding: '16px 12px', fontWeight: 600 }}>₱{p.amount}</td>
