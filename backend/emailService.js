@@ -82,12 +82,12 @@ const sendEmployeeCredentials = async (employee) => {
 
     console.log('📤 Sending email to:', email);
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully:', info.response);
+    console.log('✅ Email sent successfully:', info.messageId);
     return { success: true, message: 'Email sent successfully', messageId: info.messageId };
 
   } catch (error) {
     console.error('❌ Error sending email:', error.message);
-    console.error('Error details:', error);
+    // Return error but don't throw - let the API still succeed
     return { success: false, message: `Email failed: ${error.message}` };
   }
 };
