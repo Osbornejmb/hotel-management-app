@@ -8,7 +8,6 @@ const MobileSidebar = ({ activePage, setActivePage, isMobile, isOpen, setOpen })
     logHistory: Calendar,
     tasks: List,
     payroll: CreditCard,
-    profile: User,
   };
 
   const sections = [
@@ -16,7 +15,6 @@ const MobileSidebar = ({ activePage, setActivePage, isMobile, isOpen, setOpen })
     { key: 'logHistory', label: 'Log History' },
     { key: 'tasks', label: 'Tasks' },
     { key: 'payroll', label: 'Payroll' },
-    { key: 'profile', label: 'Profile' },
   ];
 
   const sidebarStyle = {
