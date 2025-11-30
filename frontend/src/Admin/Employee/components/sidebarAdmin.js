@@ -111,7 +111,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection, isMobile, isOpen, setOp
         </div>
 
         {/* Sidebar buttons */}
-        <nav style={{ width: '100%' }}>
+        <nav style={{ width: '100%', flexGrow: 1 }}>
           {sections.map(sec => {
             const Icon = navIcons[sec.key] || '•';
             return (
@@ -143,7 +143,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection, isMobile, isOpen, setOp
         </nav>
 
         {/* logout button */}
-        <div style={{ width: '100%' }}>
+        <div style={{ marginTop: 'auto', width: '100%' }}>
           <LogoutButton
             style={{
               width: '100%',

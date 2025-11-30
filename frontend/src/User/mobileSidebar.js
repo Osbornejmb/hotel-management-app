@@ -104,7 +104,7 @@ const MobileSidebar = ({ activePage, setActivePage, isMobile, isOpen, setOpen })
         </div>
 
         {/* Sidebar buttons */}
-        <nav style={{ width: '100%' }}>
+        <nav style={{ width: '100%', flexGrow: 1 }}>
           {sections.map(sec => {
             const Icon = navIcons[sec.key] || '•';
             return (
@@ -136,7 +136,7 @@ const MobileSidebar = ({ activePage, setActivePage, isMobile, isOpen, setOpen })
         </nav>
 
         {/* Logout */}
-        <div style={{ width: '100%' }}>
+        <div style={{ marginTop: 'auto', width: '100%' }}>
           <LogoutButton
             style={{
               width: '100%',
