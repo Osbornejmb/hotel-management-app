@@ -143,7 +143,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection, isMobile, isOpen, setOp
         </nav>
 
         {/* logout button */}
-        <div style={{ marginTop: 'auto', width: '100%' }}>
+        <div style={{ width: '100%' }}>
           <LogoutButton
             style={{
               width: '100%',
