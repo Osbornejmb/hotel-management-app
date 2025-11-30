@@ -17,7 +17,7 @@ const TaskRequests = () => {
   const [processing, setProcessing] = useState(false);
 
   // API configuration
-  const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com') + '/api';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
 
   // Fetch tasks from your actual API
   const fetchTasks = async () => {
@@ -25,8 +25,8 @@ const TaskRequests = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching tasks from:', `${API_BASE_URL}/requests`);
-      const response = await fetch(`${API_BASE_URL}/requests`);
+      console.log('Fetching tasks from:', `${API_BASE_URL}/api/requests`);
+      const response = await fetch(`${API_BASE_URL}/api/requests`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -67,12 +67,12 @@ const TaskRequests = () => {
     try {
       console.log('Attempting to fetch employees...');
       
-      // Try multiple possible endpoints
+      // Try multiple possible endpoints (in order of preference)
       const endpoints = [
-        `${API_BASE_URL}/employees/list`,
-        `${API_BASE_URL}/requests/employees/list`,
-        `${API_BASE_URL}/tasks/employees/list`,
-        `${API_BASE_URL}/users?role=employee`
+        `${API_BASE_URL}/api/employee`,                    // Main employee endpoint
+        `${API_BASE_URL}/api/tasks/employees/list`,       // Task employees endpoint
+        `${API_BASE_URL}/api/requests/employees/list`,    // Request employees endpoint
+        `${API_BASE_URL}/api/users?role=employee`         // User endpoint
       ];
 
       let employeesData = [];
@@ -131,7 +131,7 @@ const TaskRequests = () => {
   // Fetch existing tasks from tasks collection to check employee assignments
   const fetchExistingTasks = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/tasks`);
+      const response = await fetch(`${API_BASE_URL}/api/tasks`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch existing tasks');
@@ -234,7 +234,7 @@ const TaskRequests = () => {
 
       console.log('Creating task with data:', taskData);
 
-      const response = await fetch(`${API_BASE_URL}/tasks`, {
+      const response = await fetch(`${API_BASE_URL}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -286,7 +286,7 @@ const TaskRequests = () => {
       }
       
       // Step 1: Update the request with assigned employee (using employee ID)
-      const assignResponse = await fetch(`${API_BASE_URL}/requests/${selectedTask._id}/assign`, {
+      const assignResponse = await fetch(`${API_BASE_URL}/api/requests/${selectedTask._id}/assign`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -309,7 +309,7 @@ const TaskRequests = () => {
       await createTaskInTasksCollection(selectedTask, selectedEmp);
       
       // Step 3: Update the request status to 'in-progress'
-      const updateResponse = await fetch(`${API_BASE_URL}/requests/${selectedTask._id}/status`, {
+      const updateResponse = await fetch(`${API_BASE_URL}/api/requests/${selectedTask._id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
