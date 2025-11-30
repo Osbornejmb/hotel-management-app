@@ -21,18 +21,47 @@ const notificationRoutes = require('./notificationRoutes');
 const app = express();
 
 // Middleware - CORS and JSON parsing should come FIRST
-app.use(cors());
+// Configure CORS to allow requests from frontend
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'https://hotel-management-app-s3.vercel.app',
+      'https://hotel-management-app-s3.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Create HTTP server
 const server = http.createServer(app);
 
 // Initialize Socket.io
-const allowedOrigin = process.env.FRONTEND_URL || 'https://hotel-management-app-s3.vercel.app';
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'https://hotel-management-app-s3.vercel.app',
+  'https://hotel-management-app-s3.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001'
+];
+
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigin,
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 

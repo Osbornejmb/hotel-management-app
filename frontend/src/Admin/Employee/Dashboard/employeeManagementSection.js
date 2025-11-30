@@ -153,6 +153,7 @@ const EmployeeManagementSection = () => {
     const res = await fetch(`${API_BASE_URL}/api/employee`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload)
     });
     
@@ -185,7 +186,9 @@ const EmployeeManagementSection = () => {
     setMessage({ type: 'success', text: successMessage });
     
   } catch (err) {
-    setMessage({ type: 'error', text: err.message });
+    console.error('Employee save error:', err);
+    const errorMessage = err.message || 'Failed to save employee';
+    setMessage({ type: 'error', text: errorMessage });
   } finally {
     setSubmitting(false); // End loading
   }
