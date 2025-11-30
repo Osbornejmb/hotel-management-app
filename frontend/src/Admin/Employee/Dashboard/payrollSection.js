@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 // Helper: fetch attendance records and group by employee
 async function fetchAttendanceRecords() {
   try {
-    console.log('[payrollSection] Fetching from /api/attendances');
-    const res = await fetch('/api/attendances');
+    const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
+    console.log('[payrollSection] Fetching from', backendUrl + '/api/attendances');
+    const res = await fetch(backendUrl + '/api/attendances');
     
     if (!res.ok) {
       console.error('[payrollSection] API error:', res.statusText);

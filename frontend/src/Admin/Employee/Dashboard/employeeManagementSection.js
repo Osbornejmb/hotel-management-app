@@ -64,7 +64,8 @@ const EmployeeManagementSection = () => {
       const datePart = `${month}${day}${year}`;
       
       // Fetch existing employees to determine the next sequential number
-      const res = await fetch('/api/employees');
+      const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
+      const res = await fetch(backendUrl + '/api/employees');
       const data = await parseResponse(res);
       const existingEmployees = Array.isArray(data) ? data : [];
       
@@ -131,7 +132,8 @@ const EmployeeManagementSection = () => {
   };
 
   try {
-    const res = await fetch('/api/employees', {
+    const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(backendUrl + '/api/employees', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -202,7 +204,8 @@ const EmployeeManagementSection = () => {
   const fetchEmployees = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/employees');
+      const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
+      const res = await fetch(backendUrl + '/api/employees');
       const data = await parseResponse(res); // expect array of Employee documents
       const mapped = (Array.isArray(data) ? data : []).map(u => {
         // Use employeeCode as the primary ID if available, otherwise fall back
@@ -240,7 +243,8 @@ const EmployeeManagementSection = () => {
     setModalOpen(true);
     // setEmployeeDetails(null); // REMOVED - state variable deleted
     try {
-      const res = await fetch(`/api/employees/${emp.id}/details`);
+      const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
+      const res = await fetch(backendUrl + `/api/employees/${emp.id}/details`);
       if (!res.ok) throw new Error('Failed to fetch employee details');
       // const data = await res.json();
       // setEmployeeDetails(data); // REMOVED - state variable deleted
@@ -262,8 +266,9 @@ const EmployeeManagementSection = () => {
     const confirmDelete = window.confirm(`Delete ${emp.name || emp.id}? This action cannot be undone.`);
     if (!confirmDelete) return;
     try {
+      const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/employees/${emp.id}`, {
+      const res = await fetch(backendUrl + `/api/employees/${emp.id}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });

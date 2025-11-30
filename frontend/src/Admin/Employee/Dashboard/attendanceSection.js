@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 // Updated Helper: fetch attendance records from database
 async function fetchAttendanceRecords() {
   try {
-    console.log('[attendanceSection] Fetching from /api/attendances');
-    const res = await fetch('/api/attendances');
+    const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
+    console.log('[attendanceSection] Fetching from', backendUrl + '/api/attendances');
+    const res = await fetch(backendUrl + '/api/attendances');
     console.log('[attendanceSection] Response status:', res.status);
     
     if (!res.ok) {
