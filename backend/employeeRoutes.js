@@ -31,10 +31,13 @@ const authenticateEmployee = async (req, res, next) => {
 // GET /api/employee - list all employees (admin only)
 router.get('/', async (req, res) => {
   try {
+    console.log('[employeeRoutes] GET / - called');
     const list = await Employee.find().sort({ employeeId: 1, createdAt: -1 }).lean();
+    console.log(`[employeeRoutes] GET / - found ${list.length} employees`);
+    console.log('[employeeRoutes] Sample employee:', list[0]);
     res.json(list);
   } catch (err) {
-    console.error('GET /api/employee error', err);
+    console.error('[employeeRoutes] GET / error', err.message, err.stack);
     res.status(500).json({ error: 'Failed to fetch employees' });
   }
 });

@@ -21,7 +21,13 @@ const notificationRoutes = require('./notificationRoutes');
 const app = express();
 
 // Middleware - CORS and JSON parsing should come FIRST
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://hotel-management-app-ten.vercel.app'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Create HTTP server
@@ -30,8 +36,12 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", // Your frontend URL
-    methods: ["GET", "POST"]
+    origin: [
+      'http://localhost:3000',
+      'https://hotel-management-app-ten.vercel.app'
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -82,6 +92,31 @@ app.get("/api/test-email", async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Diagnostic endpoint to check database status
+app.get("/api/diagnostic", async (req, res) => {
+  try {
+    const Attendance = require('./attendanceRoutes');
+    const Employee = require('./Employee');
+    
+    const attendanceCount = await Attendance.countDocuments();
+    const employeeCount = await Employee.countDocuments();
+    
+    res.json({
+      status: "ok",
+      database: "connected",
+      collections: {
+        attendances: attendanceCount,
+        employees: employeeCount
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: "error",
+      message: err.message 
+    });
   }
 });
 

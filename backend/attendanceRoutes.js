@@ -3,15 +3,17 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 // Employee
-const Employee = require('./employee'); // Employee model
+const Employee = require('./Employee'); // Employee model
 // Attendance
 const AttendanceSchema = new mongoose.Schema({
-  cardId: String,
+  cardId: { type: String, index: true },
+  employeeId: { type: String, index: true },
   name: String,
+  employeeName: String,
   clockIn: Date,
   clockOut: Date,
   totalHours: Number,
-  date: String // YYYY-MM-DD
+  date: { type: String, index: true } // YYYY-MM-DD
 }, { collection: 'attendances' });
 
 const Attendance = mongoose.models.Attendance || mongoose.model('Attendance', AttendanceSchema);
@@ -81,34 +83,34 @@ router.post('/', async (req, res) => {
 // GET all attendance records (for payroll calculation)
 router.get('/', async (req, res) => {
   try {
-    const attendanceRecords = await Attendance.find({});
-    console.log(`[attendanceRoutes] GET / - found ${attendanceRecords.length} records`);
+    console.log('[attendanceRoutes] GET / - called');
+    const attendanceRecords = await Attendance.find({}).lean();
+    console.log(`[attendanceRoutes] GET / - found ${attendanceRecords.length} records from database`);
 
     // Normalize records to ensure frontend receives consistent types
     const normalized = attendanceRecords.map(rec => {
-      const obj = rec.toObject ? rec.toObject() : rec;
       // Support both old and new schema formats
-      const cardId = obj.cardId || obj.employeeId || '';
-      const name = obj.name || obj.employeeName || '';
+      const cardId = rec.cardId || rec.employeeId || '';
+      const name = rec.name || rec.employeeName || '';
       
-      console.log(`[attendanceRoutes] Normalizing record: cardId=${cardId}, name=${name}, totalHours=${obj.totalHours}`);
+      console.log(`[attendanceRoutes] Normalizing: cardId="${cardId}", name="${name}", totalHours=${rec.totalHours}`);
       
       return {
-        _id: obj._id,
+        _id: rec._id,
         cardId: String(cardId),
         name: String(name),
-        clockIn: obj.clockIn || null,
-        clockOut: obj.clockOut || null,
-        totalHours: typeof obj.totalHours === 'number' ? obj.totalHours : Number(obj.totalHours) || 0,
-        date: obj.date || new Date().toISOString().split('T')[0]
+        clockIn: rec.clockIn || null,
+        clockOut: rec.clockOut || null,
+        totalHours: typeof rec.totalHours === 'number' ? rec.totalHours : Number(rec.totalHours) || 0,
+        date: rec.date || new Date().toISOString().split('T')[0]
       };
     });
     
-    console.log(`[attendanceRoutes] Returning ${normalized.length} normalized records`);
-    return res.json(normalized);
+    console.log(`[attendanceRoutes] GET / - returning ${normalized.length} normalized records`);
+    res.json(normalized);
   } catch (error) {
-    console.error(`[attendanceRoutes] GET / error:`, error.message);
-    return res.status(500).json({ error: error.message });
+    console.error(`[attendanceRoutes] GET / error:`, error.message, error.stack);
+    res.status(500).json({ error: error.message });
   }
 });
 
