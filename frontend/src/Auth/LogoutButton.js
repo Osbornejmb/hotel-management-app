@@ -14,7 +14,6 @@ function LogoutButton({ style = {}, children, className, ...props }) {
   };
 
   const baseStyle = {
-    margin: '1rem',
     padding: '0.5rem 1.25rem',
     borderRadius: 8,
     border: '2px solid #FFD700',
