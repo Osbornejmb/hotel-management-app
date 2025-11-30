@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Calendar, List, CreditCard, User } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import './user.css';
 
 import EmployeeDashboard from './employeeDashboard';
@@ -8,10 +8,14 @@ import EmployeeTasks from './employeetask';
 import EmployeePayroll from './employeePayroll';
 import EmployeeProfile from './employeeProfile';
 import LogoutModal from './logoutModal'; // 👈 import modal
+import MobileSidebar from './mobileSidebar';
+import useResponsive from '../hooks/useResponsive';
 
 const EmployeeMainDashboard = () => {
   const [activePage, setActivePage] = useState('dashboard');
   const [showLogout, setShowLogout] = useState(false);
+  const { isMobile } = useResponsive();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderPage = () => {
     switch (activePage) {
@@ -37,46 +41,27 @@ const EmployeeMainDashboard = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/login"; 
+    window.location.href = "/login";
+  };
+
+  const mainStyle = {
+    flex: 1,
+    padding: isMobile ? 20 : 40,
+    position: 'relative',
+    marginLeft: isMobile ? 0 : 220,
+    transition: 'margin-left 0.3s ease'
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:h-screen lg:fixed lg:top-0 lg:left-0 bg-[#4b2b17] shadow-sm z-20 text-white">
-        <div className="p-4 font-bold text-lg">Employee Portal</div>
-        <nav className="mt-6 flex flex-col space-y-2 flex-grow">
-          {[ 
-            { id: 'dashboard', label: 'Home', icon: Home },
-            { id: 'logHistory', label: 'Log', icon: Calendar },
-            { id: 'tasks', label: 'Tasks', icon: List },
-            { id: 'payroll', label: 'Payroll', icon: CreditCard },
-            { id: 'profile', label: 'Profile', icon: User }
-          ].map(({ id, label, icon: Icon }) => (
-            <button 
-              key={id}
-              onClick={() => setActivePage(id)}
-              className={`flex items-center space-x-3 px-4 py-2 rounded-md text-left transition-colors duration-200 ${
-                activePage === id 
-                  ? 'bg-[#d2aa3a] text-[#2f1b0a] font-semibold' 
-                  : 'text-white hover:bg-[rgba(255,255,255,0.1)]'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              <span>{label}</span>
-            </button>
-          ))}
-          <button 
-            onClick={() => setShowLogout(true)} 
-            className="flex items-center space-x-3 px-4 py-2 rounded-md text-left text-red-400 hover:bg-[rgba(255,255,255,0.1)] mt-auto"
-          >
-            Logout
+      <MobileSidebar activePage={activePage} setActivePage={setActivePage} isMobile={isMobile} isOpen={sidebarOpen} setOpen={setSidebarOpen} />
+      
+      <div style={mainStyle}>
+        {isMobile && (
+          <button onClick={() => setSidebarOpen(true)} style={{ position: 'absolute', top: 15, left: 15, zIndex: 1100 }}>
+            <Menu size={24} />
           </button>
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 lg:ml-64">
+        )}
         <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-4 sticky top-0 z-30">
           <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
         </header>
@@ -84,33 +69,6 @@ const EmployeeMainDashboard = () => {
         <main className="pb-20">{renderPage()}</main>
       </div>
 
-      {/* Bottom Navigation - Mobile only */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#4b2b17] border-t border-gray-800 px-4 py-2 z-20 lg:hidden">
-        <div className="flex justify-around">
-          {[ 
-            { id: 'dashboard', label: 'Home', icon: Home },
-            { id: 'logHistory', label: 'Log', icon: Calendar },
-            { id: 'tasks', label: 'Tasks', icon: List },
-            { id: 'payroll', label: 'Payroll', icon: CreditCard },
-            { id: 'profile', label: 'Profile', icon: User }
-          ].map(({ id, label, icon: Icon }) => (
-            <button 
-              key={id}
-              onClick={() => setActivePage(id)}
-              className={`flex flex-col items-center space-y-1 py-2 px-4 rounded-lg transition-colors ${
-                activePage === id 
-                  ? 'bg-[#d2aa3a] text-[#2f1b0a] font-semibold' 
-                  : 'text-white hover:bg-[rgba(255,255,255,0.1)]'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              <span className="text-xs">{label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Logout Modal */}
       <LogoutModal 
         isOpen={showLogout} 
         onConfirm={handleLogout} 
