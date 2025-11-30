@@ -28,7 +28,7 @@ app.use(express.json());
 const server = http.createServer(app);
 
 // Initialize Socket.io
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigin = process.env.FRONTEND_URL || 'https://hotel-management-app-s3.vercel.app';
 const io = socketIo(server, {
   cors: {
     origin: allowedOrigin,

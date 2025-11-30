@@ -74,7 +74,7 @@ router.get('/my-credentials', authenticateEmployee, async (req, res) => {
       username: employee.username,
       email: employee.email,
       name: employee.name,
-      loginUrl: process.env.APP_URL || process.env.FRONTEND_URL || 'http://localhost:3000',
+      loginUrl: process.env.APP_URL || process.env.FRONTEND_URL || 'https://hotel-management-app-s3.vercel.app',
       message: 'Please contact HR if you need your password reset.'
     });
   } catch (err) {

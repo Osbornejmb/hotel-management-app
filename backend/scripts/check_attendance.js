@@ -64,7 +64,7 @@ function getJson(url, path) {
 }
 
 async function run() {
-  const base = process.env.ATTENDANCE_API_BASE || 'http://localhost:5000';
+  const base = process.env.ATTENDANCE_API_BASE || 'https://hotel-management-app-qo2l.onrender.com';
   const postPath = process.env.ATTENDANCE_POST_PATH || '/api/attendances';
   const getPath = process.env.ATTENDANCE_GET_PATH || '/api/attendances';
   const employeeId = process.env.TEST_EMPLOYEE_ID || '0085231178';

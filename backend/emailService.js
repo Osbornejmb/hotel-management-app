@@ -141,7 +141,7 @@ const sendEmployeeCredentials = async (employeeData) => {
               <strong>Important:</strong> For security reasons, please change your password after your first login.
             </div>
 
-            <p>You can access the system at: <a href="${process.env.APP_URL || 'http://localhost:3000'}">${process.env.APP_URL || 'http://localhost:3000'}</a></p>
+            <p>You can access the system at: <a href="${process.env.APP_URL || 'https://hotel-management-app-s3.vercel.app'}">${process.env.APP_URL || 'https://hotel-management-app-s3.vercel.app'}</a></p>
             
             <div class="footer">
               <p>If you have any questions, please contact the HR department.</p>
