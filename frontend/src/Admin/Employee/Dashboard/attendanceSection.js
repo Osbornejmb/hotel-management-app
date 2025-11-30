@@ -5,17 +5,29 @@ import React, { useState, useEffect } from 'react';
 async function fetchAttendanceRecords() {
   try {
     const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
-    console.log('[attendanceSection] Fetching from', backendUrl + '/api/attendances');
-    const res = await fetch(backendUrl + '/api/attendances');
+    const url = backendUrl + '/api/attendances';
+    console.log('[attendanceSection] Fetching from:', url);
+    const res = await fetch(url);
     console.log('[attendanceSection] Response status:', res.status);
+    console.log('[attendanceSection] Response headers:', res.headers.get('content-type'));
     
     if (!res.ok) {
       console.error('[attendanceSection] API error:', res.statusText);
+      const errorText = await res.text();
+      console.error('[attendanceSection] Error body:', errorText);
       return [];
     }
     
-    const data = await res.json();
-    console.log('[attendanceSection] Raw data received:', data);
+    const text = await res.text();
+    console.log('[attendanceSection] Raw response text:', text);
+    
+    const data = JSON.parse(text);
+    console.log('[attendanceSection] Parsed JSON data:', data);
+    
+    if (!Array.isArray(data)) {
+      console.error('[attendanceSection] Data is not an array:', typeof data);
+      return [];
+    }
     
     const mapped = data.map(record => {
       console.log('[attendanceSection] Processing record:', record);
@@ -33,7 +45,7 @@ async function fetchAttendanceRecords() {
     console.log('[attendanceSection] Mapped records:', mapped);
     return mapped;
   } catch (err) {
-    console.error('[attendanceSection] fetchAttendanceRecords error', err);
+    console.error('[attendanceSection] fetchAttendanceRecords error:', err);
     return [];
   }
 }

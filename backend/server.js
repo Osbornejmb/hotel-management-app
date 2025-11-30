@@ -80,6 +80,22 @@ app.use('/api/attendances', attendanceRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// Simple test endpoint
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "Backend is running" });
+});
+
+// Test attendances endpoint
+app.get("/api/test-attendances", async (req, res) => {
+  try {
+    console.log('[test-attendances] called');
+    res.json({ status: "ok", message: "Test endpoint working" });
+  } catch (err) {
+    console.error('[test-attendances] error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Test email endpoint
 app.get("/api/test-email", async (req, res) => {
   try {
@@ -95,37 +111,26 @@ app.get("/api/test-email", async (req, res) => {
   }
 });
 
-// Diagnostic endpoint to check database status
-app.get("/api/diagnostic", async (req, res) => {
-  try {
-    const Attendance = require('./attendanceRoutes');
-    const Employee = require('./Employee');
-    
-    const attendanceCount = await Attendance.countDocuments();
-    const employeeCount = await Employee.countDocuments();
-    
-    res.json({
-      status: "ok",
-      database: "connected",
-      collections: {
-        attendances: attendanceCount,
-        employees: employeeCount
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      status: "error",
-      message: err.message 
-    });
-  }
-});
-
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.log(err));
 
 app.get("/", (req, res) => {
   res.send("Hello from backend!");
+});
+
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error('[Global Error Handler]', err);
+  res.status(err.status || 500).json({ 
+    error: err.message || 'Internal server error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
+// Catch undefined routes and return 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found', path: req.path });
 });
 
 const PORT = process.env.PORT || 5000;

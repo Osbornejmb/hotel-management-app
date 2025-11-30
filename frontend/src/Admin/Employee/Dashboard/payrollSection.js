@@ -4,19 +4,32 @@ import React, { useState, useEffect } from 'react';
 async function fetchAttendanceRecords() {
   try {
     const backendUrl = 'https://hotel-management-app-qo2l.onrender.com';
-    console.log('[payrollSection] Fetching from', backendUrl + '/api/attendances');
-    const res = await fetch(backendUrl + '/api/attendances');
+    const url = backendUrl + '/api/attendances';
+    console.log('[payrollSection] Fetching from:', url);
+    const res = await fetch(url);
+    console.log('[payrollSection] Response status:', res.status);
     
     if (!res.ok) {
       console.error('[payrollSection] API error:', res.statusText);
+      const errorText = await res.text();
+      console.error('[payrollSection] Error body:', errorText);
       return [];
     }
     
-    const data = await res.json();
-    console.log('[payrollSection] Raw data received:', data);
+    const text = await res.text();
+    console.log('[payrollSection] Raw response text:', text);
+    
+    const data = JSON.parse(text);
+    console.log('[payrollSection] Parsed JSON data:', data);
+    
+    if (!Array.isArray(data)) {
+      console.error('[payrollSection] Data is not an array');
+      return [];
+    }
+    
     return data;
   } catch (err) {
-    console.error('[payrollSection] fetchAttendanceRecords error', err);
+    console.error('[payrollSection] fetchAttendanceRecords error:', err);
     return [];
   }
 }

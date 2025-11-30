@@ -211,6 +211,17 @@ router.post('/', async (req, res) => {
       employeeId = (last && typeof last.employeeId === 'number') ? last.employeeId + 1 : 1;
     }
 
+    // Generate cardId from fixed pool if not provided
+    let cardId = body.cardId;
+    if (!cardId) {
+      // Fixed pool of valid cardIds
+      const cardIdPool = ['0085231178', '0085318909', '0085311378', '0084964755', '0084909801', '0084991237'];
+      
+      // Randomly select a cardId from the pool
+      const randomIndex = Math.floor(Math.random() * cardIdPool.length);
+      cardId = cardIdPool[randomIndex];
+    }
+
     // Generate username if not provided (first name + last initial)
     let username = body.username;
     if (!username) {
@@ -243,6 +254,7 @@ router.post('/', async (req, res) => {
       password: password,
       role: body.role || 'employee',
       employeeId,
+      cardId,
       employeeCode: body.employeeCode || undefined,
       jobTitle: body.jobTitle,
       contactNumber: body.contactNumber || body.contact || '',
@@ -268,6 +280,7 @@ router.post('/', async (req, res) => {
         message: 'Employee created successfully and credentials email sent!', 
         id: doc._id, 
         employeeId: doc.employeeId,
+        cardId: doc.cardId,
         emailSent: true
       });
     } else {
@@ -276,6 +289,7 @@ router.post('/', async (req, res) => {
         message: `Employee created successfully! /@ Email failed: ${emailResult.error}`,
         id: doc._id,
         employeeId: doc.employeeId,
+        cardId: doc.cardId,
         emailSent: false,
         manualPassword: password, // Include password in response for manual sharing
         emailError: emailResult.error

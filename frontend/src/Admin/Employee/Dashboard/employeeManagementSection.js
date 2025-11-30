@@ -214,6 +214,7 @@ const EmployeeManagementSection = () => {
           id: u._id || u.id || u.employeeCode || u.username,
           employeeId: u.employeeId,
           formattedId,
+          cardId: u.cardId || 'N/A',
           name: u.name || u.fullName || u.username,
           email: u.email || '',
           jobTitle: u.jobTitle || u.position || 'Staff',
@@ -285,9 +286,10 @@ const EmployeeManagementSection = () => {
   const handleExport = () => {
     // Create CSV content
     const csvContent = [
-      ['ID', 'Name', 'Job Title', 'Contact', 'Email', 'Status'],
+      ['ID', 'Card ID', 'Name', 'Job Title', 'Contact', 'Email', 'Status'],
       ...filteredEmployees.map(emp => [
         emp.formattedId,
+        emp.cardId,
         emp.name,
         emp.jobTitle,
         emp.contact,
@@ -505,6 +507,25 @@ const EmployeeManagementSection = () => {
                 />
                 <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
                   Auto-generated ID
+                </div>
+              </div>
+              <div>
+                <input 
+                  name="cardId" 
+                  value="Auto-assigned from pool" 
+                  placeholder="Card ID" 
+                  style={{ 
+                    padding: '10px 12px', 
+                    borderRadius: 6, 
+                    border: "1px solid #d1d5db", 
+                    fontSize: '14px',
+                    width: '100%',
+                    backgroundColor: '#f9fafb'
+                  }} 
+                  readOnly
+                />
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                  Randomly assigned from fixed pool
                 </div>
               </div>
               <input 
@@ -729,6 +750,14 @@ const EmployeeManagementSection = () => {
                     color: '#374151', 
                     fontSize: '14px',
                     whiteSpace: 'nowrap'
+                  }}>CARD ID</th>
+                  <th style={{ 
+                    padding: '16px', 
+                    textAlign: "left", 
+                    fontWeight: '600', 
+                    color: '#374151', 
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap'
                   }}>EMPLOYEE NAME</th>
                   <th style={{ 
                     padding: '16px', 
@@ -775,7 +804,7 @@ const EmployeeManagementSection = () => {
               <tbody>
                 {filteredEmployees.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ 
+                    <td colSpan={8} style={{ 
                       padding: '48px', 
                       textAlign: 'center', 
                       color: '#6b7280',
@@ -804,6 +833,15 @@ const EmployeeManagementSection = () => {
                         whiteSpace: 'nowrap'
                       }}>
                         {emp.formattedId || emp.id}
+                      </td>
+                      <td style={{ 
+                        padding: '16px', 
+                        fontSize: '14px', 
+                        color: '#374151',
+                        fontWeight: '600',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {emp.cardId}
                       </td>
                       <td style={{ padding: '16px' }}>
                         <div style={{ 
@@ -974,6 +1012,12 @@ const EmployeeManagementSection = () => {
                     <strong style={{ minWidth: 80, fontSize: '14px', color: '#374151' }}>ID:</strong> 
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>
                       {selectedEmployee.formattedId || selectedEmployee.id}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <strong style={{ minWidth: 80, fontSize: '14px', color: '#374151' }}>Card ID:</strong> 
+                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                      {selectedEmployee.cardId}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center' }}>

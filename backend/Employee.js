@@ -23,6 +23,9 @@ const EmployeeSchema = new mongoose.Schema({
   // human/padded code if you prefer a display code
   employeeCode: { type: String, required: false, unique: false },
 
+  // card ID for attendance/RFID tracking - auto-generated and unique
+  cardId: { type: String, unique: true, sparse: true, required: false },
+
   // optional password for employee accounts (will be hashed)
   password: { type: String, required: false },
 
