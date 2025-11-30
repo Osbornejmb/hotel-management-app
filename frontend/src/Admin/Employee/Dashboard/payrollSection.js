@@ -20,10 +20,11 @@ function calculatePayrollFromAttendance(attendanceRecords) {
   const hourlyRate = 95; // PHP per hour
 
   attendanceRecords.forEach(record => {
+    if (!record.cardId) return; // Skip records without cardId
     if (!employeeMap[record.cardId]) {
       employeeMap[record.cardId] = {
         cardId: record.cardId,
-        name: record.name,
+        name: record.name || 'Unknown',
         totalHours: 0,
         records: []
       };
@@ -33,8 +34,8 @@ function calculatePayrollFromAttendance(attendanceRecords) {
   });
 
   return Object.values(employeeMap).map(emp => ({
-    id: emp.cardId,
-    employee: emp.name,
+    id: emp.cardId || 'N/A',
+    employee: emp.name || 'Unknown',
     cardId: emp.cardId,
     totalHours: Math.round(emp.totalHours * 100) / 100,
     amount: Math.round(emp.totalHours * hourlyRate * 100) / 100,
@@ -373,8 +374,8 @@ const PayrollSection = () => {
 
   // Filter payrolls based on search term and active tab
   const filteredPayrolls = sortedPayrolls.filter(payroll => {
-    const matchesSearch = payroll.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payroll.employee.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (payroll.id || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (payroll.employee || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = 
       activeTab === 'all' || 
       (activeTab === 'paid' && payroll.status === 'Paid') ||
