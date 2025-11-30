@@ -153,7 +153,7 @@ const PaymentModal = ({ isOpen, onClose, payroll, onConfirm }) => {
             <span style={{ fontWeight: 600 }}>{payroll?.employee}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontWeight: 500, color: '#2c3e50' }}>Employee ID:</span>
+            <span style={{ fontWeight: 500, color: '#2c3e50' }}>Card ID:</span>
             <span style={{ fontWeight: 600 }}>{payroll?.id}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -444,7 +444,7 @@ const PayrollSection = () => {
       return;
     }
 
-    const headers = ['Employee ID', 'Employee Name', 'Period Start', 'Period End', 'Amount', 'Status'];
+    const headers = ['Card ID', 'Name', 'Period Start', 'Period End', 'Amount', 'Status'];
     const csvContent = [
       headers.join(','),
       ...filteredPayrolls.map(payroll => [
@@ -517,7 +517,7 @@ const PayrollSection = () => {
           <div style={{ display: 'flex', flex: 1, gap: 8 }}>
             <input
               type="text"
-              placeholder="Enter employee ID or name..."
+              placeholder="Enter card ID or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
