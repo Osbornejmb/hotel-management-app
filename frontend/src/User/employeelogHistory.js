@@ -74,6 +74,10 @@ const EmployeeLogHistory = () => {
     return <div className="p-4">Error: {error}</div>;
   }
 
+  if (logEntries.length === 0) {
+    return <div className="p-4 text-center">No Data Yet</div>;
+  }
+
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-6">

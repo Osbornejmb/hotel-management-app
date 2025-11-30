@@ -103,9 +103,9 @@ const EmployeePayroll = () => {
   if (error) {
     return <div className="p-4">Error: {error}</div>;
   }
-  
-  if (!currentPayroll) {
-    return <div className="p-4">No payroll data available for this employee.</div>
+
+  if (payrollData.length === 0) {
+    return <div className="p-4 text-center">No Data Yet</div>;
   }
 
   return (
