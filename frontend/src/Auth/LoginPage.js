@@ -23,7 +23,7 @@ function LoginPage() {
     try {
       let data;
       // Use environment variable for API base so production can point to deployed backend
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       try {
         // First try the users login endpoint
         data = await attemptLogin(`${apiBase}/api/users/login`);

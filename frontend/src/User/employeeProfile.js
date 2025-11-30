@@ -21,7 +21,7 @@ const EmployeeProfile = () => {
       }
 
       // Fetch employee profile
-          const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
           const profileResponse = await fetch(`${apiBase}/api/employee/my-profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -69,7 +69,7 @@ const EmployeeProfile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/employee/change-password`, {
         method: 'POST',
         headers: {
@@ -97,7 +97,7 @@ const EmployeeProfile = () => {
     if (!employeeData?.email) return;
 
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/employee/reset-password-request`, {
         method: 'POST',
         headers: {
@@ -280,7 +280,7 @@ const EmployeeProfile = () => {
                 <div className="text-xs text-gray-500">Login URL</div>
                 <div className="font-medium">
                   <a href={credentials?.loginUrl} className="text-blue-600 hover:text-blue-800">
-                    {credentials?.loginUrl || (process.env.REACT_APP_API_URL || 'http://localhost:5000')}
+                    {credentials?.loginUrl || (process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com')}
                   </a>
                 </div>
               </div>

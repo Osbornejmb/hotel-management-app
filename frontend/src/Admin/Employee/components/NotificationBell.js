@@ -14,7 +14,7 @@ const NotificationBell = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     socketRef.current = io(apiBase);
 
     // Listen for new notifications
@@ -67,7 +67,7 @@ const NotificationBell = () => {
     try {
       setIsLoading(true);
       
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/notifications`, {
         headers: {
           'Content-Type': 'application/json'
@@ -90,7 +90,7 @@ const NotificationBell = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       await fetch(`${apiBase}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
@@ -111,7 +111,7 @@ const NotificationBell = () => {
 
   const markAllAsRead = async () => {
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       await fetch(`${apiBase}/api/notifications/mark-all-read`, {
         method: 'PATCH',
         headers: {

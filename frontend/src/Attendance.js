@@ -9,7 +9,7 @@ const Attendance = () => {
 
   const loadRecords = async () => {
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const res = await fetch(`${apiBase}/api/attendances`);
       if (!res.ok) return;
       const data = await res.json();
@@ -30,7 +30,7 @@ const Attendance = () => {
     setMessage('');
     setDetails(null);
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const res = await fetch(`${apiBase}/api/attendances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

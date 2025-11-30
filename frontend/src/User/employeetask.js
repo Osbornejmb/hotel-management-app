@@ -7,7 +7,7 @@ const EmployeeTasks = () => {
   const [employeeInfo, setEmployeeInfo] = useState({ name: '', employeeId: '' });
 
   // Use your backend URL
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
 
   useEffect(() => {
     fetchEmployeeTasks();

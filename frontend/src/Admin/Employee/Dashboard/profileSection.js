@@ -19,7 +19,7 @@ const ProfileSection = () => {
 
     (async () => {
       try {
-        const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
         const res = await fetch(`${apiBase}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });

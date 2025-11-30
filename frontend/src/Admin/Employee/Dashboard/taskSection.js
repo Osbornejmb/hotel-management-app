@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 // Helper: fetch basic employee list (id + name + formatted id)
 async function fetchEmployeesBasic() {
   try {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     const res = await fetch(`${apiBase}/api/employee`);
     if (!res.ok) return [];
     const data = await res.json();
@@ -28,7 +28,7 @@ async function fetchEmployeesBasic() {
 // Helper: fetch tasks from API
 async function fetchTasksFromAPI() {
   try {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     const res = await fetch(`${apiBase}/api/tasks`);
     if (!res.ok) return [];
     const data = await res.json();
@@ -676,7 +676,7 @@ const TasksSection = () => {
   // Handle Create New Task - UPDATED for real API
   const handleCreateTask = async (newTask) => {
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/tasks`, {
         method: "POST",
         headers: {

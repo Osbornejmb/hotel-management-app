@@ -14,7 +14,7 @@ const NotificationBar = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     socketRef.current = io(apiBase);
 
     // Listen for new notifications
@@ -76,7 +76,7 @@ const NotificationBar = () => {
       console.log('Fetching unread notifications from /api/notifications/unread...');
       
       // Fetch only unread notifications
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/notifications/unread`, {
         headers: {
           'Content-Type': 'application/json'
@@ -122,7 +122,7 @@ const NotificationBar = () => {
   // Fallback method if /unread endpoint doesn't exist
   const fetchAllAndFilterUnread = async () => {
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/notifications`, {
         headers: {
           'Content-Type': 'application/json'
@@ -157,7 +157,7 @@ const NotificationBar = () => {
   const markAsRead = async (notificationId) => {
     try {
       console.log('Marking notification as read:', notificationId);
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
@@ -196,7 +196,7 @@ const NotificationBar = () => {
   const markAllAsRead = async () => {
     try {
       console.log('Marking all notifications as read');
-      const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
       const response = await fetch(`${apiBase}/api/notifications/mark-all-read`, {
         method: 'PATCH',
         headers: {

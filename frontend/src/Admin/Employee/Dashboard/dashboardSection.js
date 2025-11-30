@@ -50,7 +50,7 @@ async function fetchPayrollStatus() {
 // Helper: fetch pending tasks
 async function fetchPendingTasks() {
   try {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     const res = await fetch(`${apiBase}/api/tasks`);
     if (!res.ok) return 0;
     const data = await res.json();
@@ -65,7 +65,7 @@ async function fetchPendingTasks() {
 // Helper: fetch recent logs
 async function fetchRecentLogs() {
   try {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return [];
     const data = await res.json();

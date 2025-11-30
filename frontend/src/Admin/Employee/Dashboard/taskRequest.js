@@ -17,7 +17,7 @@ const TaskRequests = () => {
   const [processing, setProcessing] = useState(false);
 
   // API configuration
-  const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5000') + '/api';
+  const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com') + '/api';
 
   // Fetch tasks from your actual API
   const fetchTasks = async () => {
