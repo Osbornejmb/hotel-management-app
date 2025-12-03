@@ -57,7 +57,8 @@ const EmployeeLogHistory = () => {
         
         // Fetch both attendance and completed tasks
         const [attendanceRes, tasksRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+          // Fetch from attendances collection - all records
+          fetch(`${API_BASE_URL}/api/attendances`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -69,24 +70,40 @@ const EmployeeLogHistory = () => {
           })
         ]);
 
-        // Handle attendance data - filter by cardId if available
+        // Handle attendance data - filter by cardId
         let attendanceData = [];
         if (attendanceRes.ok) {
           const data = await attendanceRes.json();
           if (Array.isArray(data) && data.length > 0) {
-            // Filter by cardId to ensure we only get this employee's records
+            // Filter by cardId to get only this employee's attendance records
             const filteredData = cardId 
               ? data.filter(entry => entry.cardId === cardId)
               : data;
             
-            attendanceData = filteredData.map(entry => ({
-              date: entry.clockIn ? new Date(entry.clockIn).toLocaleDateString() : 'Unknown',
-              timeIn: entry.clockIn ? new Date(entry.clockIn).toLocaleTimeString() : '—',
-              timeOut: entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString() : '—',
-              totalHours: entry.totalHours ? entry.totalHours.toFixed(2) + ' hrs' : '—',
-              status: entry.clockOut ? 'COMPLETED' : 'ACTIVE',
-              type: 'attendance'
-            }));
+            console.log('Filtered attendance records:', {
+              total: data.length,
+              filtered: filteredData.length,
+              cardId: cardId
+            });
+            
+            attendanceData = filteredData.map(entry => {
+              // Determine status based on clockOut state
+              const hasTimedOut = entry.clockOut && entry.clockOut !== null;
+              let status = 'PRESENT';
+              
+              if (hasTimedOut) {
+                status = entry.totalHours >= 8 ? 'COMPLETED' : 'INCOMPLETE';
+              }
+              
+              return {
+                date: entry.date ? new Date(entry.date).toLocaleDateString() : (entry.clockIn ? new Date(entry.clockIn).toLocaleDateString() : 'Unknown'),
+                timeIn: entry.clockIn ? new Date(entry.clockIn).toLocaleTimeString() : '—',
+                timeOut: hasTimedOut ? new Date(entry.clockOut).toLocaleTimeString() : '—',
+                totalHours: entry.totalHours ? entry.totalHours.toFixed(2) + ' hrs' : '—',
+                status: status,
+                type: 'attendance'
+              };
+            });
           }
         }
 
