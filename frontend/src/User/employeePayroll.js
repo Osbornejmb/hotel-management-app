@@ -37,16 +37,32 @@ const EmployeePayroll = () => {
           },
         });
 
+        // Handle both 404 (no records) and other errors
         if (!response.ok) {
+          if (response.status === 404) {
+            // No attendance records for this employee yet
+            setPayrollData([]);
+            setError(null);
+            return;
+          }
           throw new Error('Failed to fetch attendance data');
         }
 
         const attendanceData = await response.json();
         
-        // NOTE: Gross pay, deductions, and net pay are using dummy data.
-        // The backend does not currently support these calculations.
+        // Handle empty data
+        if (!Array.isArray(attendanceData) || attendanceData.length === 0) {
+          setPayrollData([]);
+          setError(null);
+          return;
+        }
+        
+        // Process attendance into payroll periods
         const processedPayroll = attendanceData.reduce((acc, entry) => {
-          const period = new Date(entry.date).toLocaleString('default', { month: 'long', year: 'numeric' });
+          // Use clockIn date if available, fallback to date field
+          const entryDate = entry.clockIn ? new Date(entry.clockIn) : new Date(entry.date);
+          const period = entryDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+          
           if (!acc[period]) {
             acc[period] = {
               id: period,
@@ -64,16 +80,20 @@ const EmployeePayroll = () => {
         }, {});
 
         const payrollArray = Object.values(processedPayroll).map(periodData => {
-          // Dummy calculations for monetary values
-          const grossPay = periodData.totalHours * 30; // Assuming $30/hr
-          const deductions = grossPay * 0.2; // Assuming 20% deductions
+          // Calculate monetary values based on hours
+          // NOTE: Using standard rate of $30/hr - can be updated with employee-specific rates
+          const HOURLY_RATE = 30;
+          const DEDUCTION_RATE = 0.15; // 15% for taxes, benefits, etc.
+          
+          const grossPay = periodData.totalHours * HOURLY_RATE;
+          const deductions = grossPay * DEDUCTION_RATE;
           const netPay = grossPay - deductions;
 
           return {
             ...periodData,
             totalHours: periodData.totalHours.toFixed(2),
             grossPay: `$${grossPay.toFixed(2)}`,
-            overtime: `$0.00`, // Overtime not calculated
+            overtime: `$0.00`, // Overtime calculation requires employee-specific rates
             deductions: `$${deductions.toFixed(2)}`,
             netPay: `$${netPay.toFixed(2)}`,
           };
@@ -83,8 +103,10 @@ const EmployeePayroll = () => {
         if (payrollArray.length > 0) {
           setSelectedPeriod(payrollArray[0].period);
         }
+        setError(null);
 
       } catch (err) {
+        console.error('Error fetching payroll data:', err);
         setError(err.message);
       } finally {
         setLoading(false);

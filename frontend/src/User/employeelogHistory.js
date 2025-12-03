@@ -39,14 +39,31 @@ const EmployeeLogHistory = () => {
           },
         });
 
+        // Handle both 404 (no records) and other errors
         if (!response.ok) {
+          if (response.status === 404) {
+            // No attendance records for this employee yet
+            setLogEntries([]);
+            setTotalHours(0);
+            setError(null);
+            return;
+          }
           throw new Error('Failed to fetch log history');
         }
 
         const data = await response.json();
+        
+        // Handle empty data
+        if (!Array.isArray(data) || data.length === 0) {
+          setLogEntries([]);
+          setTotalHours(0);
+          setError(null);
+          return;
+        }
+
         const formattedData = data.map(entry => ({
-          date: new Date(entry.clockIn).toLocaleDateString(),
-          timeIn: new Date(entry.clockIn).toLocaleTimeString(),
+          date: entry.clockIn ? new Date(entry.clockIn).toLocaleDateString() : 'Unknown',
+          timeIn: entry.clockIn ? new Date(entry.clockIn).toLocaleTimeString() : '—',
           timeOut: entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString() : '—',
           totalHours: entry.totalHours ? entry.totalHours.toFixed(2) + ' hrs' : '—',
           status: entry.clockOut ? 'COMPLETED' : 'ACTIVE',
@@ -55,8 +72,10 @@ const EmployeeLogHistory = () => {
 
         const total = data.reduce((acc, entry) => acc + (entry.totalHours || 0), 0);
         setTotalHours(total.toFixed(2));
+        setError(null);
 
       } catch (err) {
+        console.error('Error fetching log history:', err);
         setError(err.message);
       } finally {
         setLoading(false);

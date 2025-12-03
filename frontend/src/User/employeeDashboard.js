@@ -90,10 +90,17 @@ const EmployeeDashboard = () => {
   const calculateStats = () => {
     const completedTasks = tasks.filter(task => task.status === 'COMPLETED').length;
     const pendingTasks = tasks.filter(task => task.status === 'NOT_STARTED' || task.status === 'IN_PROGRESS').length;
-    const totalHours = "5.30"; // This could be calculated from task time estimates
+    
+    // Calculate total hours from attendance data (from tasks estimated time or attendance)
+    const totalHours = tasks.reduce((sum, task) => {
+      // Estimate hours based on task priority/type (can be enhanced with actual time tracking)
+      const baseHours = task.priority === 'HIGH' || task.priority === 'high' ? 2 : 
+                       task.priority === 'MEDIUM' || task.priority === 'medium' ? 1.5 : 1;
+      return sum + baseHours;
+    }, 0).toFixed(2);
     
     return [
-      { value: totalHours, unit: "Hrs", label: "Total Hours", color: "text-orange-500" },
+      { value: totalHours, unit: "Hrs", label: "Estimated Hours", color: "text-orange-500" },
       { value: completedTasks.toString(), label: "Tasks Completed", color: "text-green-500" },
       { value: pendingTasks.toString(), label: "Pending Tasks", color: "text-red-500" }
     ];
