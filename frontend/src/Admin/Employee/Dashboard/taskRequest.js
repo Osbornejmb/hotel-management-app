@@ -27,11 +27,20 @@ const TaskRequests = () => {
       const response = await fetch(`${API_BASE_URL}/api/attendances`);
       if (!response.ok) {
         console.warn('Failed to fetch attendance records');
+        setPresentEmployeesToday([]);
         return [];
       }
 
       const allAttendance = await response.json();
       console.log('All attendance records from API:', allAttendance);
+      console.log('Total attendance records:', allAttendance.length);
+      
+      if (!allAttendance || allAttendance.length === 0) {
+        console.log('No attendance records in database - using all employees as available');
+        // If no attendance records exist, show all employees as available
+        setPresentEmployeesToday([]);
+        return [];
+      }
       
       // Transform data using same logic as attendance dashboard
       const transformedRecords = allAttendance.map(record => {
@@ -54,6 +63,7 @@ const TaskRequests = () => {
       return presentEmployeeNames;
     } catch (err) {
       console.error('Error fetching attendance records:', err);
+      setPresentEmployeesToday([]);
       return [];
     }
   };
@@ -183,51 +193,22 @@ const TaskRequests = () => {
     }
   };
 
-    // Filter employees based on task type AND check if they already have active tasks AND check if they are present today
+    // Filter employees based on presence - show all present employees regardless of job type
     const getFilteredEmployees = (taskType) => {
-      if (!taskType || employees.length === 0) {
-        console.log('No task type or employees available');
+      if (employees.length === 0) {
+        console.log('No employees available');
         return [];
       }
 
-      const jobTitleMap = {
-        'cleaning': ['Cleaner', 'Housekeeping', 'Staff'],
-        'maintenance': ['Maintenance', 'Technician', 'Staff'],
-        'repair': ['Maintenance', 'Technician', 'Staff'],
-        'inspection': ['Manager', 'Supervisor', 'Staff'],
-        'setup': ['Staff', 'Maintenance', 'Technician'],
-        'other': ['Staff']
-      };
-
-      const allowedJobTitles = jobTitleMap[taskType?.toLowerCase()] || ['Staff'];
-      
-      console.log('Filtering employees for job type:', taskType);
-      console.log('Allowed job titles:', allowedJobTitles);
       console.log('Total employees:', employees.length);
       console.log('Present employees today:', presentEmployeesToday);
 
-      // Get employees with the right job title AND valid data
-      const qualifiedEmployees = employees.filter(employee => {
-        if (!employee || !employee._id || !employee.name || !employee.jobTitle) {
-          return false;
-        }
-
-        const matchesJob = allowedJobTitles.some(title => 
-          employee.jobTitle.toLowerCase().includes(title.toLowerCase())
-        );
-
-        console.log(`Employee ${employee.name} (${employee.jobTitle}) matches:`, matchesJob);
-        return matchesJob;
-      });
-
-      console.log('Qualified employees:', qualifiedEmployees);
-
-      // If no present employees found, show all qualified employees with a note
+      // If no present employees found, show all employees
       if (presentEmployeesToday.length === 0) {
-        console.log('No present employees found - showing all qualified employees');
+        console.log('No present employees in attendance - showing all employees');
         
         // Filter out employees who already have active tasks
-        const availableEmployees = qualifiedEmployees.filter(employee => {
+        const availableEmployees = employees.filter(employee => {
           if (!employee || !employee.name) return false;
           
           // Check if employee has any active tasks
@@ -240,21 +221,22 @@ const TaskRequests = () => {
           return !hasActiveTask;
         });
 
-        console.log('Available employees (no attendance filtering):', availableEmployees);
+        console.log('Available employees:', availableEmployees);
         return availableEmployees;
       }
 
-      // Filter to only employees who are present today
-      const presentQualifiedEmployees = qualifiedEmployees.filter(employee => {
+      // Filter to only present employees
+      const presentEmployees = employees.filter(employee => {
+        if (!employee || !employee.name) return false;
         const isPresent = presentEmployeesToday.includes(employee.name);
-        console.log(`Employee ${employee.name} is present today:`, isPresent);
+        console.log(`Employee ${employee.name} is present:`, isPresent);
         return isPresent;
       });
 
-      console.log('Present qualified employees:', presentQualifiedEmployees);
+      console.log('Present employees:', presentEmployees);
 
       // Filter out employees who already have active tasks
-      const availableEmployees = presentQualifiedEmployees.filter(employee => {
+      const availableEmployees = presentEmployees.filter(employee => {
         if (!employee || !employee.name) return false;
         
         // Check if employee has any active tasks
@@ -267,7 +249,7 @@ const TaskRequests = () => {
         return !hasActiveTask;
       });
 
-      console.log('Available employees for', taskType, ':', availableEmployees);
+      console.log('Available employees:', availableEmployees);
       return availableEmployees;
     };  // Handle Assign Staff button click
   const handleAssignClick = (task) => {
