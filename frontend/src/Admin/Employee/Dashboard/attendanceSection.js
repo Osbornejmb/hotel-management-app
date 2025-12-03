@@ -8,15 +8,20 @@ async function fetchAttendanceRecords() {
     const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return [];
     const data = await res.json();
-    return data.map(record => ({
-      date: new Date(record.date).toLocaleDateString(),
-      employee: record.name,
-      cardId: record.cardId,
-      timeIn: new Date(record.clockIn).toLocaleTimeString(),
-      timeOut: new Date(record.clockOut).toLocaleTimeString(),
-      hours: `${record.totalHours.toFixed(2)} Hrs`,
-      status: record.totalHours < 8 ? 'Incomplete' : 'Complete'
-    }));
+    return data.map(record => {
+      // If clockOut is null, employee hasn't timed out yet - they are "Present"
+      const hasTimedOut = record.clockOut && record.clockOut !== null;
+      
+      return {
+        date: new Date(record.date).toLocaleDateString(),
+        employee: record.name,
+        cardId: record.cardId,
+        timeIn: new Date(record.clockIn).toLocaleTimeString(),
+        timeOut: hasTimedOut ? new Date(record.clockOut).toLocaleTimeString() : '', // Blank if not timed out
+        hours: hasTimedOut ? `${record.totalHours.toFixed(2)} Hrs` : '—',
+        status: hasTimedOut ? (record.totalHours >= 8 ? 'Complete' : 'Incomplete') : 'Present'
+      };
+    });
   } catch (err) {
     console.error('fetchAttendanceRecords error', err);
     return [];
@@ -325,12 +330,14 @@ const AttendanceSection = () => {
                 <td style={{ padding: '16px 12px' }}>
                   <span style={{
                     color: log.status === 'Present' ? '#2ecc71' : 
-                           log.status === 'Late' ? '#e67e22' : '#e74c3c',
+                           log.status === 'Complete' ? '#27ae60' :
+                           log.status === 'Incomplete' ? '#e74c3c' : '#7f8c8d',
                     fontWeight: 600,
                     padding: '6px 12px',
                     borderRadius: 20,
                     background: log.status === 'Present' ? 'rgba(46, 204, 113, 0.1)' : 
-                               log.status === 'Late' ? 'rgba(230, 126, 34, 0.1)' : 'rgba(231, 76, 60, 0.1)',
+                               log.status === 'Complete' ? 'rgba(39, 174, 96, 0.1)' :
+                               log.status === 'Incomplete' ? 'rgba(231, 76, 60, 0.1)' : 'rgba(127, 140, 141, 0.1)',
                     display: 'inline-block',
                     fontSize: '0.85rem'
                   }}>
