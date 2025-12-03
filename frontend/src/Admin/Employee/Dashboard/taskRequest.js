@@ -27,8 +27,10 @@ const TaskRequests = () => {
       const response = await fetch(`${API_BASE_URL}/api/attendances`);
       if (!response.ok) {
         console.warn('Failed to fetch attendance records');
-        setPresentEmployeesToday([]);
-        return [];
+        // If attendance fetch fails, use all employees
+        const allEmployeeNames = employees.map(e => e.name);
+        setPresentEmployeesToday(allEmployeeNames);
+        return allEmployeeNames;
       }
 
       const allAttendance = await response.json();
@@ -37,9 +39,10 @@ const TaskRequests = () => {
       
       if (!allAttendance || allAttendance.length === 0) {
         console.log('No attendance records in database - using all employees as available');
-        // If no attendance records exist, show all employees as available
-        setPresentEmployeesToday([]);
-        return [];
+        // If no attendance records exist, use all employees
+        const allEmployeeNames = employees.map(e => e.name);
+        setPresentEmployeesToday(allEmployeeNames);
+        return allEmployeeNames;
       }
       
       // Transform data using same logic as attendance dashboard
@@ -58,13 +61,22 @@ const TaskRequests = () => {
       const presentEmployeeNames = presentEmployees.map(record => record.name);
       
       console.log('Employees with "Present" status:', presentEmployeeNames);
-      setPresentEmployeesToday(presentEmployeeNames);
       
+      // If still no present employees, use all employees
+      if (presentEmployeeNames.length === 0) {
+        const allEmployeeNames = employees.map(e => e.name);
+        setPresentEmployeesToday(allEmployeeNames);
+        return allEmployeeNames;
+      }
+      
+      setPresentEmployeesToday(presentEmployeeNames);
       return presentEmployeeNames;
     } catch (err) {
       console.error('Error fetching attendance records:', err);
-      setPresentEmployeesToday([]);
-      return [];
+      // On error, use all employees
+      const allEmployeeNames = employees.map(e => e.name);
+      setPresentEmployeesToday(allEmployeeNames);
+      return allEmployeeNames;
     }
   };
 
@@ -504,7 +516,7 @@ const TaskRequests = () => {
             {filteredTasks.length} request{filteredTasks.length !== 1 ? 's' : ''}
           </span>
           <span className="employee-count">
-            {employees.length} employee{employees.length !== 1 ? 's' : ''} available
+            {presentEmployeesToday.length} employee{presentEmployeesToday.length !== 1 ? 's' : ''} available
           </span>
         </div>
       </div>
