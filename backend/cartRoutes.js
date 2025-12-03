@@ -285,7 +285,22 @@ router.post('/:roomNumber/upsell', async (req, res) => {
 
     // Get the cart
     const cart = await Cart.findOne({ roomNumber });
-    if (!cart || !cart.items.length) {
+    // Normalize cart items: some older documents may store items as an object/map instead of an array.
+    const cartItems = (function() {
+      if (!cart) return [];
+      if (Array.isArray(cart.items)) return cart.items;
+      if (cart.items && typeof cart.items === 'object') {
+        try {
+          const vals = Object.values(cart.items).filter(Boolean);
+          return Array.isArray(vals) ? vals : [];
+        } catch (e) {
+          return [];
+        }
+      }
+      return [];
+    })();
+
+    if (!cart || !cartItems.length) {
       return res.json({
         showUpsell: false,
         reason: 'empty_cart',
@@ -294,7 +309,8 @@ router.post('/:roomNumber/upsell', async (req, res) => {
     }
 
     // Analyze cart for food items and presence of snack/beverage/dessert
-    const cartItems = cart.items;
+    // use normalized `cartItems` variable
+
     // hasFoodItems: any item not in the three upsell categories
     // Use substring matching to be tolerant of categories like "snacks & sides", "beverage - wine", etc.
     const hasFoodItems = cartItems.some(item => {

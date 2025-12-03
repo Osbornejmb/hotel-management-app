@@ -1455,7 +1455,7 @@ function Facilities() {
                                 Order #{order._id ? order._id.slice(-6) : 'N/A'}
                               </div>
                               <div className="text-sm text-amber-700">
-                                Placed on {new Date(order.createdAt || Date.now()).toLocaleDateString()}
+                                Placed on {new Date(order.checkedOutAt || order.createdAt || Date.now()).toLocaleDateString()}
                               </div>
                             </div>
                             <div className="flex items-center space-x-3">
