@@ -1,17 +1,89 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const EmployeeLogHistory = () => {
-  const logEntries = [
-    { date: '2025-01-05', timeIn: '05:00 AM', timeOut: '—', totalHours: '—', status: 'ACTIVE' },
-    { date: '2025-01-04', timeIn: '05:00 AM', timeOut: '05:00 PM', totalHours: '12 hrs', status: 'COMPLETED' }
-  ];
+  const [logEntries, setLogEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totalHours, setTotalHours] = useState(0);
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+
+  const getEmployeeFromToken = () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return {
+          employeeId: payload.employeeId || '',
+        };
+      }
+    } catch (error) {
+      console.error('Error decoding token:', error);
+    }
+    return { employeeId: '' };
+  };
+
+  useEffect(() => {
+    const fetchLogHistory = async () => {
+      try {
+        setLoading(true);
+        const employee = getEmployeeFromToken();
+        if (!employee.employeeId) {
+          throw new Error('Employee ID not found in token.');
+        }
+
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch log history');
+        }
+
+        const data = await response.json();
+        const formattedData = data.map(entry => ({
+          date: new Date(entry.clockIn).toLocaleDateString(),
+          timeIn: new Date(entry.clockIn).toLocaleTimeString(),
+          timeOut: entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString() : '—',
+          totalHours: entry.totalHours ? entry.totalHours.toFixed(2) + ' hrs' : '—',
+          status: entry.clockOut ? 'COMPLETED' : 'ACTIVE',
+        }));
+        setLogEntries(formattedData);
+
+        const total = data.reduce((acc, entry) => acc + (entry.totalHours || 0), 0);
+        setTotalHours(total.toFixed(2));
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogHistory();
+  }, []);
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4">Error: {error}</div>;
+  }
+
+  if (logEntries.length === 0) {
+    return <div className="p-4 text-center">No Data Yet</div>;
+  }
 
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-gray-900">Log History</h1>
         <div className="text-center">
-          <div className="text-2xl font-bold text-orange-500">18:50</div>
+          <div className="text-2xl font-bold text-orange-500">{totalHours}</div>
           <div className="text-xs text-gray-500">Total Hours</div>
         </div>
       </div>
