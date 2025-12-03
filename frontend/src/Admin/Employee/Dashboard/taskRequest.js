@@ -95,22 +95,29 @@ const TaskRequests = () => {
       const data = await response.json();
       console.log('Raw API response:', data);
       
-      const transformedTasks = data.map(request => ({
-        _id: request._id,
-        taskId: request._id,
-        roomNumber: request.room || request.roomNumber,
-        jobType: request.taskType || request.jobType,
-        date: request.date || request.createdAt,
-        priority: request.priority,
-        status: request.status || 'pending',
-        assignedTo: request.assignedTo?.name || request.assignedTo || 'Unassigned',
-        description: request.description || '',
-        notes: request.notes || '',
-        location: request.location || '',
-        completedAt: request.completedAt
-      }));
+      const transformedTasks = data
+        .filter(request => {
+          // Filter out completed tasks
+          const isCompleted = request.status === 'COMPLETED' || request.status === 'completed';
+          console.log(`Task ${request._id} status: ${request.status}, isCompleted: ${isCompleted}`);
+          return !isCompleted;
+        })
+        .map(request => ({
+          _id: request._id,
+          taskId: request._id,
+          roomNumber: request.room || request.roomNumber,
+          jobType: request.taskType || request.jobType,
+          date: request.date || request.createdAt,
+          priority: request.priority,
+          status: request.status || 'pending',
+          assignedTo: request.assignedTo?.name || request.assignedTo || 'Unassigned',
+          description: request.description || '',
+          notes: request.notes || '',
+          location: request.location || '',
+          completedAt: request.completedAt
+        }));
       
-      console.log('Transformed tasks:', transformedTasks);
+      console.log('Transformed tasks (completed removed):', transformedTasks);
       setTasks(transformedTasks);
       
     } catch (error) {
