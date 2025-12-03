@@ -81,26 +81,39 @@ const EmployeeLogHistory = () => {
           });
           
           completedTasks = myCompletedTasks.map(task => {
-            // Try different date fields - log for debugging
+            // Log the entire task object to see all fields
+            console.log('Full Completed Task Object:', JSON.stringify(task, null, 2));
+            
+            // Try different date fields with better error handling
             let completionDate = 'Unknown';
-            if (task.completedAt) {
-              completionDate = new Date(task.completedAt).toLocaleDateString();
-            } else if (task.updatedAt) {
-              completionDate = new Date(task.updatedAt).toLocaleDateString();
-            } else if (task.date) {
-              completionDate = new Date(task.date).toLocaleDateString();
+            
+            try {
+              if (task.completedAt && task.completedAt !== null && task.completedAt !== undefined) {
+                const date = new Date(task.completedAt);
+                if (!isNaN(date.getTime())) {
+                  completionDate = date.toLocaleDateString();
+                }
+              } else if (task.updatedAt && task.updatedAt !== null && task.updatedAt !== undefined) {
+                const date = new Date(task.updatedAt);
+                if (!isNaN(date.getTime())) {
+                  completionDate = date.toLocaleDateString();
+                }
+              } else if (task.date && task.date !== null && task.date !== undefined) {
+                const date = new Date(task.date);
+                if (!isNaN(date.getTime())) {
+                  completionDate = date.toLocaleDateString();
+                }
+              } else if (task.createdAt && task.createdAt !== null && task.createdAt !== undefined) {
+                const date = new Date(task.createdAt);
+                if (!isNaN(date.getTime())) {
+                  completionDate = date.toLocaleDateString();
+                }
+              }
+            } catch (err) {
+              console.error('Error parsing date for task:', task._id, err);
             }
             
-            console.log('Completed Task:', {
-              id: task._id,
-              completedAt: task.completedAt,
-              updatedAt: task.updatedAt,
-              date: task.date,
-              parsedDate: completionDate,
-              type: task.type,
-              taskType: task.taskType,
-              jobType: task.jobType
-            });
+            console.log('Parsed Completion Date:', completionDate, 'for task:', task._id);
             
             return {
               date: completionDate,
