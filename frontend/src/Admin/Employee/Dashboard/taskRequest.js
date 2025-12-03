@@ -102,20 +102,24 @@ const TaskRequests = () => {
           console.log(`Task ${request._id} status: ${request.status}, isCompleted: ${isCompleted}`);
           return !isCompleted;
         })
-        .map(request => ({
-          _id: request._id,
-          taskId: request._id,
-          roomNumber: request.room || request.roomNumber,
-          jobType: request.taskType || request.jobType,
-          date: request.date || request.createdAt,
-          priority: request.priority,
-          status: request.status || 'pending',
-          assignedTo: request.assignedTo?.name || request.assignedTo || 'Unassigned',
-          description: request.description || '',
-          notes: request.notes || '',
-          location: request.location || '',
-          completedAt: request.completedAt
-        }));
+        .map(request => {
+          const jobType = request.taskType || request.jobType;
+          console.log(`Task ${request._id} - taskType: ${request.taskType}, jobType: ${request.jobType}, final: ${jobType}`);
+          return {
+            _id: request._id,
+            taskId: request._id,
+            roomNumber: request.room || request.roomNumber,
+            jobType: jobType,
+            date: request.date || request.createdAt,
+            priority: request.priority,
+            status: request.status || 'pending',
+            assignedTo: request.assignedTo?.name || request.assignedTo || 'Unassigned',
+            description: request.description || '',
+            notes: request.notes || '',
+            location: request.location || '',
+            completedAt: request.completedAt
+          };
+        });
       
       console.log('Transformed tasks (completed removed):', transformedTasks);
       setTasks(transformedTasks);
@@ -440,9 +444,13 @@ const TaskRequests = () => {
     initializeData();
   }, []);
 
-  const filteredTasks = tasks.filter(task => 
-    filter === 'all' || task.priority === filter
-  );
+  const filteredTasks = tasks.filter(task => {
+    // Filter by priority
+    const priorityMatch = filter === 'all' || task.priority === filter;
+    // Filter out already assigned tasks
+    const isNotAssigned = task.assignedTo === 'Unassigned' || task.assignedTo === 'unassigned';
+    return priorityMatch && isNotAssigned;
+  });
 
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -584,11 +592,8 @@ const TaskRequests = () => {
               <button 
                 className="btn-assign"
                 onClick={() => handleAssignClick(task)}
-                disabled={task.assignedTo !== 'Unassigned' && task.assignedTo !== 'unassigned'}
               >
-                {task.assignedTo && task.assignedTo !== 'Unassigned' && task.assignedTo !== 'unassigned' 
-                  ? 'Already Assigned' 
-                  : 'Assign Staff'}
+                Assign Staff
               </button>
               <button 
                 className="btn-view"
