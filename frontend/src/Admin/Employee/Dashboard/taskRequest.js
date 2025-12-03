@@ -20,7 +20,7 @@ const TaskRequests = () => {
   // API configuration
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
 
-  // Fetch today's attendance records to get list of present employees
+  // Fetch today's attendance records to get list of present employees (still clocked in)
   const fetchTodayAttendance = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/attendances`);
@@ -35,12 +35,14 @@ const TaskRequests = () => {
       
       const todayAttendance = allAttendance.filter(record => {
         const recordDate = new Date(record.date).toLocaleDateString('en-CA');
-        return recordDate === today;
+        // Only include employees who are still present (haven't timed out yet)
+        const hasTimedOut = record.clockOut && record.clockOut !== null;
+        return recordDate === today && !hasTimedOut;
       });
 
       const presentEmployeeNames = todayAttendance.map(record => record.name);
       
-      console.log('Today\'s present employees:', presentEmployeeNames);
+      console.log('Today\'s currently present employees (still clocked in):', presentEmployeeNames);
       setPresentEmployeesToday(presentEmployeeNames);
       
       return presentEmployeeNames;
