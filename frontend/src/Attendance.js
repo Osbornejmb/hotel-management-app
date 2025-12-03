@@ -66,11 +66,15 @@ const Attendance = () => {
               request2.onupgradeneeded = (e) => {
                 e.target.result.createObjectStore('photos', { autoIncrement: true });
               };
-              request2.onsuccess = () => {
-                const db2 = request2.target.result;
+              request2.onsuccess = (event2) => {
+                const db2 = event2.target.result;
                 const tx = db2.transaction('photos', 'readwrite');
                 tx.objectStore('photos').add(imageData);
                 db2.close();
+                resolve(filename);
+              };
+              request2.onerror = () => {
+                console.error('Error opening IndexedDB v2');
                 resolve(filename);
               };
             } else {
@@ -81,6 +85,7 @@ const Attendance = () => {
             }
           };
           request.onerror = () => {
+            console.error('Error opening IndexedDB');
             resolve(filename);
           };
         } catch (err) {
@@ -95,24 +100,46 @@ const Attendance = () => {
   // Start camera
   const startCamera = async () => {
     try {
+      console.log('Starting camera...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 } }
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setShowCamera(true);
-        // Auto-capture after 2 seconds
-        setTimeout(() => {
-          if (showCamera) {
-            capturePhotoAuto();
-          }
-        }, 2000);
-      }
+      console.log('Stream obtained:', stream);
+      setShowCamera(true);
+      console.log('Show camera set to true');
+      
+      // Set up video stream after state update
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          console.log('Stream assigned to video element');
+          
+          // Auto-capture after video loads
+          videoRef.current.onloadedmetadata = () => {
+            console.log('Video metadata loaded, starting auto-capture');
+            setTimeout(() => {
+              capturePhotoAuto();
+            }, 1000);
+          };
+        }
+      }, 100);
     } catch (err) {
       console.error('Error accessing camera:', err);
       setMessage('Unable to access camera. Please check permissions.');
       setTimeout(() => setMessage(''), 3000);
     }
+  };
+
+  // Download image to user's computer
+  const downloadImage = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Auto-capture photo with face detection
@@ -139,12 +166,19 @@ const Attendance = () => {
 
       // Convert canvas to blob and save
       canvas.toBlob(async (blob) => {
-        const filename = await saveImageLocally(blob);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${cardId}_${timestamp}.jpg`;
+        
+        // Save locally to IndexedDB
+        await saveImageLocally(blob);
         console.log('Image saved locally:', filename);
+        
+        // Download image to computer
+        downloadImage(blob, filename);
         
         closeCamera();
         
-        // Process attendance (mock - no backend)
+        // Send only cardId to backend (no image)
         processAttendance();
       }, 'image/jpeg', 0.8);
     } catch (err) {
@@ -159,38 +193,62 @@ const Attendance = () => {
     await capturePhotoAuto();
   };
 
-  // Process attendance locally (mock)
-  const processAttendance = () => {
+  // Process attendance - send only cardId to backend
+  const processAttendance = async () => {
     setLoading(true);
+    const submittedCardId = cardId; // Store the cardId before clearing
+    setCardId(''); // Clear immediately
     
-    // Simulate attendance processing
-    setTimeout(() => {
-      // Mock employee data
-      const mockName = 'Employee ' + cardId;
-      const isClockedOut = Math.random() > 0.5; // Random for demo
-      
-      if (isClockedOut) {
-        setMessage(`Thank You, ${mockName}`);
-        setDetails({
-          label: 'Clocked Out',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          total: (Math.random() * 8 + 7).toFixed(2) // Mock 7-15 hours
-        });
-      } else {
-        setMessage(`${getGreeting()}, ${mockName}`);
+    try {
+      console.log('Sending attendance to backend with cardId:', submittedCardId);
+      const response = await fetch('http://localhost:5000/api/attendance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cardId: submittedCardId
+        })
+      });
+
+      const data = await response.json();
+      console.log('Backend response:', data);
+
+      if (!response.ok) {
+        // Show error message with remaining cooldown time
+        setMessage(data.error);
+        setLoading(false);
+        setTimeout(() => setMessage(''), 5000);
+        return;
+      }
+
+      // Show response from backend
+      if (data.status === 'clocked-in') {
+        setMessage(`${getGreeting()}, ${data.name}`);
         setDetails({
           label: 'Clocked In',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          time: new Date(data.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+      } else if (data.status === 'clocked-out') {
+        setMessage(`Thank You, ${data.name}`);
+        setDetails({
+          label: 'Clocked Out',
+          time: new Date(data.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          total: data.totalHours ? data.totalHours.toFixed(2) : '0.00'
         });
       }
 
       setLoading(false);
-      setCardId('');
       setTimeout(() => {
         setMessage('');
         setDetails(null);
       }, 4000);
-    }, 500);
+    } catch (err) {
+      console.error('Error sending attendance to backend:', err);
+      setMessage(`Error: ${err.message}`);
+      setLoading(false);
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   // Close camera

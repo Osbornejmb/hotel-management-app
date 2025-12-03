@@ -44,7 +44,7 @@ function saveImageLocally(imageData, cardId, type) {
 // Attendance route
 router.post('/attendance', async (req, res) => {
   try {
-    const { cardId, image } = req.body;
+    const { cardId } = req.body;
     console.log('Request received with cardId:', cardId);
     if (!cardId) return res.status(400).json({ error: 'Card ID is required' });
 
@@ -56,12 +56,36 @@ router.post('/attendance', async (req, res) => {
 
     const today = getDateString();
     let attendance = await Attendance.findOne({ cardId: employee.cardId, date: today });
-    console.log('Existing attendance record:', attendance);
+    console.log('Existing attendance record for today:', attendance);
 
     if (!attendance) {
-      // Clock in - save image locally
-      const clockInImageFilename = saveImageLocally(image, cardId, 'clockin');
+      // Check if employee clocked out yesterday and if 24hr cooldown has passed
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayString = yesterday.toISOString().split('T')[0];
       
+      const yesterdayAttendance = await Attendance.findOne({ cardId: employee.cardId, date: yesterdayString });
+      console.log('Yesterday attendance record:', yesterdayAttendance);
+      
+      if (yesterdayAttendance && yesterdayAttendance.clockOut) {
+        const clockOutTime = new Date(yesterdayAttendance.clockOut);
+        const currentTime = new Date();
+        const timeSinceClockOut = (currentTime - clockOutTime) / (1000 * 60); // minutes
+        
+        // Need to wait 24 hours (1440 minutes) from yesterday's clock out time
+        const cooldownMinutes = 24 * 60;
+        if (timeSinceClockOut < cooldownMinutes) {
+          const remainingMinutes = Math.ceil(cooldownMinutes - timeSinceClockOut);
+          const remainingSeconds = Math.ceil((remainingMinutes * 60) - (timeSinceClockOut * 60 * 60 / 1000));
+          return res.status(400).json({ 
+            error: `24-hour cooldown in effect. Please wait ${remainingMinutes} minute(s) before clocking in again.`,
+            remainingMinutes,
+            remainingSeconds: Math.max(0, remainingSeconds)
+          });
+        }
+      }
+      
+      // Clock in
       attendance = await Attendance.create({
         cardId: employee.cardId,
         name: employee.name,
@@ -69,21 +93,30 @@ router.post('/attendance', async (req, res) => {
         date: today
       });
       console.log('Creating new clock-in record:', attendance);
-      console.log('Clock-in image saved as:', clockInImageFilename);
       return res.json({
         status: 'clocked-in',
         name: employee.name,
         clockIn: attendance.clockIn
       });
     } else if (!attendance.clockOut) {
-      // Clock out - save image locally
-      const clockOutImageFilename = saveImageLocally(image, cardId, 'clockout');
+      // Clock out - check 30 minute minimum work time
+      const clockOutTime = new Date();
+      const timeSinceClockIn = (clockOutTime - attendance.clockIn) / (1000 * 60); // minutes
       
-      attendance.clockOut = new Date();
+      // Minimum 30 minutes between clock in and clock out
+      if (timeSinceClockIn < 30) {
+        const remainingMinutes = Math.ceil(30 - timeSinceClockIn);
+        return res.status(400).json({ 
+          error: `Please work at least 30 minutes before clocking out. ${remainingMinutes} minute(s) remaining.`,
+          remainingMinutes
+        });
+      }
+      
+      attendance.clockOut = clockOutTime;
       attendance.totalHours = (attendance.clockOut - attendance.clockIn) / (1000 * 60 * 60); // hours
       console.log('Updating clock-out record:', attendance);
       await attendance.save();
-      console.log('Clock-out image saved as:', clockOutImageFilename);
+      console.log('Employee clocked out');
       return res.json({
         status: 'clocked-out',
         name: employee.name,
@@ -91,7 +124,7 @@ router.post('/attendance', async (req, res) => {
         totalHours: attendance.totalHours
       });
     } else {
-      // Already clocked out, prevent duplicate clock-ins
+      // Already clocked out today
       return res.status(400).json({ error: 'Employee has already clocked out for today.' });
     }
   } catch (err) {
