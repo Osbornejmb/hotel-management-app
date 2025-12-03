@@ -190,9 +190,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    // Validate email
-    if (!body.email || String(body.email).trim() === '') {
-      return res.status(400).json({ error: 'Email is required' });
+    // Validate email - either provided or we'll generate a fallback
+    let email = body.email;
+    if (!email || String(email).trim() === '') {
+      // Generate a temporary email if not provided
+      const tempUsername = body.username || body.name || body.id;
+      email = `${tempUsername.toLowerCase().replace(/\s+/g, '.')}@system.local`;
     }
 
     // Ensure department is present (schema may require it) - use provided or fallback
@@ -236,7 +239,7 @@ router.post('/', async (req, res) => {
       username: username,
       name: name,
       department,
-      email: body.email,
+      email: email,
       password: password,
       role: body.role || 'employee',
       employeeId,
@@ -256,9 +259,9 @@ router.post('/', async (req, res) => {
     // Send email with credentials (non-blocking)
     let emailResult = { success: false, message: 'Email not attempted' };
     try {
-      console.log(`Attempting to send credentials to ${body.email}...`);
+      console.log(`Attempting to send credentials to ${email}...`);
       emailResult = await sendEmployeeCredentials({
-        email: body.email,
+        email: email,
         username: username,
         id: body.employeeCode || employeeId,
         password: password,
@@ -266,9 +269,9 @@ router.post('/', async (req, res) => {
       });
       
       if (emailResult.success) {
-        console.log(`✅ Email sent successfully to ${body.email}`);
+        console.log(`✅ Email sent successfully to ${email}`);
       } else {
-        console.warn(`⚠️ Email failed for ${body.email}: ${emailResult.message}`);
+        console.warn(`⚠️ Email failed for ${email}: ${emailResult.message}`);
       }
     } catch (emailErr) {
       console.error(`⚠️ Email service error: ${emailErr.message}`);
@@ -281,6 +284,7 @@ router.post('/', async (req, res) => {
       id: doc._id, 
       employeeId: doc.employeeId,
       cardId: doc.cardId,
+      email: email,
       emailSent: emailResult.success,
       emailError: emailResult.message,
       generatedPassword: password
