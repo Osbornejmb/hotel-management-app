@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import CheckoutUpsellModal from './CheckoutUpsellModal';
+import OrderConfirmationModal from './OrderConfirmationModal';
 import { useAddCartPopup } from './AddCartPopupContext';
 import { useCheckoutPopup } from './CheckoutPopupContext';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -87,6 +88,9 @@ export default function CustomerInterface() {
   const [upsellData, setUpsellData] = useState({});
   const [isUpsellLoading, setIsUpsellLoading] = useState(false);
   const [, setPendingCheckout] = useState(false);
+  // Order confirmation modal states
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [isConfirmationLoading, setIsConfirmationLoading] = useState(false);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   // Get current room number from localStorage
@@ -2063,19 +2067,8 @@ export default function CustomerInterface() {
             const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}`);
             setCart(res.data?.items || []);
             setShowUpsellModal(false);
-            // proceed to checkout after adding upsell item
-            setCheckoutLoading(true);
-            try {
-              await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
-              setCart([]);
-              showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
-              setShowCart(false);
-            } catch (err) {
-              console.error('Checkout failed after upsell add', err);
-              showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
-            } finally {
-              setCheckoutLoading(false);
-            }
+            // Show order confirmation modal before checkout
+            setShowConfirmationModal(true);
           } catch (err) {
             console.error('Error adding upsell item:', err);
             alert('Failed to add item to cart. Please try again.');
@@ -2083,20 +2076,37 @@ export default function CustomerInterface() {
         }}
         onContinueCheckout={async () => {
           setShowUpsellModal(false);
-          setCheckoutLoading(true);
+          // Show order confirmation modal (without adding new items)
+          setShowConfirmationModal(true);
+        }}
+        isLoading={isUpsellLoading}
+      />
+
+      {/* Order Confirmation Modal */}
+      <OrderConfirmationModal
+        isOpen={showConfirmationModal}
+        items={cart}
+        onConfirm={async () => {
+          if (!roomNumber || cart.length === 0) return;
+          setIsConfirmationLoading(true);
           try {
             await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
             setCart([]);
             showCheckoutPopup({ success: true, message: 'Checkout successful! Your order has been sent to the restaurant.' });
             setShowCart(false);
-          } catch (err) {
-            console.error('Checkout failed after skipping upsell', err);
+            setShowConfirmationModal(false);
+          } catch (error) {
+            console.error('Checkout error:', error);
             showCheckoutPopup({ success: false, message: 'Checkout failed. Please try again.' });
           } finally {
-            setCheckoutLoading(false);
+            setIsConfirmationLoading(false);
           }
         }}
-        isLoading={isUpsellLoading}
+        onCancel={() => {
+          setShowConfirmationModal(false);
+          setShowCart(true);
+        }}
+        isLoading={isConfirmationLoading}
       />
 
       {/* Add CSS for animations */}
