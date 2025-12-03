@@ -260,8 +260,9 @@ router.post('/', async (req, res) => {
       emailResult = await sendEmployeeCredentials({
         email: body.email,
         username: username,
-        id: employeeId,
-        password: password
+        id: body.employeeCode || employeeId,
+        password: password,
+        name: name
       });
       
       if (emailResult.success) {

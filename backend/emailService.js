@@ -45,7 +45,7 @@ const sendEmployeeCredentials = async (employee) => {
       return { success: false, message: 'Email service not configured' };
     }
 
-    const { email, username, id, password } = employee;
+    const { email, username, id, password, name } = employee;
 
     if (!email || !username || !password) {
       console.error('❌ Missing required employee data for email:', { email, username, password });
@@ -60,7 +60,7 @@ const sendEmployeeCredentials = async (employee) => {
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
           <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 5px;">
             <h2 style="color: #333;">Welcome to the Hotel Management System</h2>
-            <p>Dear ${username},</p>
+            <p>Dear ${name || username},</p>
             <p>Your account has been successfully created. Below are your login credentials:</p>
             
             <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;">

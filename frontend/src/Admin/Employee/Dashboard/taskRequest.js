@@ -31,16 +31,13 @@ const TaskRequests = () => {
 
       const allAttendance = await response.json();
       
-      // Get today's date in local timezone
       const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
       
-      // Filter for today's attendance records
       const todayAttendance = allAttendance.filter(record => {
         const recordDate = new Date(record.date).toLocaleDateString('en-CA');
         return recordDate === today;
       });
 
-      // Extract employee names who are present today
       const presentEmployeeNames = todayAttendance.map(record => record.name);
       
       console.log('Today\'s present employees:', presentEmployeeNames);
@@ -53,7 +50,6 @@ const TaskRequests = () => {
     }
   };
 
-  // Fetch tasks from your actual API
   const fetchTasks = async () => {
     try {
       setLoading(true);
@@ -69,7 +65,6 @@ const TaskRequests = () => {
       const data = await response.json();
       console.log('Raw API response:', data);
       
-      // Transform the data to match our expected structure
       const transformedTasks = data.map(request => ({
         _id: request._id,
         taskId: request._id,
