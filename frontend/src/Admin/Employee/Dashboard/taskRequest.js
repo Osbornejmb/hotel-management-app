@@ -447,9 +447,9 @@ const TaskRequests = () => {
   const filteredTasks = tasks.filter(task => {
     // Filter by priority
     const priorityMatch = filter === 'all' || task.priority === filter;
-    // Filter out completed tasks
-    const isNotCompleted = task.status !== 'COMPLETED' && task.status !== 'completed';
-    return priorityMatch && isNotCompleted;
+    // Filter out already assigned tasks
+    const isNotAssigned = task.assignedTo === 'Unassigned' || task.assignedTo === 'unassigned';
+    return priorityMatch && isNotAssigned;
   });
 
   const getPriorityColor = (priority) => {
