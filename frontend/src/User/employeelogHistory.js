@@ -222,40 +222,96 @@ const EmployeeLogHistory = () => {
 
       {activeTab === 'attendance' && (
         <div>
-          <h3>Attendance Records</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px' }}>
-            <thead>
-              <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Date</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Time In</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Time Out</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Total Hours</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendanceEntries.map((entry, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '10px' }}>{entry.date}</td>
-                  <td style={{ padding: '10px' }}>{entry.timeIn}</td>
-                  <td style={{ padding: '10px' }}>{entry.timeOut}</td>
-                  <td style={{ padding: '10px' }}>{entry.totalHours}</td>
-                  <td style={{ padding: '10px' }}>
-                    <span style={{
-                      background: entry.status === 'COMPLETED' ? '#d4edda' : '#fff3cd',
-                      color: entry.status === 'COMPLETED' ? '#155724' : '#856404',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.85rem'
-                    }}>
-                      {entry.status}
-                    </span>
-                  </td>
+          <h3 style={{ 
+            marginBottom: 24, 
+            color: '#2c3e50',
+            fontWeight: 600,
+            fontSize: '1.3rem'
+          }}>
+            Attendance Records {attendanceEntries.length > 0 && `(${attendanceEntries.length} records)`}
+          </h3>
+          
+          <div style={{
+            background: '#fff',
+            borderRadius: 12,
+            padding: 16,
+            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
+            marginBottom: 24,
+            width: '100%',
+            overflowX: 'auto'
+          }}>
+            <table style={{ 
+              width: '100%', 
+              fontSize: 14, 
+              color: '#2c3e50', 
+              borderCollapse: 'collapse',
+              minWidth: '600px'
+            }}>
+              <thead>
+                <tr style={{ 
+                  textAlign: 'left', 
+                  fontWeight: 600,
+                  borderBottom: '2px solid #ecf0f1'
+                }}>
+                  <th style={{ padding: '16px 12px' }}>Date</th>
+                  <th style={{ padding: '16px 12px' }}>Time-In</th>
+                  <th style={{ padding: '16px 12px' }}>Time-Out</th>
+                  <th style={{ padding: '16px 12px' }}>Hours</th>
+                  <th style={{ padding: '16px 12px' }}>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ marginTop: '15px', fontSize: '1.1rem', fontWeight: 'bold' }}>
+              </thead>
+              <tbody>
+                {attendanceEntries.map((entry, idx) => (
+                  <tr key={idx} style={{ 
+                    borderBottom: '1px solid #ecf0f1',
+                    transition: 'background 0.2s ease'
+                  }}>
+                    <td style={{ padding: '16px 12px', fontWeight: 500 }}>{entry.date}</td>
+                    <td style={{ padding: '16px 12px', fontWeight: 500 }}>{entry.timeIn}</td>
+                    <td style={{ padding: '16px 12px', fontWeight: 500 }}>{entry.timeOut}</td>
+                    <td style={{ padding: '16px 12px', fontWeight: 600, color: '#3498db' }}>{entry.totalHours}</td>
+                    <td style={{ padding: '16px 12px' }}>
+                      <span style={{
+                        color: entry.status === 'ACTIVE' ? '#2ecc71' : 
+                               entry.status === 'COMPLETED' ? '#27ae60' :
+                               '#7f8c8d',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        borderRadius: 20,
+                        background: entry.status === 'ACTIVE' ? 'rgba(46, 204, 113, 0.1)' : 
+                                   entry.status === 'COMPLETED' ? 'rgba(39, 174, 96, 0.1)' : 'rgba(127, 140, 141, 0.1)',
+                        display: 'inline-block',
+                        fontSize: '0.85rem'
+                      }}>
+                        {entry.status === 'ACTIVE' ? 'Present' : entry.status === 'COMPLETED' ? 'Complete' : 'Incomplete'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                
+                {attendanceEntries.length === 0 && (
+                  <tr>
+                    <td colSpan={5} style={{ 
+                      textAlign: 'center', 
+                      padding: '40px 0',
+                      color: '#7f8c8d',
+                      fontStyle: 'italic'
+                    }}>
+                      No attendance records available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div style={{ 
+            marginTop: '15px', 
+            fontSize: '1.1rem', 
+            fontWeight: 'bold',
+            color: '#2c3e50',
+            paddingLeft: '8px'
+          }}>
             Total Hours Worked: {totalHours} hrs
           </div>
         </div>
