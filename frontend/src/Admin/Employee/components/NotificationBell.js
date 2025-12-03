@@ -178,7 +178,7 @@ const NotificationBell = () => {
             border: '1px solid #ddd',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            zIndex: 9999,
+            zIndex: 99999,
             padding: '15px',
             cursor: 'pointer',
             animation: 'slideInRight 0.3s ease-out'
