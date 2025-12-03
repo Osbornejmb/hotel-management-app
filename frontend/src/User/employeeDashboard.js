@@ -6,6 +6,7 @@ const EmployeeDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [employeeInfo, setEmployeeInfo] = useState({ name: '', employeeId: '' });
+  const [workHours, setWorkHours] = useState(0);
 
   // Use your backend URL
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
@@ -31,7 +32,7 @@ const EmployeeDashboard = () => {
 
   // Fetch tasks from API
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         
@@ -46,18 +47,19 @@ const EmployeeDashboard = () => {
         const employee = getEmployeeFromToken();
         setEmployeeInfo(employee);
 
-        const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+        // Fetch tasks
+        const tasksResponse = await fetch(`${API_BASE_URL}/api/tasks`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        if (!response.ok) {
+        if (!tasksResponse.ok) {
           throw new Error('Failed to fetch tasks');
         }
 
-        const tasksData = await response.json();
+        const tasksData = await tasksResponse.json();
         
         // Filter tasks to show only those assigned to the current employee AND not completed
         const myTasks = tasksData.filter(task => {
@@ -76,6 +78,29 @@ const EmployeeDashboard = () => {
         });
 
         setTasks(myTasks);
+
+        // Fetch attendance data to get actual work hours
+        try {
+          const attendanceResponse = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (attendanceResponse.ok) {
+            const attendanceData = await attendanceResponse.json();
+            if (Array.isArray(attendanceData) && attendanceData.length > 0) {
+              const totalHours = attendanceData.reduce((sum, record) => sum + (record.totalHours || 0), 0);
+              setWorkHours(totalHours);
+              console.log('Total work hours from attendance:', totalHours);
+            }
+          }
+        } catch (attendanceError) {
+          console.error('Error fetching attendance data:', attendanceError);
+          setWorkHours(0);
+        }
+
       } catch (error) {
         console.error('Error fetching tasks:', error);
       } finally {
@@ -83,24 +108,19 @@ const EmployeeDashboard = () => {
       }
     };
 
-    fetchTasks();
+    fetchData();
   }, []);
 
-  // Calculate stats based on filtered tasks
+  // Calculate stats based on filtered tasks and actual work hours
   const calculateStats = () => {
     const completedTasks = tasks.filter(task => task.status === 'COMPLETED').length;
     const pendingTasks = tasks.filter(task => task.status === 'NOT_STARTED' || task.status === 'IN_PROGRESS').length;
     
-    // Calculate total hours from attendance data (from tasks estimated time or attendance)
-    const totalHours = tasks.reduce((sum, task) => {
-      // Estimate hours based on task priority/type (can be enhanced with actual time tracking)
-      const baseHours = task.priority === 'HIGH' || task.priority === 'high' ? 2 : 
-                       task.priority === 'MEDIUM' || task.priority === 'medium' ? 1.5 : 1;
-      return sum + baseHours;
-    }, 0).toFixed(2);
+    // Use actual work hours from attendance data
+    const totalHours = workHours.toFixed(2);
     
     return [
-      { value: totalHours, unit: "Hrs", label: "Estimated Hours", color: "text-orange-500" },
+      { value: totalHours, unit: "Hrs", label: "Work Hours Today", color: "text-orange-500" },
       { value: completedTasks.toString(), label: "Tasks Completed", color: "text-green-500" },
       { value: pendingTasks.toString(), label: "Pending Tasks", color: "text-red-500" }
     ];
@@ -265,6 +285,9 @@ const EmployeeDashboard = () => {
             </div>
           ))}
         </div>
+        <p className="text-xs text-gray-400 mt-3">
+          <strong>Work Hours:</strong> Total hours clocked in based on attendance records
+        </p>
       </div>
 
       <div className="mb-4">
