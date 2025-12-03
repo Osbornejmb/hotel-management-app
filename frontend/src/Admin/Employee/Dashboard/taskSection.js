@@ -767,7 +767,7 @@ const TasksSection = () => {
   // Get task counts for better UX
   const taskCounts = {
     all: tasks.length,
-    unassigned: tasks.filter((t) => t.status === "UNASSIGNED").length,
+    completed: tasks.filter((t) => t.status === "COMPLETED").length,
     notStarted: tasks.filter((t) => t.status === "NOT_STARTED").length,
   };
 
@@ -922,11 +922,11 @@ const TasksSection = () => {
             </span>
           </button>
           <button
-            onClick={() => setActiveFilter("unassigned")}
+            onClick={() => setActiveFilter("completed")}
             style={{
               padding: "8px 16px",
-              background: activeFilter === "unassigned" ? "#e74c3c" : "#f8f9fa",
-              color: activeFilter === "unassigned" ? "white" : "#7f8c8d",
+              background: activeFilter === "completed" ? "#27ae60" : "#f8f9fa",
+              color: activeFilter === "completed" ? "white" : "#7f8c8d",
               border: "none",
               borderRadius: 20,
               fontWeight: 500,
@@ -944,16 +944,16 @@ const TasksSection = () => {
                 width: 12,
                 height: 12,
                 borderRadius: "50%",
-                background: activeFilter === "unassigned" ? "#fff" : "#e74c3c",
+                background: activeFilter === "completed" ? "#fff" : "#27ae60",
               }}
             ></span>
-            Unassigned
+            Completed
             <span
               style={{
                 position: "absolute",
                 top: "-8px",
                 right: "-8px",
-                background: "#e74c3c",
+                background: "#27ae60",
                 color: "white",
                 borderRadius: "50%",
                 width: "20px",
@@ -965,7 +965,7 @@ const TasksSection = () => {
                 fontWeight: "bold",
               }}
             >
-              {taskCounts.unassigned}
+              {taskCounts.completed}
             </span>
           </button>
           <button
