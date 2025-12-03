@@ -80,7 +80,7 @@ const useNotificationSound = () => {
     } catch (error) {
       console.log('Notification sound error:', error);
     }
-  }, []);
+  }, [apiBase]);
 
   return playSound;
 };
@@ -108,7 +108,7 @@ function MenuManager() {
     } catch (error) {
       console.error('Error fetching food:', error);
     }
-  }, []);
+  }, [apiBase]);
 
   const handleToggleAvailability = React.useCallback(async (item) => {
     setTogglingItemId(item._id);
@@ -1179,7 +1179,7 @@ function RestaurantAdminDashboard() {
         setAnalysisResult(null);
       }
     })();
-  }, [orders]);
+  }, [orders, apiBase]);
 
   // Compute per-item room counts (which room ordered an item the most)
   const perItemRoomCounts = React.useMemo(() => {
