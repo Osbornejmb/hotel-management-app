@@ -81,14 +81,21 @@ const EmployeeLogHistory = () => {
           });
           
           completedTasks = myCompletedTasks.map(task => {
-            const taskHours = task.priority === 'HIGH' || task.priority === 'high' ? 2 : 
-                             task.priority === 'MEDIUM' || task.priority === 'medium' ? 1.5 : 1;
+            // Try different date fields
+            let completionDate = 'Unknown';
+            if (task.completedAt) {
+              completionDate = new Date(task.completedAt).toLocaleDateString();
+            } else if (task.updatedAt) {
+              completionDate = new Date(task.updatedAt).toLocaleDateString();
+            } else if (task.date) {
+              completionDate = new Date(task.date).toLocaleDateString();
+            }
+            
             return {
-              date: task.completedAt ? new Date(task.completedAt).toLocaleDateString() : 'Unknown',
+              date: completionDate,
               taskName: task.jobType || task.taskType || 'Task',
               roomNumber: task.room || task.roomNumber || 'N/A',
               priority: task.priority || 'LOW',
-              estimatedHours: taskHours.toFixed(2) + ' hrs',
               status: 'COMPLETED',
               type: 'task'
             };
@@ -217,7 +224,6 @@ const EmployeeLogHistory = () => {
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Task Type</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Room #</th>
                 <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Priority</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Estimated Hours</th>
               </tr>
             </thead>
             <tbody>
@@ -237,7 +243,6 @@ const EmployeeLogHistory = () => {
                       {entry.priority}
                     </span>
                   </td>
-                  <td style={{ padding: '10px' }}>{entry.estimatedHours}</td>
                 </tr>
               ))}
             </tbody>

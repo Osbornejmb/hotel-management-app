@@ -4,6 +4,7 @@ const EmployeeDashboard = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [completedTasks, setCompletedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [employeeInfo, setEmployeeInfo] = useState({ name: '', employeeId: '' });
   const [workHours, setWorkHours] = useState(0);
@@ -61,23 +62,29 @@ const EmployeeDashboard = () => {
 
         const tasksData = await tasksResponse.json();
         
-        // Filter tasks to show only those assigned to the current employee AND not completed
-        const myTasks = tasksData.filter(task => {
+        // Filter tasks for current employee
+        const employeeTasks = tasksData.filter(task => {
           const matchesName = task.assigned && 
                              task.assigned.toLowerCase() === employee.name.toLowerCase();
           const matchesId = task.employeeId && 
                            task.employeeId.toString() === employee.employeeId?.toString();
-          const isNotCompleted = task.status !== 'COMPLETED';
-          return (matchesName || matchesId) && isNotCompleted;
+          return (matchesName || matchesId);
         });
 
-        console.log('Filtered tasks for dashboard:', {
+        // Separate into pending and completed
+        const pendingTasks = employeeTasks.filter(task => task.status !== 'COMPLETED');
+        const completedTasksList = employeeTasks.filter(task => task.status === 'COMPLETED');
+
+        console.log('Employee tasks breakdown:', {
           employeeName: employee.name,
           totalTasks: tasksData.length,
-          myTasks: myTasks.length
+          employeeTasks: employeeTasks.length,
+          pending: pendingTasks.length,
+          completed: completedTasksList.length
         });
 
-        setTasks(myTasks);
+        setTasks(pendingTasks);
+        setCompletedTasks(completedTasksList);
 
         // Fetch attendance data to get actual work hours
         try {
@@ -113,16 +120,16 @@ const EmployeeDashboard = () => {
 
   // Calculate stats based on filtered tasks and actual work hours
   const calculateStats = () => {
-    const completedTasks = tasks.filter(task => task.status === 'COMPLETED').length;
-    const pendingTasks = tasks.filter(task => task.status === 'NOT_STARTED' || task.status === 'IN_PROGRESS').length;
+    const completed = completedTasks.length;
+    const pending = tasks.filter(task => task.status === 'NOT_STARTED' || task.status === 'IN_PROGRESS').length;
     
     // Use actual work hours from attendance data
     const totalHours = workHours.toFixed(2);
     
     return [
       { value: totalHours, unit: "Hrs", label: "Work Hours Today", color: "text-orange-500" },
-      { value: completedTasks.toString(), label: "Tasks Completed", color: "text-green-500" },
-      { value: pendingTasks.toString(), label: "Pending Tasks", color: "text-red-500" }
+      { value: completed.toString(), label: "Tasks Completed", color: "text-green-500" },
+      { value: pending.toString(), label: "Pending Tasks", color: "text-red-500" }
     ];
   };
 
