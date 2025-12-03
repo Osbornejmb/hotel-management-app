@@ -38,7 +38,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection, isMobile, isOpen, setOp
     color: '#fff',
     height: '100vh',
     overflowY: 'auto',
-    zIndex: 1200,
+    zIndex: 1000,
     transition: 'transform 0.3s ease',
     transform: isMobile ? (isOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
   };
@@ -50,7 +50,7 @@ const SidebarAdmin = ({ activeSection, setActiveSection, isMobile, isOpen, setOp
     width: '100%',
     height: '100%',
     background: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 1199,
+    zIndex: 999,
     display: isMobile && isOpen ? 'block' : 'none',
   };
 
