@@ -319,37 +319,85 @@ const EmployeeLogHistory = () => {
 
       {activeTab === 'tasks' && (
         <div>
-          <h3>Completed Tasks</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px' }}>
-            <thead>
-              <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Date Completed</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Task Type</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Room #</th>
-                <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Priority</th>
-              </tr>
-            </thead>
-            <tbody>
-              {taskEntries.map((entry, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '10px' }}>{entry.date}</td>
-                  <td style={{ padding: '10px' }}>{entry.taskName}</td>
-                  <td style={{ padding: '10px' }}>#{entry.roomNumber}</td>
-                  <td style={{ padding: '10px' }}>
-                    <span style={{
-                      background: entry.priority === 'HIGH' ? '#f8d7da' : entry.priority === 'MEDIUM' ? '#fff3cd' : '#d1ecf1',
-                      color: entry.priority === 'HIGH' ? '#721c24' : entry.priority === 'MEDIUM' ? '#856404' : '#0c5460',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '0.85rem'
-                    }}>
-                      {entry.priority}
-                    </span>
-                  </td>
+          <h3 style={{ 
+            marginBottom: 24, 
+            color: '#2c3e50',
+            fontWeight: 600,
+            fontSize: '1.3rem'
+          }}>
+            Completed Tasks {taskEntries.length > 0 && `(${taskEntries.length} records)`}
+          </h3>
+          
+          <div style={{
+            background: '#fff',
+            borderRadius: 12,
+            padding: 16,
+            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
+            marginBottom: 24,
+            width: '100%',
+            overflowX: 'auto'
+          }}>
+            <table style={{ 
+              width: '100%', 
+              fontSize: 14, 
+              color: '#2c3e50', 
+              borderCollapse: 'collapse',
+              minWidth: '600px'
+            }}>
+              <thead>
+                <tr style={{ 
+                  textAlign: 'left', 
+                  fontWeight: 600,
+                  borderBottom: '2px solid #ecf0f1'
+                }}>
+                  <th style={{ padding: '16px 12px' }}>Date Completed</th>
+                  <th style={{ padding: '16px 12px' }}>Task Type</th>
+                  <th style={{ padding: '16px 12px' }}>Room #</th>
+                  <th style={{ padding: '16px 12px' }}>Priority</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {taskEntries.map((entry, idx) => (
+                  <tr key={idx} style={{ 
+                    borderBottom: '1px solid #ecf0f1',
+                    transition: 'background 0.2s ease'
+                  }}>
+                    <td style={{ padding: '16px 12px', fontWeight: 500 }}>{entry.date}</td>
+                    <td style={{ padding: '16px 12px' }}>{entry.taskName}</td>
+                    <td style={{ padding: '16px 12px', fontWeight: 500 }}>#{entry.roomNumber}</td>
+                    <td style={{ padding: '16px 12px' }}>
+                      <span style={{
+                        color: entry.priority === 'HIGH' ? '#c0392b' : 
+                               entry.priority === 'MEDIUM' ? '#d68910' : '#0984e3',
+                        fontWeight: 600,
+                        padding: '6px 12px',
+                        borderRadius: 20,
+                        background: entry.priority === 'HIGH' ? 'rgba(192, 57, 43, 0.1)' : 
+                                   entry.priority === 'MEDIUM' ? 'rgba(214, 137, 16, 0.1)' : 'rgba(9, 132, 227, 0.1)',
+                        display: 'inline-block',
+                        fontSize: '0.85rem'
+                      }}>
+                        {entry.priority}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                
+                {taskEntries.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ 
+                      textAlign: 'center', 
+                      padding: '40px 0',
+                      color: '#7f8c8d',
+                      fontStyle: 'italic'
+                    }}>
+                      No completed tasks available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
