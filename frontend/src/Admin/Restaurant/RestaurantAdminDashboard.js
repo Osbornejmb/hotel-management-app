@@ -20,6 +20,9 @@ import {
 // PDF export
 import { jsPDF } from 'jspdf';
 
+// Base API URL (module-level so ESLint no-undef doesn't trigger)
+const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -80,7 +83,7 @@ const useNotificationSound = () => {
     } catch (error) {
       console.log('Notification sound error:', error);
     }
-  }, [apiBase]);
+  }, []);
 
   return playSound;
 };
@@ -108,7 +111,7 @@ function MenuManager() {
     } catch (error) {
       console.error('Error fetching food:', error);
     }
-  }, [apiBase]);
+  }, []);
 
   const handleToggleAvailability = React.useCallback(async (item) => {
     setTogglingItemId(item._id);
@@ -999,7 +1002,6 @@ const statusSteps = [
 ];
 
 function RestaurantAdminDashboard() {
-  const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const [orders, setOrders] = React.useState([]);
   const [cancelledOrders, setCancelledOrders] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState('orders');
@@ -1179,7 +1181,7 @@ function RestaurantAdminDashboard() {
         setAnalysisResult(null);
       }
     })();
-  }, [orders, apiBase]);
+  }, [orders]);
 
   // Compute per-item room counts (which room ordered an item the most)
   const perItemRoomCounts = React.useMemo(() => {
