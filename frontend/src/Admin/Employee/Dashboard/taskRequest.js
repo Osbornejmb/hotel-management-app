@@ -21,6 +21,7 @@ const TaskRequests = () => {
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
 
   // Fetch today's attendance records to get list of present employees (still clocked in)
+  // Uses the same logic as attendance dashboard
   const fetchTodayAttendance = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/attendances`);
@@ -30,40 +31,26 @@ const TaskRequests = () => {
       }
 
       const allAttendance = await response.json();
-      console.log('All attendance records:', allAttendance);
+      console.log('All attendance records from API:', allAttendance);
       
-      // Use simple date format matching (YYYY-MM-DD)
-      const today = new Date().toISOString().split('T')[0];
-      console.log('Today\'s date for comparison:', today);
-      
-      // Filter for employees still clocked in today (no clockOut)
-      const todayAttendance = allAttendance.filter(record => {
-        console.log(`Checking record: date="${record.date}", clockOut="${record.clockOut}", name="${record.name}"`);
-        // Match date string directly (already in YYYY-MM-DD format from backend)
-        const dateMatches = record.date === today;
-        // Only include employees who are still present (haven't timed out yet)
+      // Transform data using same logic as attendance dashboard
+      const transformedRecords = allAttendance.map(record => {
         const hasTimedOut = record.clockOut && record.clockOut !== null;
-        const isStillPresent = !hasTimedOut;
-        
-        console.log(`  - dateMatches: ${dateMatches}, hasTimedOut: ${hasTimedOut}, isStillPresent: ${isStillPresent}`);
-        
-        return dateMatches && isStillPresent;
+        return {
+          name: record.name,
+          status: hasTimedOut ? (record.totalHours >= 8 ? 'Complete' : 'Incomplete') : 'Present'
+        };
       });
-
-      const presentEmployeeNames = todayAttendance.map(record => record.name);
-      console.log('Today\'s currently present employees (still clocked in):', presentEmployeeNames);
       
-      // If no one is clocked in today, fall back to anyone who has ever clocked in and hasn't clocked out
-      if (presentEmployeeNames.length === 0) {
-        console.log('No present employees today - checking for active employees from any date');
-        const activeEmployees = allAttendance.filter(record => !record.clockOut || record.clockOut === null);
-        const activeNames = activeEmployees.map(record => record.name);
-        console.log('Active employees (from any date):', activeNames);
-        setPresentEmployeesToday(activeNames);
-        return activeNames;
-      }
+      console.log('Transformed records:', transformedRecords);
       
+      // Filter for employees with "Present" status (still clocked in)
+      const presentEmployees = transformedRecords.filter(record => record.status === 'Present');
+      const presentEmployeeNames = presentEmployees.map(record => record.name);
+      
+      console.log('Employees with "Present" status:', presentEmployeeNames);
       setPresentEmployeesToday(presentEmployeeNames);
+      
       return presentEmployeeNames;
     } catch (err) {
       console.error('Error fetching attendance records:', err);
