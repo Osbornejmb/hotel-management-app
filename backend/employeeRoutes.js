@@ -282,7 +282,7 @@ router.post('/', async (req, res) => {
       employeeId: doc.employeeId,
       cardId: doc.cardId,
       emailSent: emailResult.success,
-      emailMessage: emailResult.message,
+      emailError: emailResult.message,
       generatedPassword: password
     });
 
