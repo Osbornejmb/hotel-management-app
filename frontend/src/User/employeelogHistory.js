@@ -37,6 +37,24 @@ const EmployeeLogHistory = () => {
 
         const token = localStorage.getItem('token');
         
+        // Fetch employee details to get cardId
+        let cardId = null;
+        try {
+          const employeeRes = await fetch(`${API_BASE_URL}/api/employee/${employee.employeeId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          if (employeeRes.ok) {
+            const employeeData = await employeeRes.json();
+            cardId = employeeData.cardId;
+            console.log('Employee cardId:', cardId);
+          }
+        } catch (err) {
+          console.error('Error fetching employee details:', err);
+        }
+        
         // Fetch both attendance and completed tasks
         const [attendanceRes, tasksRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
@@ -51,12 +69,17 @@ const EmployeeLogHistory = () => {
           })
         ]);
 
-        // Handle attendance data
+        // Handle attendance data - filter by cardId if available
         let attendanceData = [];
         if (attendanceRes.ok) {
           const data = await attendanceRes.json();
           if (Array.isArray(data) && data.length > 0) {
-            attendanceData = data.map(entry => ({
+            // Filter by cardId to ensure we only get this employee's records
+            const filteredData = cardId 
+              ? data.filter(entry => entry.cardId === cardId)
+              : data;
+            
+            attendanceData = filteredData.map(entry => ({
               date: entry.clockIn ? new Date(entry.clockIn).toLocaleDateString() : 'Unknown',
               timeIn: entry.clockIn ? new Date(entry.clockIn).toLocaleTimeString() : '—',
               timeOut: entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString() : '—',

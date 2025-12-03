@@ -86,7 +86,7 @@ const EmployeeDashboard = () => {
         setTasks(pendingTasks);
         setCompletedTasks(completedTasksList);
 
-        // Fetch attendance data to get actual work hours
+        // Fetch attendance data to get today's work hours
         try {
           const attendanceResponse = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
             headers: {
@@ -98,9 +98,25 @@ const EmployeeDashboard = () => {
           if (attendanceResponse.ok) {
             const attendanceData = await attendanceResponse.json();
             if (Array.isArray(attendanceData) && attendanceData.length > 0) {
-              const totalHours = attendanceData.reduce((sum, record) => sum + (record.totalHours || 0), 0);
-              setWorkHours(totalHours);
-              console.log('Total work hours from attendance:', totalHours);
+              // Get today's date in YYYY-MM-DD format
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Filter for today's records only
+              const todayRecords = attendanceData.filter(record => {
+                if (record.clockIn) {
+                  const recordDate = new Date(record.clockIn).toISOString().split('T')[0];
+                  return recordDate === today;
+                } else if (record.date) {
+                  const recordDate = new Date(record.date).toISOString().split('T')[0];
+                  return recordDate === today;
+                }
+                return false;
+              });
+              
+              // Sum only today's hours
+              const todayHours = todayRecords.reduce((sum, record) => sum + (record.totalHours || 0), 0);
+              setWorkHours(todayHours);
+              console.log('Today\'s work hours from attendance:', todayHours, 'Records:', todayRecords);
             }
           }
         } catch (attendanceError) {
