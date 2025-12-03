@@ -15,9 +15,43 @@ const TaskRequests = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [assignDescription, setAssignDescription] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [presentEmployeesToday, setPresentEmployeesToday] = useState([]);
 
   // API configuration
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+
+  // Fetch today's attendance records to get list of present employees
+  const fetchTodayAttendance = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/attendances`);
+      if (!response.ok) {
+        console.warn('Failed to fetch attendance records');
+        return [];
+      }
+
+      const allAttendance = await response.json();
+      
+      // Get today's date in local timezone
+      const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
+      
+      // Filter for today's attendance records
+      const todayAttendance = allAttendance.filter(record => {
+        const recordDate = new Date(record.date).toLocaleDateString('en-CA');
+        return recordDate === today;
+      });
+
+      // Extract employee names who are present today
+      const presentEmployeeNames = todayAttendance.map(record => record.name);
+      
+      console.log('Today\'s present employees:', presentEmployeeNames);
+      setPresentEmployeesToday(presentEmployeeNames);
+      
+      return presentEmployeeNames;
+    } catch (err) {
+      console.error('Error fetching attendance records:', err);
+      return [];
+    }
+  };
 
   // Fetch tasks from your actual API
   const fetchTasks = async () => {
@@ -146,7 +180,7 @@ const TaskRequests = () => {
     }
   };
 
-  // Filter employees based on task type AND check if they already have active tasks
+  // Filter employees based on task type AND check if they already have active tasks AND check if they are present today
   const getFilteredEmployees = (taskType) => {
     if (!taskType || employees.length === 0) {
       console.log('No task type or employees available');
@@ -167,6 +201,7 @@ const TaskRequests = () => {
     console.log('Filtering employees for job type:', taskType);
     console.log('Allowed job titles:', allowedJobTitles);
     console.log('Total employees:', employees.length);
+    console.log('Present employees today:', presentEmployeesToday);
 
     // Get employees with the right job title AND valid data
     const qualifiedEmployees = employees.filter(employee => {
@@ -184,8 +219,17 @@ const TaskRequests = () => {
 
     console.log('Qualified employees:', qualifiedEmployees);
 
+    // Filter to only employees who are present today
+    const presentQualifiedEmployees = qualifiedEmployees.filter(employee => {
+      const isPresent = presentEmployeesToday.includes(employee.name);
+      console.log(`Employee ${employee.name} is present today:`, isPresent);
+      return isPresent;
+    });
+
+    console.log('Present qualified employees:', presentQualifiedEmployees);
+
     // Filter out employees who already have active tasks
-    const availableEmployees = qualifiedEmployees.filter(employee => {
+    const availableEmployees = presentQualifiedEmployees.filter(employee => {
       if (!employee || !employee.name) return false;
       
       // Check if employee has any active tasks
@@ -358,7 +402,8 @@ const TaskRequests = () => {
         await Promise.all([
           fetchTasks(),
           fetchEmployees(),
-          fetchExistingTasks()
+          fetchExistingTasks(),
+          fetchTodayAttendance()
         ]);
       } catch (error) {
         console.error('Error initializing data:', error);
@@ -394,7 +439,7 @@ const TaskRequests = () => {
       case 'inspection': return '🔍';
       case 'repair': return '🛠️';
       case 'setup': return '⚙️';
-      case 'other': return '📋';
+      case 'miscellaneous': return '📋';
       default: return '📋';
     }
   };
@@ -443,7 +488,7 @@ const TaskRequests = () => {
             className="btn-refresh"
             onClick={async () => {
               setLoading(true);
-              await Promise.all([fetchTasks(), fetchEmployees(), fetchExistingTasks()]);
+              await Promise.all([fetchTasks(), fetchEmployees(), fetchExistingTasks(), fetchTodayAttendance()]);
               setLoading(false);
             }}
             disabled={loading}
@@ -569,7 +614,7 @@ const TaskRequests = () => {
                 </select>
                 {getFilteredEmployees(selectedTask.jobType).length === 0 && (
                   <div className="no-employees-warning">
-                    ⚠️ No available employees for this task type. All qualified employees currently have active tasks.
+                    ⚠️ No available employees for this task type. All qualified employees are either absent today or currently have active tasks.
                   </div>
                 )}
               </div>
