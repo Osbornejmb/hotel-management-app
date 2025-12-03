@@ -50,17 +50,26 @@ async function fetchPayrollStatus() {
     let res = await fetch(`${apiBase}/api/payrolls`);
     if (res.ok) {
       const data = await res.json();
-      const paid = data.filter((p) => p.status === "Paid" || p.status === "paid").length;
-      const unpaid = data.filter((p) => p.status === "Unpaid" || p.status === "unpaid").length;
-      const total = data.reduce((sum, p) => sum + (p.amount || p.netPay || 0), 0);
-      return { paid, unpaid, total };
+      if (Array.isArray(data) && data.length > 0) {
+        const paid = data.filter((p) => p.status === "Paid" || p.status === "paid").length;
+        const unpaid = data.filter((p) => p.status === "Unpaid" || p.status === "unpaid").length;
+        const total = data.reduce((sum, p) => sum + (p.amount || p.netPay || 0), 0);
+        console.log('Payroll data:', { paid, unpaid, total, count: data.length });
+        return { paid, unpaid, total };
+      }
     }
     
-    // Fallback: try employees to get employee count
-    res = await fetch(`${apiBase}/api/employee`);
+    // Fallback: Count unique employees from attendance records (those who have worked)
+    res = await fetch(`${apiBase}/api/attendances`);
     if (res.ok) {
-      const data = await res.json();
-      return { paid: 0, unpaid: data.length || 0, total: 0 };
+      const attendanceData = await res.json();
+      const uniqueEmployees = new Set();
+      attendanceData.forEach(att => {
+        if (att.name) uniqueEmployees.add(att.name);
+      });
+      const employeeCount = uniqueEmployees.size;
+      console.log('Fallback to attendance: unique employees =', employeeCount);
+      return { paid: 0, unpaid: employeeCount, total: 0 };
     }
     
     return { paid: 0, unpaid: 0, total: 0 };
