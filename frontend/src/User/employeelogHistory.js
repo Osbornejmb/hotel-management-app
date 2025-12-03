@@ -81,7 +81,7 @@ const EmployeeLogHistory = () => {
           });
           
           completedTasks = myCompletedTasks.map(task => {
-            // Try different date fields
+            // Try different date fields - log for debugging
             let completionDate = 'Unknown';
             if (task.completedAt) {
               completionDate = new Date(task.completedAt).toLocaleDateString();
@@ -91,9 +91,20 @@ const EmployeeLogHistory = () => {
               completionDate = new Date(task.date).toLocaleDateString();
             }
             
+            console.log('Completed Task:', {
+              id: task._id,
+              completedAt: task.completedAt,
+              updatedAt: task.updatedAt,
+              date: task.date,
+              parsedDate: completionDate,
+              type: task.type,
+              taskType: task.taskType,
+              jobType: task.jobType
+            });
+            
             return {
               date: completionDate,
-              taskName: task.jobType || task.taskType || 'Task',
+              taskName: task.type || task.jobType || task.taskType || 'Task',
               roomNumber: task.room || task.roomNumber || 'N/A',
               priority: task.priority || 'LOW',
               status: 'COMPLETED',
