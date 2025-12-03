@@ -36,25 +36,8 @@ const EmployeeLogHistory = () => {
         }
 
         const token = localStorage.getItem('token');
-        
-        // Fetch employee details to get cardId
-        let cardId = null;
-        try {
-          const employeeRes = await fetch(`${API_BASE_URL}/api/employee/${employee.employeeId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          
-          if (employeeRes.ok) {
-            const employeeData = await employeeRes.json();
-            cardId = employeeData.cardId;
-            console.log('Employee cardId:', cardId);
-          }
-        } catch (err) {
-          console.error('Error fetching employee details:', err);
-        }
-        
+        const employeeName = employee.name;
+
         // Fetch both attendance and completed tasks
         const [attendanceRes, tasksRes] = await Promise.all([
           // Fetch from attendances collection - all records
@@ -70,20 +53,20 @@ const EmployeeLogHistory = () => {
           })
         ]);
 
-        // Handle attendance data - filter by cardId
+        // Handle attendance data - filter by name
         let attendanceData = [];
         if (attendanceRes.ok) {
           const data = await attendanceRes.json();
           if (Array.isArray(data) && data.length > 0) {
-            // Filter by cardId to get only this employee's attendance records
-            const filteredData = cardId 
-              ? data.filter(entry => entry.cardId === cardId)
+            // Filter by name to get only this employee's attendance records
+            const filteredData = employeeName
+              ? data.filter(entry => entry.name && entry.name.toLowerCase() === employeeName.toLowerCase())
               : data;
             
             console.log('Filtered attendance records:', {
               total: data.length,
               filtered: filteredData.length,
-              cardId: cardId
+              employeeName: employeeName
             });
             
             attendanceData = filteredData.map(entry => {
