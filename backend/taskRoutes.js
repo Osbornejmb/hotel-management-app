@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('./task');
-const Employee = require('./Employee');
+const Employee = require('./employee');
 
 // Notification helper function - UPDATED
 const sendTaskNotification = async (task, action, io) => {

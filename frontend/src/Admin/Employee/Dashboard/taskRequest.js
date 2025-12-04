@@ -186,15 +186,8 @@ const TaskRequests = () => {
 
     } catch (err) {
       console.error('Error fetching employees:', err);
-      setError('Failed to load employees list. Using fallback data.');
-      
-      // Fallback to mock data for development
-      const fallbackEmployees = [
-        { _id: '1', name: 'John Doe', employeeId: 'E1001', jobTitle: 'Cleaner', department: 'Housekeeping' },
-        { _id: '2', name: 'Jane Smith', employeeId: 'E1002', jobTitle: 'Maintenance', department: 'Facilities' },
-        { _id: '3', name: 'Mike Johnson', employeeId: 'E1003', jobTitle: 'Staff', department: 'General' }
-      ];
-      setEmployees(fallbackEmployees);
+      setError('Failed to load employees list. Please check the server connection.');
+      setEmployees([]);
     }
   };
 
