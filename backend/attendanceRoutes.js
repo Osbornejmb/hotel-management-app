@@ -54,6 +54,40 @@ router.post('/attendance', async (req, res) => {
     console.log('Employee found:', employee);
     if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
+    // Check for any ongoing attendance (clockIn without clockOut) regardless of date
+    const ongoingAttendance = await Attendance.findOne({ 
+      cardId: employee.cardId, 
+      clockOut: null 
+    });
+    console.log('Ongoing attendance check:', ongoingAttendance);
+
+    if (ongoingAttendance) {
+      // Employee has an ongoing attendance that hasn't been clocked out - clock them out automatically
+      const clockOutTime = new Date();
+      const timeSinceClockIn = (clockOutTime - ongoingAttendance.clockIn) / (1000 * 60); // minutes
+      
+      // Minimum 30 minutes between clock in and clock out
+      if (timeSinceClockIn < 30) {
+        const remainingMinutes = Math.ceil(30 - timeSinceClockIn);
+        return res.status(400).json({ 
+          error: `Please work at least 30 minutes before clocking out. ${remainingMinutes} minute(s) remaining.`,
+          remainingMinutes
+        });
+      }
+      
+      ongoingAttendance.clockOut = clockOutTime;
+      ongoingAttendance.totalHours = (ongoingAttendance.clockOut - ongoingAttendance.clockIn) / (1000 * 60 * 60); // hours
+      console.log('Auto clock-out for ongoing attendance:', ongoingAttendance);
+      await ongoingAttendance.save();
+      console.log('Employee auto-clocked out');
+      return res.json({
+        status: 'clocked-out',
+        name: employee.name,
+        clockOut: ongoingAttendance.clockOut,
+        totalHours: ongoingAttendance.totalHours
+      });
+    }
+
     const today = getDateString();
     let attendance = await Attendance.findOne({ cardId: employee.cardId, date: today });
     console.log('Existing attendance record for today:', attendance);
