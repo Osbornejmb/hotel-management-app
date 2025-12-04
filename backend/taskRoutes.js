@@ -154,6 +154,18 @@ router.patch('/:taskId/status', async (req, res) => {
 
     console.log('Task status updated successfully:', task.taskId, task.status);
 
+    // If task is completed and it's a maintenance task, update room status to available
+    if (status === 'COMPLETED' && task.type === 'maintenance') {
+      const Room = require('./Room');
+      const room = await Room.findOne({ roomNumber: task.room });
+      
+      if (room && room.status === 'under maintenance') {
+        room.status = 'available';
+        await room.save();
+        console.log(`Room ${task.room} status updated to available after maintenance completion`);
+      }
+    }
+
     // Send notification after status update
     const io = req.app.get('io');
     if (io) {
