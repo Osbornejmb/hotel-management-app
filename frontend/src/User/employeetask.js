@@ -137,45 +137,24 @@ const EmployeeTasks = () => {
           // If task is being marked as COMPLETED, also update the room status to "available"
           if (newStatus === 'COMPLETED' && taskToUpdate && taskToUpdate.room) {
             try {
-              // First fetch the room to check its current status
-              const roomCheckResponse = await fetch(`${API_BASE_URL}/api/rooms/number/${taskToUpdate.room}/status`, {
+              // Update room status to available
+              const roomUpdateResponse = await fetch(`${API_BASE_URL}/api/rooms/number/${taskToUpdate.room}/status`, {
+                method: 'PATCH',
                 headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'available' })
               });
 
-              if (roomCheckResponse.ok) {
-                const roomData = await roomCheckResponse.json();
-                const currentStatus = roomData.room?.status ? roomData.room.status.toLowerCase() : '';
-                
-                console.log(`Room ${taskToUpdate.room} current status: ${roomData.room?.status} (normalized: ${currentStatus})`);
-                
-                // Check if room is in maintenance (case-insensitive)
-                if (currentStatus === 'under maintenance' || currentStatus === 'maintenance' || currentStatus === 'Maintenance') {
-                  // Update room status to available
-                  const roomUpdateResponse = await fetch(`${API_BASE_URL}/api/rooms/number/${taskToUpdate.room}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ status: 'available' })
-                  });
-
-                  if (roomUpdateResponse.ok) {
-                    console.log('✅ Room status updated from maintenance to available:', taskToUpdate.room);
-                  } else {
-                    console.warn('⚠️ Failed to update room status:', roomUpdateResponse.status);
-                  }
-                } else {
-                  console.log(`Room is not in maintenance (status: ${roomData.room?.status}), skipping room update`);
-                }
+              if (roomUpdateResponse.ok) {
+                const updateResult = await roomUpdateResponse.json();
+                console.log('✅ Room status updated to available:', taskToUpdate.room, updateResult);
               } else {
-                console.warn('Could not fetch room status to verify maintenance status');
+                console.warn('⚠️ Failed to update room status:', roomUpdateResponse.status);
               }
             } catch (roomErr) {
-              console.warn('Error checking/updating room status:', roomErr);
+              console.warn('Error updating room status:', roomErr);
             }
           }
         } else if (response.status === 404) {
