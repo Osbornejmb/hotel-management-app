@@ -15,18 +15,78 @@ const TaskRequests = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [assignDescription, setAssignDescription] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [presentEmployeesToday, setPresentEmployeesToday] = useState([]);
 
   // API configuration
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
 
-  // Fetch tasks from your actual API
+  // Fetch today's attendance records to get list of present employees (still clocked in)
+  // Uses the same logic as attendance dashboard
+  const fetchTodayAttendance = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/attendances`);
+      if (!response.ok) {
+        console.warn('Failed to fetch attendance records');
+        // If attendance fetch fails, use all employees
+        const allEmployeeNames = employees.map(e => e.name);
+        setPresentEmployeesToday(allEmployeeNames);
+        return allEmployeeNames;
+      }
+
+      const allAttendance = await response.json();
+      console.log('All attendance records from API:', allAttendance);
+      console.log('Total attendance records:', allAttendance.length);
+      
+      if (!allAttendance || allAttendance.length === 0) {
+        console.log('No attendance records in database - using all employees as available');
+        // If no attendance records exist, use all employees
+        const allEmployeeNames = employees.map(e => e.name);
+        setPresentEmployeesToday(allEmployeeNames);
+        return allEmployeeNames;
+      }
+      
+      // Transform data using same logic as attendance dashboard
+      const transformedRecords = allAttendance.map(record => {
+        const hasTimedOut = record.clockOut && record.clockOut !== null;
+        return {
+          name: record.name,
+          status: hasTimedOut ? (record.totalHours >= 8 ? 'Complete' : 'Incomplete') : 'Present'
+        };
+      });
+      
+      console.log('Transformed records:', transformedRecords);
+      
+      // Filter for employees with "Present" status (still clocked in)
+      const presentEmployees = transformedRecords.filter(record => record.status === 'Present');
+      const presentEmployeeNames = presentEmployees.map(record => record.name);
+      
+      console.log('Employees with "Present" status:', presentEmployeeNames);
+      
+      // If still no present employees, use all employees
+      if (presentEmployeeNames.length === 0) {
+        const allEmployeeNames = employees.map(e => e.name);
+        setPresentEmployeesToday(allEmployeeNames);
+        return allEmployeeNames;
+      }
+      
+      setPresentEmployeesToday(presentEmployeeNames);
+      return presentEmployeeNames;
+    } catch (err) {
+      console.error('Error fetching attendance records:', err);
+      // On error, use all employees
+      const allEmployeeNames = employees.map(e => e.name);
+      setPresentEmployeesToday(allEmployeeNames);
+      return allEmployeeNames;
+    }
+  };
+
   const fetchTasks = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching tasks from:', `${API_BASE_URL}/requests`);
-      const response = await fetch(`${API_BASE_URL}/requests`);
+      console.log('Fetching tasks from:', `${API_BASE_URL}/api/requests`);
+      const response = await fetch(`${API_BASE_URL}/api/requests`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -35,23 +95,33 @@ const TaskRequests = () => {
       const data = await response.json();
       console.log('Raw API response:', data);
       
-      // Transform the data to match our expected structure
-      const transformedTasks = data.map(request => ({
-        _id: request._id,
-        taskId: request._id,
-        roomNumber: request.room || request.roomNumber,
-        jobType: request.taskType || request.jobType,
-        date: request.date || request.createdAt,
-        priority: request.priority,
-        status: request.status || 'pending',
-        assignedTo: request.assignedTo?.name || request.assignedTo || 'Unassigned',
-        description: request.description || '',
-        notes: request.notes || '',
-        location: request.location || '',
-        completedAt: request.completedAt
-      }));
+      const transformedTasks = data
+        .filter(request => {
+          // Filter out completed tasks
+          const isCompleted = request.status === 'COMPLETED' || request.status === 'completed';
+          console.log(`Task ${request._id} status: ${request.status}, isCompleted: ${isCompleted}`);
+          return !isCompleted;
+        })
+        .map(request => {
+          const jobType = request.taskType || request.jobType;
+          console.log(`Task ${request._id} - taskType: ${request.taskType}, jobType: ${request.jobType}, final: ${jobType}`);
+          return {
+            _id: request._id,
+            taskId: request._id,
+            roomNumber: request.room || request.roomNumber,
+            jobType: jobType,
+            date: request.date || request.createdAt,
+            priority: request.priority,
+            status: request.status || 'pending',
+            assignedTo: request.assignedTo?.name || request.assignedTo || 'Unassigned',
+            description: request.description || '',
+            notes: request.notes || '',
+            location: request.location || '',
+            completedAt: request.completedAt
+          };
+        });
       
-      console.log('Transformed tasks:', transformedTasks);
+      console.log('Transformed tasks (completed removed):', transformedTasks);
       setTasks(transformedTasks);
       
     } catch (error) {
@@ -67,12 +137,12 @@ const TaskRequests = () => {
     try {
       console.log('Attempting to fetch employees...');
       
-      // Try multiple possible endpoints
+      // Try multiple possible endpoints (in order of preference)
       const endpoints = [
-        `${API_BASE_URL}/employees/list`,
-        `${API_BASE_URL}/requests/employees/list`,
-        `${API_BASE_URL}/tasks/employees/list`,
-        `${API_BASE_URL}/users?role=employee`
+        `${API_BASE_URL}/api/employee`,                    // Main employee endpoint
+        `${API_BASE_URL}/api/tasks/employees/list`,       // Task employees endpoint
+        `${API_BASE_URL}/api/requests/employees/list`,    // Request employees endpoint
+        `${API_BASE_URL}/api/users?role=employee`         // User endpoint
       ];
 
       let employeesData = [];
@@ -131,7 +201,7 @@ const TaskRequests = () => {
   // Fetch existing tasks from tasks collection to check employee assignments
   const fetchExistingTasks = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/tasks`);
+      const response = await fetch(`${API_BASE_URL}/api/tasks`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch existing tasks');
@@ -146,63 +216,65 @@ const TaskRequests = () => {
     }
   };
 
-  // Filter employees based on task type AND check if they already have active tasks
-  const getFilteredEmployees = (taskType) => {
-    if (!taskType || employees.length === 0) {
-      console.log('No task type or employees available');
-      return [];
-    }
-
-    const jobTitleMap = {
-      'cleaning': ['Cleaner', 'Housekeeping', 'Staff'],
-      'maintenance': ['Maintenance', 'Technician', 'Staff'],
-      'repair': ['Maintenance', 'Technician', 'Staff'],
-      'inspection': ['Manager', 'Supervisor', 'Staff'],
-      'setup': ['Staff', 'Maintenance', 'Technician'],
-      'other': ['Staff']
-    };
-
-    const allowedJobTitles = jobTitleMap[taskType?.toLowerCase()] || ['Staff'];
-    
-    console.log('Filtering employees for job type:', taskType);
-    console.log('Allowed job titles:', allowedJobTitles);
-    console.log('Total employees:', employees.length);
-
-    // Get employees with the right job title AND valid data
-    const qualifiedEmployees = employees.filter(employee => {
-      if (!employee || !employee._id || !employee.name || !employee.jobTitle) {
-        return false;
+    // Filter employees based on presence - show all present employees regardless of job type
+    const getFilteredEmployees = (taskType) => {
+      if (employees.length === 0) {
+        console.log('No employees available');
+        return [];
       }
 
-      const matchesJob = allowedJobTitles.some(title => 
-        employee.jobTitle.toLowerCase().includes(title.toLowerCase())
-      );
+      console.log('Total employees:', employees.length);
+      console.log('Present employees today:', presentEmployeesToday);
 
-      console.log(`Employee ${employee.name} (${employee.jobTitle}) matches:`, matchesJob);
-      return matchesJob;
-    });
+      // If no present employees found, show all employees
+      if (presentEmployeesToday.length === 0) {
+        console.log('No present employees in attendance - showing all employees');
+        
+        // Filter out employees who already have active tasks
+        const availableEmployees = employees.filter(employee => {
+          if (!employee || !employee.name) return false;
+          
+          // Check if employee has any active tasks
+          const hasActiveTask = existingTasks.some(task => 
+            task.assigned === employee.name && 
+            task.status !== 'COMPLETED'
+          );
+          
+          console.log(`Employee ${employee.name} has active task:`, hasActiveTask);
+          return !hasActiveTask;
+        });
 
-    console.log('Qualified employees:', qualifiedEmployees);
+        console.log('Available employees:', availableEmployees);
+        return availableEmployees;
+      }
 
-    // Filter out employees who already have active tasks
-    const availableEmployees = qualifiedEmployees.filter(employee => {
-      if (!employee || !employee.name) return false;
-      
-      // Check if employee has any active tasks
-      const hasActiveTask = existingTasks.some(task => 
-        task.assigned === employee.name && 
-        task.status !== 'COMPLETED'
-      );
-      
-      console.log(`Employee ${employee.name} has active task:`, hasActiveTask);
-      return !hasActiveTask;
-    });
+      // Filter to only present employees
+      const presentEmployees = employees.filter(employee => {
+        if (!employee || !employee.name) return false;
+        const isPresent = presentEmployeesToday.includes(employee.name);
+        console.log(`Employee ${employee.name} is present:`, isPresent);
+        return isPresent;
+      });
 
-    console.log('Available employees for', taskType, ':', availableEmployees);
-    return availableEmployees;
-  };
+      console.log('Present employees:', presentEmployees);
 
-  // Handle Assign Staff button click
+      // Filter out employees who already have active tasks
+      const availableEmployees = presentEmployees.filter(employee => {
+        if (!employee || !employee.name) return false;
+        
+        // Check if employee has any active tasks
+        const hasActiveTask = existingTasks.some(task => 
+          task.assigned === employee.name && 
+          task.status !== 'COMPLETED'
+        );
+        
+        console.log(`Employee ${employee.name} has active task:`, hasActiveTask);
+        return !hasActiveTask;
+      });
+
+      console.log('Available employees:', availableEmployees);
+      return availableEmployees;
+    };  // Handle Assign Staff button click
   const handleAssignClick = (task) => {
     console.log('Assign clicked for task:', task);
     console.log('Available employees for this task:', getFilteredEmployees(task.jobType));
@@ -234,7 +306,7 @@ const TaskRequests = () => {
 
       console.log('Creating task with data:', taskData);
 
-      const response = await fetch(`${API_BASE_URL}/tasks`, {
+      const response = await fetch(`${API_BASE_URL}/api/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -286,7 +358,7 @@ const TaskRequests = () => {
       }
       
       // Step 1: Update the request with assigned employee (using employee ID)
-      const assignResponse = await fetch(`${API_BASE_URL}/requests/${selectedTask._id}/assign`, {
+      const assignResponse = await fetch(`${API_BASE_URL}/api/requests/${selectedTask._id}/assign`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -309,7 +381,7 @@ const TaskRequests = () => {
       await createTaskInTasksCollection(selectedTask, selectedEmp);
       
       // Step 3: Update the request status to 'in-progress'
-      const updateResponse = await fetch(`${API_BASE_URL}/requests/${selectedTask._id}/status`, {
+      const updateResponse = await fetch(`${API_BASE_URL}/api/requests/${selectedTask._id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -358,7 +430,8 @@ const TaskRequests = () => {
         await Promise.all([
           fetchTasks(),
           fetchEmployees(),
-          fetchExistingTasks()
+          fetchExistingTasks(),
+          fetchTodayAttendance()
         ]);
       } catch (error) {
         console.error('Error initializing data:', error);
@@ -371,9 +444,13 @@ const TaskRequests = () => {
     initializeData();
   }, []);
 
-  const filteredTasks = tasks.filter(task => 
-    filter === 'all' || task.priority === filter
-  );
+  const filteredTasks = tasks.filter(task => {
+    // Filter by priority
+    const priorityMatch = filter === 'all' || task.priority === filter;
+    // Filter out already assigned tasks
+    const isNotAssigned = task.assignedTo === 'Unassigned' || task.assignedTo === 'unassigned';
+    return priorityMatch && isNotAssigned;
+  });
 
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -394,7 +471,7 @@ const TaskRequests = () => {
       case 'inspection': return '🔍';
       case 'repair': return '🛠️';
       case 'setup': return '⚙️';
-      case 'other': return '📋';
+      case 'miscellaneous': return '📋';
       default: return '📋';
     }
   };
@@ -443,7 +520,7 @@ const TaskRequests = () => {
             className="btn-refresh"
             onClick={async () => {
               setLoading(true);
-              await Promise.all([fetchTasks(), fetchEmployees(), fetchExistingTasks()]);
+              await Promise.all([fetchTasks(), fetchEmployees(), fetchExistingTasks(), fetchTodayAttendance()]);
               setLoading(false);
             }}
             disabled={loading}
@@ -454,7 +531,7 @@ const TaskRequests = () => {
             {filteredTasks.length} request{filteredTasks.length !== 1 ? 's' : ''}
           </span>
           <span className="employee-count">
-            {employees.length} employee{employees.length !== 1 ? 's' : ''} available
+            {presentEmployeesToday.length} employee{presentEmployeesToday.length !== 1 ? 's' : ''} available
           </span>
         </div>
       </div>
@@ -515,11 +592,8 @@ const TaskRequests = () => {
               <button 
                 className="btn-assign"
                 onClick={() => handleAssignClick(task)}
-                disabled={task.assignedTo !== 'Unassigned' && task.assignedTo !== 'unassigned'}
               >
-                {task.assignedTo && task.assignedTo !== 'Unassigned' && task.assignedTo !== 'unassigned' 
-                  ? 'Already Assigned' 
-                  : 'Assign Staff'}
+                Assign Staff
               </button>
               <button 
                 className="btn-view"
@@ -569,7 +643,7 @@ const TaskRequests = () => {
                 </select>
                 {getFilteredEmployees(selectedTask.jobType).length === 0 && (
                   <div className="no-employees-warning">
-                    ⚠️ No available employees for this task type. All qualified employees currently have active tasks.
+                    ⚠️ No available employees for this task type. {presentEmployeesToday.length === 0 ? 'No employees are currently clocked in.' : 'All qualified employees currently have active tasks.'}
                   </div>
                 )}
               </div>

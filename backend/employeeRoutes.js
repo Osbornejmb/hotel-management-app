@@ -74,7 +74,7 @@ router.get('/my-credentials', authenticateEmployee, async (req, res) => {
       username: employee.username,
       email: employee.email,
       name: employee.name,
-      loginUrl: process.env.APP_URL || 'http://localhost:5000',
+      loginUrl: process.env.APP_URL || process.env.FRONTEND_URL || 'https://hotel-management-app-s3.vercel.app',
       message: 'Please contact HR if you need your password reset.'
     });
   } catch (err) {
@@ -190,9 +190,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Name is required' });
     }
 
-    // Validate email
-    if (!body.email || String(body.email).trim() === '') {
-      return res.status(400).json({ error: 'Email is required' });
+    // Validate email - either provided or we'll generate a fallback
+    let email = body.email;
+    if (!email || String(email).trim() === '') {
+      // Generate a temporary email if not provided
+      const tempUsername = body.username || body.name || body.id;
+      email = `${tempUsername.toLowerCase().replace(/\s+/g, '.')}@system.local`;
     }
 
     // Ensure department is present (schema may require it) - use provided or fallback
@@ -236,7 +239,7 @@ router.post('/', async (req, res) => {
       username: username,
       name: name,
       department,
-      email: body.email,
+      email: email,
       password: password,
       role: body.role || 'employee',
       employeeId,
@@ -251,37 +254,41 @@ router.post('/', async (req, res) => {
     });
 
     await doc.save();
+    console.log(`Employee ${name} (ID: ${employeeId}) saved successfully`);
 
-    // Send email with credentials
-    const emailResult = await sendEmployeeCredentials({
-      email: body.email,
-      name: name,
-      username: username,
-      password: password,
-      employeeId: employeeId,
-      cardId: body.idCard // Include card ID in the email
-    });
-
-    if (emailResult.success) {
-      res.status(201).json({ 
-        message: 'Employee created successfully and credentials email sent!', 
-        id: doc._id, 
-        employeeId: doc.employeeId,
-        cardId: doc.cardId, // Include card ID in the response
-        emailSent: true
+    // Send email with credentials (non-blocking)
+    let emailResult = { success: false, message: 'Email not attempted' };
+    try {
+      console.log(`Attempting to send credentials to ${email}...`);
+      emailResult = await sendEmployeeCredentials({
+        email: email,
+        username: username,
+        id: body.employeeCode || employeeId,
+        password: password,
+        name: name
       });
-    } else {
-      // Employee was saved but email failed
-      res.status(201).json({
-        message: `Employee created successfully! /@ Email failed: ${emailResult.error}`,
-        id: doc._id,
-        employeeId: doc.employeeId,
-        cardId: doc.cardId, // Include card ID in the response
-        emailSent: false,
-        manualPassword: password, // Include password in response for manual sharing
-        emailError: emailResult.error
-      });
+      
+      if (emailResult.success) {
+        console.log(`✅ Email sent successfully to ${email}`);
+      } else {
+        console.warn(`⚠️ Email failed for ${email}: ${emailResult.message}`);
+      }
+    } catch (emailErr) {
+      console.error(`⚠️ Email service error: ${emailErr.message}`);
+      emailResult = { success: false, message: emailErr.message };
     }
+
+    // Always return success if employee was saved, regardless of email status
+    res.status(201).json({ 
+      message: 'Employee created successfully!',
+      id: doc._id, 
+      employeeId: doc.employeeId,
+      cardId: doc.cardId,
+      email: email,
+      emailSent: emailResult.success,
+      emailError: emailResult.message,
+      generatedPassword: password
+    });
 
   } catch (err) {
     console.error('POST /api/employee error', err);

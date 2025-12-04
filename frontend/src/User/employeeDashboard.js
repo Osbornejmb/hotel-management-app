@@ -4,11 +4,13 @@ const EmployeeDashboard = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [tasks, setTasks] = useState([]);
+  const [completedTasks, setCompletedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [employeeInfo, setEmployeeInfo] = useState({ name: '', employeeId: '' });
+  const [workHours, setWorkHours] = useState(0);
 
   // Use your backend URL
-  const API_BASE_URL = 'http://localhost:5000';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
 
   // Get employee info from JWT token
   const getEmployeeFromToken = () => {
@@ -31,7 +33,7 @@ const EmployeeDashboard = () => {
 
   // Fetch tasks from API
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         
@@ -46,120 +48,104 @@ const EmployeeDashboard = () => {
         const employee = getEmployeeFromToken();
         setEmployeeInfo(employee);
 
-        const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+        // Fetch tasks
+        const tasksResponse = await fetch(`${API_BASE_URL}/api/tasks`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        if (!response.ok) {
+        if (!tasksResponse.ok) {
           throw new Error('Failed to fetch tasks');
         }
 
-        const tasksData = await response.json();
+        const tasksData = await tasksResponse.json();
         
-        // Filter tasks to show only those assigned to the current employee AND not completed
-        const myTasks = tasksData.filter(task => {
+        // Filter tasks for current employee
+        const employeeTasks = tasksData.filter(task => {
           const matchesName = task.assigned && 
                              task.assigned.toLowerCase() === employee.name.toLowerCase();
           const matchesId = task.employeeId && 
                            task.employeeId.toString() === employee.employeeId?.toString();
-          const isNotCompleted = task.status !== 'COMPLETED';
-          return (matchesName || matchesId) && isNotCompleted;
+          return (matchesName || matchesId);
         });
 
-        console.log('Filtered tasks for dashboard:', {
+        // Separate into pending and completed
+        const pendingTasks = employeeTasks.filter(task => task.status !== 'COMPLETED');
+        const completedTasksList = employeeTasks.filter(task => task.status === 'COMPLETED');
+
+        console.log('Employee tasks breakdown:', {
           employeeName: employee.name,
           totalTasks: tasksData.length,
-          myTasks: myTasks.length
+          employeeTasks: employeeTasks.length,
+          pending: pendingTasks.length,
+          completed: completedTasksList.length
         });
 
-        setTasks(myTasks);
+        setTasks(pendingTasks);
+        setCompletedTasks(completedTasksList);
+
+        // Fetch attendance data to get today's work hours
+        try {
+          const attendanceResponse = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (attendanceResponse.ok) {
+            const attendanceData = await attendanceResponse.json();
+            if (Array.isArray(attendanceData) && attendanceData.length > 0) {
+              // Get today's date in YYYY-MM-DD format
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Filter for today's records only
+              const todayRecords = attendanceData.filter(record => {
+                if (record.clockIn) {
+                  const recordDate = new Date(record.clockIn).toISOString().split('T')[0];
+                  return recordDate === today;
+                } else if (record.date) {
+                  const recordDate = new Date(record.date).toISOString().split('T')[0];
+                  return recordDate === today;
+                }
+                return false;
+              });
+              
+              // Sum only today's hours
+              const todayHours = todayRecords.reduce((sum, record) => sum + (record.totalHours || 0), 0);
+              setWorkHours(todayHours);
+              console.log('Today\'s work hours from attendance:', todayHours, 'Records:', todayRecords);
+            }
+          }
+        } catch (attendanceError) {
+          console.error('Error fetching attendance data:', attendanceError);
+          setWorkHours(0);
+        }
+
       } catch (error) {
         console.error('Error fetching tasks:', error);
-        // Fallback to demo data
-        showDemoTasks();
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTasks();
+    fetchData();
   }, []);
 
-  // Demo data fallback
-  const showDemoTasks = () => {
-    const employee = getEmployeeFromToken();
-    const demoTasks = [
-      { 
-        id: 'T1001', 
-        title: 'Clean Lobby Area',
-        assigned: 'Christian Malong', 
-        employeeId: '0001',
-        room: 'Lobby', 
-        type: 'CLEANING', 
-        status: 'NOT_STARTED', 
-        priority: 'HIGH', 
-        description: 'Deep cleaning of main lobby area',
-        jobTitle: 'Cleaner',
-        assignedDate: '2025-01-15',
-        assignedTime: '09:00 AM',
-        createdAt: new Date().toISOString()
-      },
-      { 
-        id: 'T1002', 
-        title: 'Fix AC Unit',
-        assigned: 'Maria Santos', 
-        employeeId: '0002',
-        room: '302', 
-        type: 'MAINTENANCE', 
-        status: 'IN_PROGRESS', 
-        priority: 'MEDIUM', 
-        description: 'Fix AC unit in room 302',
-        jobTitle: 'Maintenance',
-        assignedDate: '2025-01-12',
-        assignedTime: '10:30 AM',
-        createdAt: new Date().toISOString()
-      },
-      { 
-        id: 'T1004', 
-        title: 'Clean Swimming Pool',
-        assigned: 'Christian Malong', 
-        employeeId: '0001',
-        room: 'Pool', 
-        type: 'CLEANING', 
-        status: 'IN_PROGRESS', 
-        priority: 'MEDIUM', 
-        description: 'Clean swimming pool area',
-        jobTitle: 'Cleaner',
-        assignedDate: '2025-01-14',
-        assignedTime: '02:00 PM',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    
-    // Filter demo tasks by current employee AND not completed
-    const filteredTasks = demoTasks.filter(task => {
-      const matchesName = task.assigned.toLowerCase() === employee.name?.toLowerCase();
-      const matchesId = task.employeeId === employee.employeeId?.toString();
-      const isNotCompleted = task.status !== 'COMPLETED';
-      return (matchesName || matchesId) && isNotCompleted;
-    });
-
-    setTasks(filteredTasks);
-  };
-
-  // Calculate stats based on filtered tasks
+  // Calculate stats based on filtered tasks and actual work hours
   const calculateStats = () => {
-    const completedTasks = tasks.filter(task => task.status === 'COMPLETED').length;
-    const pendingTasks = tasks.filter(task => task.status === 'NOT_STARTED' || task.status === 'IN_PROGRESS').length;
-    const totalHours = "5.30"; // This could be calculated from task time estimates
+    const completed = completedTasks.length;
+    const pending = tasks.filter(task => task.status === 'NOT_STARTED' || task.status === 'IN_PROGRESS').length;
+    
+    // Use actual work hours from attendance data
+    const totalHours = workHours.toFixed(2);
     
     return [
-      { value: totalHours, unit: "Hrs", label: "Total Hours", color: "text-orange-500" },
-      { value: completedTasks.toString(), label: "Tasks Completed", color: "text-green-500" },
-      { value: pendingTasks.toString(), label: "Pending Tasks", color: "text-red-500" }
+      { value: totalHours, unit: "Hrs", label: "Work Hours Today", color: "text-orange-500" },
+      { value: completed.toString(), label: "Tasks Completed", color: "text-green-500" },
+      { value: pending.toString(), label: "Pending Tasks", color: "text-red-500" }
     ];
   };
 
@@ -322,6 +308,9 @@ const EmployeeDashboard = () => {
             </div>
           ))}
         </div>
+        <p className="text-xs text-gray-400 mt-3">
+          <strong>Work Hours:</strong> Total hours clocked in based on attendance records
+        </p>
       </div>
 
       <div className="mb-4">

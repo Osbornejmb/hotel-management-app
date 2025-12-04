@@ -9,7 +9,8 @@ const Attendance = () => {
 
   const loadRecords = async () => {
     try {
-      const res = await fetch('/api/attendances');
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      const res = await fetch(`${apiBase}/api/attendances`);
       if (!res.ok) return;
       const data = await res.json();
       setRecords((data || []).slice().reverse().slice(0, 10));
@@ -29,7 +30,8 @@ const Attendance = () => {
     setMessage('');
     setDetails(null);
     try {
-      const res = await fetch('/api/attendances', {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      const res = await fetch(`${apiBase}/api/attendances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employeeId })

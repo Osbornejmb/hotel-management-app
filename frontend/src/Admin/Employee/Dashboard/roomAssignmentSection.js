@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 // Helper: fetch basic employee list (id + name + formatted id)
 async function fetchEmployeesBasic() {
   try {
-    const res = await fetch('/api/users');
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/users`);
     if (!res.ok) return [];
     const data = await res.json();
     const onlyEmployees = data.filter(u => (u.role || '').toLowerCase() === 'employee');
@@ -22,7 +23,8 @@ async function fetchEmployeesBasic() {
 // Helper: fetch tasks from API
 async function fetchTasksFromAPI() {
   try {
-    const res = await fetch('/api/tasks');
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/tasks`);
     if (!res.ok) return [];
     const data = await res.json();
     return data;
@@ -169,7 +171,8 @@ const RoomAssignmentSection = () => {
   // Handle reassign action - now updates the actual task
   const handleReassign = async (taskId, newEmployeeName) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      const response = await fetch(`${apiBase}/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -255,7 +258,8 @@ const RoomAssignmentSection = () => {
   // Handle status change - now updates the actual task
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/status`, {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      const response = await fetch(`${apiBase}/api/tasks/${taskId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

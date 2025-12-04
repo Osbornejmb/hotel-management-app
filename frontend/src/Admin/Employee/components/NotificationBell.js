@@ -14,7 +14,8 @@ const NotificationBell = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io('http://localhost:5000');
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    socketRef.current = io(apiBase);
 
     // Listen for new notifications
     socketRef.current.on('new-notification', (notification) => {
@@ -66,7 +67,8 @@ const NotificationBell = () => {
     try {
       setIsLoading(true);
       
-      const response = await fetch('http://localhost:5000/api/notifications', {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      const response = await fetch(`${apiBase}/api/notifications`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -88,7 +90,8 @@ const NotificationBell = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      await fetch(`${apiBase}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
@@ -108,7 +111,8 @@ const NotificationBell = () => {
 
   const markAllAsRead = async () => {
     try {
-      await fetch('http://localhost:5000/api/notifications/mark-all-read', {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      await fetch(`${apiBase}/api/notifications/mark-all-read`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
@@ -174,7 +178,7 @@ const NotificationBell = () => {
             border: '1px solid #ddd',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            zIndex: 9999,
+            zIndex: 99999,
             padding: '15px',
             cursor: 'pointer',
             animation: 'slideInRight 0.3s ease-out'

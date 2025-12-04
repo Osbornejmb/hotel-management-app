@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 // Helper: fetch total employees
 async function fetchTotalEmployees() {
   try {
-    const res = await fetch("/api/employee");
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/employee`);
     if (!res.ok) return 0;
     const data = await res.json();
     return Array.isArray(data) ? data.length : 0;
@@ -16,11 +17,23 @@ async function fetchTotalEmployees() {
 // Helper: fetch present employees today
 async function fetchPresentToday() {
   try {
-    const res = await fetch("/api/attendances");
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return 0;
     const data = await res.json();
-    const today = new Date().toDateString();
-    const presentToday = data.filter((att) => new Date(att.date).toDateString() === today && att.clockIn);
+    
+    // Use consistent date format (YYYY-MM-DD)
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Filter for employees still clocked in today (no clockOut or clockOut is null)
+    const presentToday = data.filter((att) => {
+      const attDate = att.date; // Already in YYYY-MM-DD format from backend
+      const isToday = attDate === today;
+      const isStillPresent = !att.clockOut || att.clockOut === null;
+      return isToday && isStillPresent;
+    });
+    
+    console.log('Present today count:', presentToday.length, 'from', data.length, 'total records');
     return presentToday.length;
   } catch (err) {
     console.error("fetchPresentToday error", err);
@@ -31,13 +44,35 @@ async function fetchPresentToday() {
 // Helper: fetch payroll status
 async function fetchPayrollStatus() {
   try {
-    const res = await fetch("/api/payrolls");
-    if (!res.ok) return { paid: 0, unpaid: 0, total: 0 };
-    const data = await res.json();
-    const paid = data.filter((p) => p.status === "Paid").length;
-    const unpaid = data.filter((p) => p.status === "Unpaid").length;
-    const total = data.reduce((sum, p) => sum + (p.amount || 0), 0);
-    return { paid, unpaid, total };
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    
+    // Try payrolls endpoint first
+    let res = await fetch(`${apiBase}/api/payrolls`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const paid = data.filter((p) => p.status === "Paid" || p.status === "paid").length;
+        const unpaid = data.filter((p) => p.status === "Unpaid" || p.status === "unpaid").length;
+        const total = data.reduce((sum, p) => sum + (p.amount || p.netPay || 0), 0);
+        console.log('Payroll data:', { paid, unpaid, total, count: data.length });
+        return { paid, unpaid, total };
+      }
+    }
+    
+    // Fallback: Count unique employees from attendance records (those who have worked)
+    res = await fetch(`${apiBase}/api/attendances`);
+    if (res.ok) {
+      const attendanceData = await res.json();
+      const uniqueEmployees = new Set();
+      attendanceData.forEach(att => {
+        if (att.name) uniqueEmployees.add(att.name);
+      });
+      const employeeCount = uniqueEmployees.size;
+      console.log('Fallback to attendance: unique employees =', employeeCount);
+      return { paid: 0, unpaid: employeeCount, total: 0 };
+    }
+    
+    return { paid: 0, unpaid: 0, total: 0 };
   } catch (err) {
     console.error("fetchPayrollStatus error", err);
     return { paid: 0, unpaid: 0, total: 0 };
@@ -47,11 +82,27 @@ async function fetchPayrollStatus() {
 // Helper: fetch pending tasks
 async function fetchPendingTasks() {
   try {
-    const res = await fetch("/api/tasks");
-    if (!res.ok) return 0;
-    const data = await res.json();
-    const pending = data.filter((task) => task.status === "pending" || task.status === "Pending");
-    return pending.length;
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    
+    // Try requests endpoint first (task requests)
+    let res = await fetch(`${apiBase}/api/requests`);
+    if (res.ok) {
+      const data = await res.json();
+      const pending = data.filter((task) => task.status !== "COMPLETED" && task.status !== "completed");
+      console.log('Pending tasks from requests:', pending.length);
+      return pending.length;
+    }
+    
+    // Fallback: try tasks endpoint
+    res = await fetch(`${apiBase}/api/tasks`);
+    if (res.ok) {
+      const data = await res.json();
+      const pending = data.filter((task) => task.status === "pending" || task.status === "Pending" || task.status !== "COMPLETED");
+      console.log('Pending tasks from tasks:', pending.length);
+      return pending.length;
+    }
+    
+    return 0;
   } catch (err) {
     console.error("fetchPendingTasks error", err);
     return 0;
@@ -61,15 +112,21 @@ async function fetchPendingTasks() {
 // Helper: fetch recent logs
 async function fetchRecentLogs() {
   try {
-    const res = await fetch("/api/attendances");
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return [];
     const data = await res.json();
-    return data.slice(0, 5).map((log) => ({
-      employee: log.employeeName,
-      timeIn: new Date(log.clockIn).toLocaleTimeString(),
-      timeOut: new Date(log.clockOut).toLocaleTimeString(),
-      date: new Date(log.date).toLocaleDateString(),
-    }));
+    
+    // Filter out records with missing data and format properly
+    return data
+      .filter(log => log.name && log.clockIn)
+      .slice(0, 10)
+      .map((log) => ({
+        employee: log.name || log.employeeName || 'Unknown',
+        timeIn: log.clockIn ? new Date(log.clockIn).toLocaleTimeString() : '—',
+        timeOut: log.clockOut ? new Date(log.clockOut).toLocaleTimeString() : '—',
+        date: log.date || 'Unknown',
+      }));
   } catch (err) {
     console.error("fetchRecentLogs error", err);
     return [];

@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 // Helper: fetch attendance records and group by employee
 async function fetchAttendanceRecords() {
   try {
-    const res = await fetch('/api/attendances');
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (!res.ok) return [];
     const data = await res.json();
     return data;
@@ -19,22 +20,23 @@ function calculatePayrollFromAttendance(attendanceRecords) {
   const hourlyRate = 95; // PHP per hour
 
   attendanceRecords.forEach(record => {
-    if (!employeeMap[record.employeeId]) {
-      employeeMap[record.employeeId] = {
-        employeeId: record.employeeId,
-        employeeName: record.employeeName,
+    if (!record.cardId) return; // Skip records without cardId
+    if (!employeeMap[record.cardId]) {
+      employeeMap[record.cardId] = {
+        cardId: record.cardId,
+        name: record.name || 'Unknown',
         totalHours: 0,
         records: []
       };
     }
-    employeeMap[record.employeeId].totalHours += record.totalHours || 0;
-    employeeMap[record.employeeId].records.push(record);
+    employeeMap[record.cardId].totalHours += record.totalHours || 0;
+    employeeMap[record.cardId].records.push(record);
   });
 
   return Object.values(employeeMap).map(emp => ({
-    id: emp.employeeId,
-    employee: emp.employeeName,
-    employeeId: emp.employeeId,
+    id: emp.cardId || 'N/A',
+    employee: emp.name || 'Unknown',
+    cardId: emp.cardId,
     totalHours: Math.round(emp.totalHours * 100) / 100,
     amount: Math.round(emp.totalHours * hourlyRate * 100) / 100,
     status: 'Unpaid',
@@ -372,8 +374,8 @@ const PayrollSection = () => {
 
   // Filter payrolls based on search term and active tab
   const filteredPayrolls = sortedPayrolls.filter(payroll => {
-    const matchesSearch = payroll.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payroll.employee.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (payroll.id || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (payroll.employee || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = 
       activeTab === 'all' || 
       (activeTab === 'paid' && payroll.status === 'Paid') ||

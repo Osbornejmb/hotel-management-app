@@ -21,7 +21,8 @@ const EmployeeProfile = () => {
       }
 
       // Fetch employee profile
-      const profileResponse = await fetch('/api/employee/my-profile', {
+        const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+          const profileResponse = await fetch(`${apiBase}/api/employee/my-profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -35,7 +36,7 @@ const EmployeeProfile = () => {
       setEmployeeData(profileData);
 
       // Fetch employee credentials
-      const credentialsResponse = await fetch('/api/employee/my-credentials', {
+      const credentialsResponse = await fetch(`${apiBase}/api/employee/my-credentials`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -68,7 +69,8 @@ const EmployeeProfile = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/employee/change-password', {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      const response = await fetch(`${apiBase}/api/employee/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +97,8 @@ const EmployeeProfile = () => {
     if (!employeeData?.email) return;
 
     try {
-      const response = await fetch('/api/employee/reset-password-request', {
+      const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+      const response = await fetch(`${apiBase}/api/employee/reset-password-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -277,7 +280,7 @@ const EmployeeProfile = () => {
                 <div className="text-xs text-gray-500">Login URL</div>
                 <div className="font-medium">
                   <a href={credentials?.loginUrl} className="text-blue-600 hover:text-blue-800">
-                    {credentials?.loginUrl || 'http://localhost:5000'}
+                    {credentials?.loginUrl || (process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com')}
                   </a>
                 </div>
               </div>
