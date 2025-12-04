@@ -105,6 +105,17 @@ export default function HotelAdminRooms() {
     }
   };
 
+  // Filter rooms by selected floor and type
+  const filteredRooms = rooms.filter(r => {
+    if (!r.roomNumber) return false;
+    // Extract leading number from roomNumber (e.g., 'P-101' -> 1)
+    const match = String(r.roomNumber).match(/(\d+)/);
+    if (!match) return false;
+    const floorMatch = match[0][0] === String(selectedFloor);
+    const typeMatch = r.roomType && r.roomType.toLowerCase() === selectedType;
+    return floorMatch && typeMatch;
+  });
+
   return (
     <HotelAdminDashboard>
       <div className="hotel-admin-rooms-content">
