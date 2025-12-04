@@ -174,7 +174,7 @@ router.patch('/:taskId/status', async (req, res) => {
       const Room = require('./Room');
       const room = await Room.findOne({ roomNumber: task.room });
       
-      if (room && room.status === 'under maintenance') {
+      if (room && room.status === 'maintenance') {
         room.status = 'available';
         await room.save();
         console.log(`Room ${task.room} status updated to available after maintenance completion`);

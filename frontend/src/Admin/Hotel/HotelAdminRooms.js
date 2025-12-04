@@ -41,16 +41,69 @@ export default function HotelAdminRooms() {
     fetchRooms();
   }, []);
 
-  // Filter rooms by selected floor and type
-  const filteredRooms = rooms.filter(r => {
-    if (!r.roomNumber) return false;
-    // Extract leading number from roomNumber (e.g., 'P-101' -> 1)
-    const match = String(r.roomNumber).match(/(\d+)/);
-    if (!match) return false;
-    const floorMatch = match[0][0] === String(selectedFloor);
-    const typeMatch = r.roomType && r.roomType.toLowerCase() === selectedType;
-    return floorMatch && typeMatch;
-  });
+  const handleConfirmRequest = async () => {
+    setActionLoading(true);
+    setActionError('');
+    setActionSuccess('');
+    
+    try {
+      const { jobType, room } = confirmModal;
+      
+      if (!room) {
+        throw new Error('Room not selected');
+      }
+
+      // Step 1: Create request/task
+      const requestRes = await fetch(`${process.env.REACT_APP_API_URL}/api/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: room.roomNumber,
+          taskType: jobType,
+          status: 'pending',
+          priority: 'high',
+          description: `${jobType.charAt(0).toUpperCase() + jobType.slice(1)} request for room ${room.roomNumber}`,
+        })
+      });
+
+      if (!requestRes.ok) {
+        throw new Error('Failed to create request');
+      }
+
+      // Step 2: If maintenance task, update room status to 'maintenance'
+      if (jobType === 'maintenance') {
+        const updateRes = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms/${room._id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'maintenance' })
+        });
+
+        if (!updateRes.ok) {
+          console.warn('Failed to update room status to maintenance');
+        }
+      }
+
+      setActionSuccess(`${jobType.charAt(0).toUpperCase() + jobType.slice(1)} request created successfully!`);
+      
+      // Refresh rooms list
+      const roomsRes = await fetch(`${process.env.REACT_APP_API_URL}/api/rooms`);
+      if (roomsRes.ok) {
+        const data = await roomsRes.json();
+        setRooms(data);
+      }
+
+      // Close modals
+      setTimeout(() => {
+        setConfirmModal({ open: false, jobType: '', room: null });
+        setModalRoom(null);
+      }, 1500);
+    } catch (err) {
+      setActionError(err.message || 'Failed to create request');
+      console.error('Request creation error:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <HotelAdminDashboard>
@@ -190,9 +243,22 @@ export default function HotelAdminRooms() {
             <div className="room-modal" style={{maxWidth: 350, textAlign: 'center'}}>
               <h4>Confirm {confirmModal.jobType === 'cleaning' ? 'Cleaning' : 'Maintenance'} Request</h4>
               <p>Are you sure you want to request {confirmModal.jobType} for Room {confirmModal.room?.roomNumber}?</p>
+              {actionError && <p style={{color: '#dc2626', fontWeight: 'bold', marginBottom: '0.5rem'}}>{actionError}</p>}
+              {actionSuccess && <p style={{color: '#16a34a', fontWeight: 'bold', marginBottom: '0.5rem'}}>{actionSuccess}</p>}
               <div className="modal-actions">
-                <button onClick={() => setConfirmModal({ open: false, jobType: '', room: null })}>Cancel</button>
-                <button>Confirm</button>
+                <button 
+                  onClick={() => setConfirmModal({ open: false, jobType: '', room: null })}
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleConfirmRequest}
+                  disabled={actionLoading}
+                  style={{opacity: actionLoading ? 0.6 : 1}}
+                >
+                  {actionLoading ? 'Creating...' : 'Confirm'}
+                </button>
               </div>
             </div>
           </div>
