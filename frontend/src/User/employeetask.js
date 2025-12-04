@@ -138,7 +138,7 @@ const EmployeeTasks = () => {
           if (newStatus === 'COMPLETED' && taskToUpdate && taskToUpdate.room) {
             try {
               // First fetch the room to check its current status
-              const roomCheckResponse = await fetch(`${API_BASE_URL}/api/rooms/${taskToUpdate.room}`, {
+              const roomCheckResponse = await fetch(`${API_BASE_URL}/api/rooms/number/${taskToUpdate.room}/status`, {
                 headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json'
@@ -147,14 +147,14 @@ const EmployeeTasks = () => {
 
               if (roomCheckResponse.ok) {
                 const roomData = await roomCheckResponse.json();
-                const currentStatus = roomData.status ? roomData.status.toLowerCase() : '';
+                const currentStatus = roomData.room?.status ? roomData.room.status.toLowerCase() : '';
                 
-                console.log(`Room ${taskToUpdate.room} current status: ${roomData.status} (normalized: ${currentStatus})`);
+                console.log(`Room ${taskToUpdate.room} current status: ${roomData.room?.status} (normalized: ${currentStatus})`);
                 
                 // Check if room is in maintenance (case-insensitive)
-                if (currentStatus === 'maintenance') {
+                if (currentStatus === 'under maintenance' || currentStatus === 'maintenance' || currentStatus === 'Maintenance') {
                   // Update room status to available
-                  const roomUpdateResponse = await fetch(`${API_BASE_URL}/api/rooms/${taskToUpdate.room}/status`, {
+                  const roomUpdateResponse = await fetch(`${API_BASE_URL}/api/rooms/number/${taskToUpdate.room}/status`, {
                     method: 'PATCH',
                     headers: {
                       'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ const EmployeeTasks = () => {
                     console.warn('⚠️ Failed to update room status:', roomUpdateResponse.status);
                   }
                 } else {
-                  console.log(`Room is not in maintenance (status: ${roomData.status}), skipping room update`);
+                  console.log(`Room is not in maintenance (status: ${roomData.room?.status}), skipping room update`);
                 }
               } else {
                 console.warn('Could not fetch room status to verify maintenance status');

@@ -68,6 +68,35 @@ router.patch('/:id', async (req, res) => {
 	}
 });
 
+// Update room status by room number
+router.patch('/number/:roomNumber/status', async (req, res) => {
+	try {
+		const { status } = req.body;
+		const { roomNumber } = req.params;
+		
+		if (!roomNumber || !status) {
+			return res.status(400).json({ error: 'Room number and status are required' });
+		}
+
+		// Find and update room by roomNumber (case-insensitive)
+		const room = await Room.findOneAndUpdate(
+			{ roomNumber: { $regex: `^${roomNumber}$`, $options: 'i' } },
+			{ status },
+			{ new: true }
+		);
+
+		if (!room) {
+			return res.status(404).json({ error: `Room ${roomNumber} not found` });
+		}
+
+		console.log(`Room ${roomNumber} status updated to: ${status}`);
+		res.json({ message: 'Room status updated', room });
+	} catch (err) {
+		console.error('Room update error:', err);
+		res.status(400).json({ error: err.message || 'Room update failed' });
+	}
+});
+
 
 router.get('/', async (req, res) => {
 	try {
