@@ -97,26 +97,44 @@ const EmployeeDashboard = () => {
 
           if (attendanceResponse.ok) {
             const attendanceData = await attendanceResponse.json();
+            console.log('Full attendance data:', attendanceData);
+            
             if (Array.isArray(attendanceData) && attendanceData.length > 0) {
               // Get today's date in YYYY-MM-DD format
               const today = new Date().toISOString().split('T')[0];
               
               // Filter for today's records only
               const todayRecords = attendanceData.filter(record => {
+                let recordDate = null;
+                
                 if (record.clockIn) {
-                  const recordDate = new Date(record.clockIn).toISOString().split('T')[0];
-                  return recordDate === today;
+                  recordDate = new Date(record.clockIn).toISOString().split('T')[0];
                 } else if (record.date) {
-                  const recordDate = new Date(record.date).toISOString().split('T')[0];
-                  return recordDate === today;
+                  recordDate = new Date(record.date).toISOString().split('T')[0];
                 }
-                return false;
+                
+                return recordDate === today;
               });
               
-              // Sum only today's hours
-              const todayHours = todayRecords.reduce((sum, record) => sum + (record.totalHours || 0), 0);
+              console.log('Today\'s attendance records:', todayRecords);
+              
+              // Calculate total hours - check for totalHours or calculate from clockIn/clockOut
+              let todayHours = 0;
+              
+              todayRecords.forEach(record => {
+                if (record.totalHours) {
+                  todayHours += record.totalHours;
+                } else if (record.clockIn && record.clockOut) {
+                  // Calculate hours from clock in/out times
+                  const clockIn = new Date(record.clockIn);
+                  const clockOut = new Date(record.clockOut);
+                  const hours = (clockOut - clockIn) / (1000 * 60 * 60); // Convert ms to hours
+                  todayHours += hours;
+                }
+              });
+              
               setWorkHours(todayHours);
-              console.log('Today\'s work hours from attendance:', todayHours, 'Records:', todayRecords);
+              console.log('Calculated work hours:', todayHours, 'Records count:', todayRecords.length);
             }
           }
         } catch (attendanceError) {

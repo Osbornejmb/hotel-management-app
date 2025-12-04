@@ -110,6 +110,9 @@ const EmployeeTasks = () => {
     try {
       const token = localStorage.getItem('token');
       
+      // Get the task being updated
+      const taskToUpdate = tasks.find(task => task.id === taskId);
+      
       // Update local state immediately for better UX
       const updatedTasks = tasks.map(task => 
         task.id === taskId ? { ...task, status: newStatus } : task
@@ -118,6 +121,7 @@ const EmployeeTasks = () => {
 
       // Try to update via API in background
       if (token) {
+        // Update task status
         const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/status`, {
           method: 'PATCH',
           headers: {
@@ -129,6 +133,28 @@ const EmployeeTasks = () => {
 
         if (response.ok) {
           console.log('Task status updated via API');
+          
+          // If task is being marked as COMPLETED, also update the room status to "available"
+          if (newStatus === 'COMPLETED' && taskToUpdate && taskToUpdate.room) {
+            try {
+              const roomUpdateResponse = await fetch(`${API_BASE_URL}/api/rooms/${taskToUpdate.room}/status`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'available' })
+              });
+
+              if (roomUpdateResponse.ok) {
+                console.log('Room status updated to available:', taskToUpdate.room);
+              } else {
+                console.warn('Failed to update room status:', roomUpdateResponse.status);
+              }
+            } catch (roomErr) {
+              console.warn('Error updating room status:', roomErr);
+            }
+          }
         } else if (response.status === 404) {
           console.log('Status update endpoint not available, using local state only');
         } else {
