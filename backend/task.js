@@ -22,7 +22,7 @@ const taskSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['CLEANING', 'MAINTENANCE', 'INSPECTION'],
+    enum: ['CLEANING', 'MAINTENANCE', 'INSPECTION', 'MISC'],
     required: true
   },
   status: {
