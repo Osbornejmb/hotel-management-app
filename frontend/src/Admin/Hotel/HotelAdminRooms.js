@@ -203,21 +203,21 @@ export default function HotelAdminRooms() {
               </div>
 
               <div className="room-modal-actions-right">
-                {modalRoom.status && modalRoom.status.toLowerCase().includes('cleaning') && (
-                  <button
-                    className="modal-btn request-cleaning"
-                    onClick={() => setConfirmModal({ open: true, jobType: 'cleaning', room: modalRoom })}
-                  >
-                    Request Cleaning
-                  </button>
-                )}
-                {modalRoom.status && modalRoom.status.toLowerCase().includes('maintenance') && (
-                  <button
-                    className="modal-btn request-maintenance"
-                    onClick={() => setConfirmModal({ open: true, jobType: 'maintenance', room: modalRoom })}
-                  >
-                    Request Maintenance
-                  </button>
+                {modalRoom.status && modalRoom.status.toLowerCase() === 'checked-out' && (
+                  <>
+                    <button
+                      className="modal-btn request-cleaning"
+                      onClick={() => setConfirmModal({ open: true, jobType: 'cleaning', room: modalRoom })}
+                    >
+                      Request Cleaning
+                    </button>
+                    <button
+                      className="modal-btn request-maintenance"
+                      onClick={() => setConfirmModal({ open: true, jobType: 'maintenance', room: modalRoom })}
+                    >
+                      Request Maintenance
+                    </button>
+                  </>
                 )}
               </div>
 
