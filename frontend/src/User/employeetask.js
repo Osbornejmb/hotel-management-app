@@ -134,27 +134,86 @@ const EmployeeTasks = () => {
         if (response.ok) {
           console.log('Task status updated via API');
           
-          // If task is being marked as COMPLETED, also update the room status to "available"
-          if (newStatus === 'COMPLETED' && taskToUpdate && taskToUpdate.room) {
-            try {
-              // Update room status to available
-              const roomUpdateResponse = await fetch(`${API_BASE_URL}/api/rooms/number/${taskToUpdate.room}/status`, {
-                method: 'PATCH',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status: 'available' })
-              });
+          // Handle room status updates based on task status and room current status
+          if (taskToUpdate && taskToUpdate.room) {
+            let roomStatusToUpdate = null;
+            let reason = '';
 
-              if (roomUpdateResponse.ok) {
-                const updateResult = await roomUpdateResponse.json();
-                console.log('✅ Room status updated to available:', taskToUpdate.room, updateResult);
-              } else {
-                console.warn('⚠️ Failed to update room status:', roomUpdateResponse.status);
+            // When task is marked as IN_PROGRESS (Start button clicked)
+            if (newStatus === 'IN_PROGRESS') {
+              const taskType = taskToUpdate.type?.toUpperCase();
+              
+              // If occupied: change to cleaning/maintenance based on task type
+              if (taskToUpdate.currentRoomStatus?.toLowerCase() === 'occupied') {
+                if (taskType === 'CLEANING') {
+                  roomStatusToUpdate = 'cleaning';
+                  reason = 'Room occupied, task is CLEANING';
+                } else if (taskType === 'MAINTENANCE') {
+                  roomStatusToUpdate = 'maintenance';
+                  reason = 'Room occupied, task is MAINTENANCE';
+                }
               }
-            } catch (roomErr) {
-              console.warn('Error updating room status:', roomErr);
+              // If checked-out: change to cleaning/maintenance based on task type
+              else if (taskToUpdate.currentRoomStatus?.toLowerCase() === 'checked-out') {
+                if (taskType === 'CLEANING') {
+                  roomStatusToUpdate = 'cleaning';
+                  reason = 'Room checked-out, task is CLEANING';
+                } else if (taskType === 'MAINTENANCE') {
+                  roomStatusToUpdate = 'maintenance';
+                  reason = 'Room checked-out, task is MAINTENANCE';
+                }
+              }
+              // If misc: don't change room status
+              else if (taskType === 'MISC' || taskType === 'MISCELLANEOUS') {
+                console.log('Task type is MISC - no room status change');
+              }
+            }
+            // When task is marked as COMPLETED (Complete button clicked)
+            else if (newStatus === 'COMPLETED') {
+              // If room was occupied, change back to occupied
+              if (taskToUpdate.currentRoomStatus?.toLowerCase() === 'occupied') {
+                roomStatusToUpdate = 'occupied';
+                reason = 'Task completed, room returns to occupied';
+              }
+              // If room was checked-out, change to available
+              else if (taskToUpdate.currentRoomStatus?.toLowerCase() === 'checked-out') {
+                roomStatusToUpdate = 'available';
+                reason = 'Task completed, room checked-out changed to available';
+              }
+              // If room was under maintenance, change to available
+              else if (taskToUpdate.currentRoomStatus?.toLowerCase() === 'under maintenance' || 
+                       taskToUpdate.currentRoomStatus?.toLowerCase() === 'maintenance' ||
+                       taskToUpdate.currentRoomStatus?.toLowerCase() === 'Maintenance') {
+                roomStatusToUpdate = 'available';
+                reason = 'Task completed, maintenance changed to available';
+              }
+              // If misc: don't change room status
+              else if (taskToUpdate.type?.toUpperCase() === 'MISC' || taskToUpdate.type?.toUpperCase() === 'MISCELLANEOUS') {
+                console.log('Task type is MISC - no room status change on complete');
+              }
+            }
+
+            // Update room status if needed
+            if (roomStatusToUpdate) {
+              try {
+                const roomUpdateResponse = await fetch(`${API_BASE_URL}/api/rooms/number/${taskToUpdate.room}/status`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ status: roomStatusToUpdate })
+                });
+
+                if (roomUpdateResponse.ok) {
+                  const updateResult = await roomUpdateResponse.json();
+                  console.log(`✅ Room ${taskToUpdate.room} status updated to "${roomStatusToUpdate}": ${reason}`, updateResult);
+                } else {
+                  console.warn('⚠️ Failed to update room status:', roomUpdateResponse.status);
+                }
+              } catch (roomErr) {
+                console.warn('Error updating room status:', roomErr);
+              }
             }
           }
         } else if (response.status === 404) {
