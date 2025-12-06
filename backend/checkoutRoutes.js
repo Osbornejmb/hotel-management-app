@@ -3,6 +3,7 @@ const router = express.Router();
 const Room = require('./Room');
 const Customer = require('./Customer');
 const ActivityLog = require('./ActivityLog');
+const { logRoomStatusChange } = require('./activityLogUtils');
 
 // Checkout route: set room to available and customer status to checkout
 router.put('/checkout', async (req, res) => {
@@ -29,17 +30,7 @@ router.put('/checkout', async (req, res) => {
 
     // Log activity for the status change
     try {
-      await ActivityLog.create({
-        actionType: 'update',
-        collection: 'rooms',
-        documentId: room._id,
-        details: { roomNumber: room.roomNumber },
-        change: {
-          field: 'status',
-          oldValue: existingRoom.status,
-          newValue: room.status
-        }
-      });
+      await logRoomStatusChange({ roomId: room._id, roomNumber: room.roomNumber, oldValue: existingRoom.status, newValue: room.status, actionType: 'checkout' });
       console.log('[ActivityLog] Logged room checkout status change for', room.roomNumber);
     } catch (logErr) {
       console.error('[ActivityLog] Failed to log checkout change:', logErr);

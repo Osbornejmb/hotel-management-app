@@ -1,6 +1,7 @@
- import React, { useEffect, useState } from 'react';
+ import React, { useEffect, useState, useRef } from 'react';
 import HotelAdminDashboard from './HotelAdminDashboard';
 import './HotelAdminRooms.css';
+import { io } from 'socket.io-client';
 
 function getRoomCardColor(status, type) {
   return 'room-card-gray';
@@ -51,44 +52,66 @@ export default function HotelAdminRooms() {
   const currentFloor = floors[currentFloorIndex];
   const roomsForCurrentFloor = roomsSorted.filter(r => Math.floor(Number(r.roomNumber) / 100) === currentFloor);
 
-  // Fetch activity logs for the selected room
+  // Fetch activity logs for the selected room, subscribe to real-time updates, and poll as fallback
   useEffect(() => {
     if (!modalRoom) return;
     setLogsLoading(true);
-    // Fetch activity logs and hoteladnotifs, then merge entries for this room
-    Promise.all([
-      fetch(`${process.env.REACT_APP_API_URL}/api/activitylogs`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${process.env.REACT_APP_API_URL}/api/hoteladnotifs`).then(r => r.ok ? r.json() : []).catch(() => []),
-    ]).then(([activityData, notifData]) => {
-      // Filter activity logs for this room only
-      const roomNumberStr = String(modalRoom.roomNumber);
-      const activityLogsForRoom = Array.isArray(activityData)
-        ? activityData.filter(log => log.collection === 'rooms' && log.details && (
-            String(log.details.roomNumber) === roomNumberStr || String(log.documentId) === String(modalRoom._id)
-          ))
-        : [];
+    const roomId = modalRoom._id;
+    let mounted = true;
+    const fetchLogs = async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/activitylogs/rooms/${roomId}`);
+        if (!res.ok) {
+          if (mounted) setActivityLogs([]);
+          return [];
+        }
+        const activityData = await res.json();
+        if (!mounted) return [];
+        const logs = Array.isArray(activityData) ? activityData.filter(log => {
+          if (!log) return false;
+          if (log.change && log.change.field === 'status') return true;
+          if (log.details && (log.details.status || log.details.newStatus)) return true;
+          if (String(log.actionType || '').toLowerCase().includes('book')) return true;
+          return false;
+        }) : [];
+        const sorted = logs
+          .filter(l => l && l.timestamp)
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        if (mounted) setActivityLogs(sorted);
+        return sorted;
+      } catch (err) {
+        if (mounted) setActivityLogs([]);
+        return [];
+      } finally {
+        if (mounted) setLogsLoading(false);
+      }
+    };
 
-      // Map hoteladnotifs entries to the same shape expected by the UI
-      const notifLogsForRoom = Array.isArray(notifData)
-        ? notifData.filter(n => n && n.roomNumber && String(n.roomNumber) === roomNumberStr)
-          .map(n => ({
-            _id: n._id || n.id,
-            actionType: 'notification',
-            details: {
-              roomNumber: n.roomNumber,
-              status: n.newStatus || n.status || null,
-              raw: n.raw || n,
-            },
-            timestamp: n.timestamp || n.createdAt || n.date || null,
-          }))
-        : [];
+    // initial fetch
+    fetchLogs();
 
-      // Combine and sort by timestamp desc
-      const combined = [...activityLogsForRoom, ...notifLogsForRoom]
-        .filter(l => l && l.timestamp)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      setActivityLogs(combined);
-    }).catch(() => setActivityLogs([])).finally(() => setLogsLoading(false));
+    // socket listener to update modal in real time
+    const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
+    const onRoomChange = (payload) => {
+      try {
+        if (!payload) return;
+        const payloadRoomId = payload.roomId || payload._id || null;
+        const payloadRoomNumber = payload.roomNumber || payload.room || null;
+        if (String(payloadRoomId) === String(roomId) || String(payloadRoomNumber) === String(modalRoom.roomNumber)) {
+          fetchLogs();
+        }
+      } catch (err) {}
+    };
+    socket.on('roomStatusChanged', onRoomChange);
+
+    // polling fallback every 15s
+    const pollInterval = setInterval(() => fetchLogs(), 15000);
+
+    return () => {
+      mounted = false;
+      try { socket.off('roomStatusChanged', onRoomChange); socket.disconnect(); } catch (err) {}
+      clearInterval(pollInterval);
+    };
   }, [modalRoom]);
 
   return (
@@ -231,9 +254,9 @@ export default function HotelAdminRooms() {
                   <ul>
                     {activityLogs.map(log => (
                       <li key={log._id}>
-                        <b>{log.actionType.charAt(0).toUpperCase() + log.actionType.slice(1)}</b> —
-                        {log.details && log.details.roomNumber ? ` Room ${log.details.roomNumber}` : ''}
-                        {log.details && log.details.status ? `, Status: ${log.details.status}` : ''}
+                        <b>{String(log.actionType || '').charAt(0).toUpperCase() + String(log.actionType || '').slice(1)}</b>
+                        {log.details && log.details.roomNumber ? ` — Room ${log.details.roomNumber}` : ''}
+                        {log.change ? ` — ${log.change.oldValue || ''} → ${log.change.newValue || ''}` : (log.details && (log.details.status || log.details.newStatus) ? ` — ${log.details.status || log.details.newStatus}` : '')}
                         <span style={{ color: '#888', marginLeft: 8 }}>
                           {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
                         </span>

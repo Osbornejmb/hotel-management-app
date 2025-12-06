@@ -3,6 +3,7 @@ const router = express.Router();
 const Room = require('./Room');
 const Customer = require('./Customer');
 const ActivityLog = require('./ActivityLog');
+const { logRoomStatusChange } = require('./activityLogUtils');
 console.log('roomRoutes loaded');
 
 // Book a room: update status to 'booked' and save guest info
@@ -17,6 +18,7 @@ router.put('/:id/book', async (req, res) => {
 		if (!room) {
 			return res.status(404).json({ error: 'Room not found' });
 		}
+		const oldStatus = room.status;
 		room.status = 'booked';
 		room.guestName = guestName;
 		room.guestContact = guestContact;
@@ -40,13 +42,19 @@ router.put('/:id/book', async (req, res) => {
 			console.error('Error saving customer:', err);
 		}
 
-		// Log activity
-		await ActivityLog.create({
-			actionType: 'book',
-			collection: 'rooms',
-			documentId: room._id,
-			details: { guestName, guestContact, checkoutDate, roomNumber: room.roomNumber },
-		});
+		// Log activity (status change + booking details)
+		try {
+			await logRoomStatusChange({ roomId: room._id, roomNumber: room.roomNumber, oldValue: oldStatus, newValue: room.status, actionType: 'book' });
+			// also store booking details as a separate create so details are preserved
+			await ActivityLog.create({
+				actionType: 'book_details',
+				collection: 'rooms',
+				documentId: room._id,
+				details: { guestName, guestContact, checkoutDate, roomNumber: room.roomNumber },
+			});
+		} catch (logErr) {
+			console.error('[ActivityLog] Failed to log booking:', logErr);
+		}
 
 		res.json({ message: 'Room booked successfully', room, customer });
 	} catch (err) {
@@ -73,28 +81,7 @@ router.patch('/:id', async (req, res) => {
 		}
 			// Log activity with 'change' field
 			try {
-				console.log('[ActivityLog] Attempting to log room update:', {
-					actionType: 'update',
-					collection: 'rooms',
-					documentId: room._id,
-					details: { status, roomNumber: room.roomNumber },
-					change: {
-						field: 'status',
-						oldValue: oldRoom ? oldRoom.status : undefined,
-						newValue: status
-					}
-				});
-				await ActivityLog.create({
-					actionType: 'update',
-					collection: 'rooms',
-					documentId: room._id,
-					details: { status, roomNumber: room.roomNumber },
-					change: {
-						field: 'status',
-						oldValue: oldRoom ? oldRoom.status : undefined,
-						newValue: status
-					}
-				});
+				await logRoomStatusChange({ roomId: room._id, roomNumber: room.roomNumber, oldValue: oldRoom ? oldRoom.status : undefined, newValue: status, actionType: 'update' });
 				console.log('[ActivityLog] Successfully logged room update.');
 			} catch (logErr) {
 				console.error('[ActivityLog] Failed to log room update:', logErr);
