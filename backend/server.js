@@ -117,7 +117,41 @@ mongoose.connect(process.env.MONGO_URI)
               const doc = change.fullDocument || await Room.findById(change.documentKey._id).lean();
               if (!doc) return;
               const status = doc.status || null;
+
+              // Emit socket notification for UI
               io.emit('roomStatusChanged', { roomId: doc._id, roomNumber: doc.roomNumber || 'Unknown', roomType: doc.roomType || 'Unknown', status });
+
+              // Ensure there's an ActivityLog entry for status changes even if update came from outside the API
+              try {
+                const ActivityLog = require('./ActivityLog');
+                // Determine if the change touched the 'status' field (updateDescription available for updates)
+                const touchedStatus = (change.updateDescription && change.updateDescription.updatedFields && ('status' in change.updateDescription.updatedFields)) || change.operationType === 'replace';
+                if (touchedStatus) {
+                  // Dedupe recent logs created by our API: look for a log in the last 5s for this room with the same new status
+                  const cutoff = new Date(Date.now() - 5000);
+                  const recent = await ActivityLog.findOne({
+                    collection: 'rooms',
+                    documentId: doc._id,
+                    timestamp: { $gte: cutoff },
+                    $or: [
+                      { 'change.field': 'status', 'change.newValue': status },
+                      { 'details.status': status }
+                    ]
+                  }).lean();
+                  if (!recent) {
+                    await ActivityLog.create({
+                      actionType: 'update',
+                      collection: 'rooms',
+                      documentId: doc._id,
+                      details: { roomNumber: doc.roomNumber, status },
+                      change: { field: 'status', oldValue: undefined, newValue: status }
+                    });
+                    console.log('[ActivityLog] Created log for room change (from change stream) for', doc.roomNumber || doc._id);
+                  }
+                }
+              } catch (logErr) {
+                console.error('Room change stream logging error:', logErr);
+              }
             }
           } catch (err) {
             console.error('Room change stream processing error:', err);

@@ -12,6 +12,7 @@ export default function HotelAdminRooms() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalRoom, setModalRoom] = useState(null);
+  const modalRoomRef = useRef(null);
   const [confirmModal, setConfirmModal] = useState({ open: false, jobType: '', room: null });
   const [activityLogs, setActivityLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -113,6 +114,35 @@ export default function HotelAdminRooms() {
       clearInterval(pollInterval);
     };
   }, [modalRoom]);
+
+  // Keep a ref to modalRoom for use inside socket handler
+  useEffect(() => { modalRoomRef.current = modalRoom; }, [modalRoom]);
+
+  // Socket listener to update rooms list in real-time so UI reflects status changes without reload
+  useEffect(() => {
+    const socket = io(process.env.REACT_APP_API_URL || '/', { transports: ['websocket', 'polling'] });
+    const handler = (payload) => {
+      try {
+        if (!payload) return;
+        const pid = payload.roomId || payload._id || null;
+        const pnum = payload.roomNumber || payload.room || null;
+        setRooms(prev => prev.map(r => {
+          if (String(r._id) === String(pid) || (pnum && String(r.roomNumber) === String(pnum))) {
+            return { ...r, status: payload.status || r.status };
+          }
+          return r;
+        }));
+
+        // also update modalRoom if it's the same room
+        const currentModal = modalRoomRef.current;
+        if (currentModal && (String(currentModal._id) === String(pid) || (pnum && String(currentModal.roomNumber) === String(pnum)))) {
+          setModalRoom(prev => ({ ...prev, status: payload.status || prev.status }));
+        }
+      } catch (err) {}
+    };
+    socket.on('roomStatusChanged', handler);
+    return () => { try { socket.off('roomStatusChanged', handler); socket.disconnect(); } catch (err) {} };
+  }, []);
 
   return (
     <HotelAdminDashboard>
