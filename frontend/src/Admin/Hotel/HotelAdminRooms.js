@@ -318,7 +318,6 @@ export default function HotelAdminRooms() {
             onClose={() => setShowActivityModal(false)}
           />
         )}
-        )}
 
         {/* Confirmation Modal */}
         {confirmModal.open && (
