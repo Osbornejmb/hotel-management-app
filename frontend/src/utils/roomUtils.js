@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-// Returns true if the room with given roomNumber is currently booked/occupied
+// Returns true if the room with given roomNumber is currently occupied
+// Only 'occupied' status allows checkout
 export async function isRoomBooked(roomNumber) {
   if (!roomNumber) return false;
   try {
@@ -9,9 +10,8 @@ export async function isRoomBooked(roomNumber) {
     const room = rooms.find(r => String(r.roomNumber) === String(roomNumber) || String(r.roomNumber).toLowerCase() === String(roomNumber).toLowerCase());
     if (!room) return false;
     const status = String(room.status || '').toLowerCase();
-    // Treat 'booked' and similar as occupied for billing window
-    const occupiedStatuses = new Set(['booked', 'checked in', 'checked_in', 'checked-in', 'occupied', 'in use']);
-    return occupiedStatuses.has(status) || status.includes('book') || status.includes('check');
+    // Only 'occupied' status allows checkout (billing window is only when room is occupied)
+    return status === 'occupied';
   } catch (err) {
     // On error, be conservative and disallow checkout
     return false;
