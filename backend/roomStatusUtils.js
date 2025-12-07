@@ -9,9 +9,12 @@ const Room = require('./Room');
  */
 async function updateRoomStatusOnTaskChange(task, newTaskStatus) {
   try {
-    const room = await Room.findOne({ roomNumber: task.room });
+    // Normalize room identifier and perform a case-insensitive trimmed match
+    const roomNumberQuery = (task.room || '').toString().trim();
+    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const room = await Room.findOne({ roomNumber: { $regex: `^${escapeRegExp(roomNumberQuery)}$`, $options: 'i' } });
     if (!room) {
-      console.warn(`Room ${task.room} not found for task status update`);
+      console.warn(`Room ${task.room} not found for task status update (queried as: '${roomNumberQuery}')`);
       return null;
     }
 
@@ -21,9 +24,9 @@ async function updateRoomStatusOnTaskChange(task, newTaskStatus) {
     // Task is starting (IN_PROGRESS)
     if (newTaskStatus === 'IN_PROGRESS') {
       // When task starts, room status should reflect the task type
-      if (task.type === 'CLEANING') {
+      if ((task.type || '').toString().toUpperCase() === 'CLEANING') {
         newRoomStatus = 'cleaning';
-      } else if (task.type === 'MAINTENANCE') {
+      } else if ((task.type || '').toString().toUpperCase() === 'MAINTENANCE') {
         newRoomStatus = 'maintenance';
       }
     }
@@ -48,11 +51,15 @@ async function updateRoomStatusOnTaskChange(task, newTaskStatus) {
 
     // Only update if status actually changed
     if (newRoomStatus && newRoomStatus !== oldRoomStatus) {
+      console.log(`Updating room '${room.roomNumber}' status: ${oldRoomStatus} -> ${newRoomStatus} (task ${task.taskId} -> ${newTaskStatus})`);
       room.status = newRoomStatus;
       await room.save();
 
-      console.log(`Room ${task.room} status changed from ${oldRoomStatus} to ${newRoomStatus} due to task ${task.taskId} status: ${newTaskStatus}`);
+      // Additional debug after save
+      console.log(`Room '${room.roomNumber}' saved. Current status: ${room.status}`);
       return { oldStatus: oldRoomStatus, newStatus: newRoomStatus };
+    } else {
+      console.log(`No room status change needed for room '${room.roomNumber}' (old: ${oldRoomStatus}, computed: ${newRoomStatus})`);
     }
 
     return null;
