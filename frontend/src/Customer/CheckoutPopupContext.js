@@ -16,9 +16,9 @@ export const CheckoutPopupProvider = ({ children }) => {
       {children}
 
       {popup && popup.open && (
-        <div className="fixed inset-0 z-9999 flex items-center justify-center">
+        <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 99999 }}>
           <div className="absolute inset-0 bg-black bg-opacity-40" onClick={close} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 mx-4 border border-amber-200" style={{ zIndex: 10000 }}>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 mx-4 border border-amber-200" style={{ zIndex: 100000 }}>
             <div className={`w-full rounded-lg p-4 mb-4 ${popup.success ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
