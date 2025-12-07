@@ -287,28 +287,99 @@ export default function HotelAdminRooms() {
                 <div style={{ marginBottom: 8 }}>
                   <small style={{ color: '#666' }}>Quick view — click "View Activity Log" for full details.</small>
                 </div>
-                {logsLoading ? (
-                  <div>Loading activity logs...</div>
-                ) : activityLogs.length === 0 ? (
-                  <div>No activity found for this room.</div>
-                ) : (
-                  <ul>
-                    {activityLogs.map(log => (
-                      <li key={log._id}>
-                        <b>{String(log.actionType || '').charAt(0).toUpperCase() + String(log.actionType || '').slice(1)}</b>
-                        {log.details && log.details.roomNumber ? ` — Room ${log.details.roomNumber}` : ''}
-                        {log.change ? ` — ${log.change.oldValue || ''} → ${log.change.newValue || ''}` : (log.details && (log.details.status || log.details.newStatus) ? ` — ${log.details.status || log.details.newStatus}` : '')}
-                        <span style={{ color: '#888', marginLeft: 8 }}>
-                          {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {(() => {
+                  if (logsLoading) return <div>Loading activity logs...</div>;
+                  if (!activityLogs || activityLogs.length === 0) return <div>No activity found for this room.</div>;
+                  return (
+                    <ul>
+                      {activityLogs.map(log => (
+                        <li key={log._id}>
+                          <b>{String(log.actionType || '').charAt(0).toUpperCase() + String(log.actionType || '').slice(1)}</b>
+                          {log.details && log.details.roomNumber ? ` — Room ${log.details.roomNumber}` : ''}
+                          {log.change ? ` — ${log.change.oldValue || ''} → ${log.change.newValue || ''}` : (log.details && (log.details.status || log.details.newStatus) ? ` — ${log.details.status || log.details.newStatus}` : '')}
+                          <span style={{ color: '#888', marginLeft: 8 }}>
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
               </div>
             </div>
           </div>
+        )}
+        {/* Filters removed: showing all rooms in a single scrollable grid to avoid layout/sorting issues for now */}
+        {/* Modal Placeholder */}
+        {modalRoom && (
+          <div className="room-modal-backdrop" onClick={() => setModalRoom(null)}>
+            <div className="room-modal" onClick={e => e.stopPropagation()}>
+              <button className="room-modal-close" onClick={() => setModalRoom(null)}>×</button>
+              <h3 className="room-modal-title">Room {modalRoom.roomNumber}</h3>
 
+              <div className="room-modal-section">
+                <div><strong>Room Type:</strong> {modalRoom.roomType}</div>
+                <div><strong>Description:</strong> {modalRoom.description || ''}</div>
+                <div><strong>Status:</strong> {modalRoom.status
+                  ? modalRoom.status.charAt(0).toUpperCase() + modalRoom.status.slice(1)
+                  : (modalRoom.isBooked ? 'Booked' : 'Available')}</div>
+                <div><strong>Price:</strong> {modalRoom.price ? `₱${modalRoom.price}` : 'N/A'}</div>
+                <div><strong>Amenities:</strong> {modalRoom.amenities?.join(', ') || 'None'}</div>
+              </div>
+
+              <div className="room-modal-actions-right">
+                <button
+                  className="modal-btn"
+                  onClick={() => setShowActivityModal(true)}
+                  title={`View full activity log for room ${modalRoom.roomNumber}`}
+                >
+                  View Activity Log
+                </button>
+                {modalRoom.status && modalRoom.status.toLowerCase() === 'checked-out' && (
+                  <>
+                    <button
+                      className="modal-btn request-cleaning"
+                      onClick={() => setConfirmModal({ open: true, jobType: 'cleaning', room: modalRoom })}
+                    >
+                      Request Cleaning
+                    </button>
+                    <button
+                      className="modal-btn request-maintenance"
+                      onClick={() => setConfirmModal({ open: true, jobType: 'maintenance', room: modalRoom })}
+                    >
+                      Request Maintenance
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="room-modal-log expanded">
+                <h4>Activity Log</h4>
+                <div style={{ marginBottom: 8 }}>
+                  <small style={{ color: '#666' }}>Quick view — click "View Activity Log" for full details.</small>
+                </div>
+                {(() => {
+                  if (logsLoading) return <div>Loading activity logs...</div>;
+                  if (!activityLogs || activityLogs.length === 0) return <div>No activity found for this room.</div>;
+                  return (
+                    <ul>
+                      {activityLogs.map(log => (
+                        <li key={log._id}>
+                          <b>{String(log.actionType || '').charAt(0).toUpperCase() + String(log.actionType || '').slice(1)}</b>
+                          {log.details && log.details.roomNumber ? ` — Room ${log.details.roomNumber}` : ''}
+                          {log.change ? ` — ${log.change.oldValue || ''} → ${log.change.newValue || ''}` : (log.details && (log.details.status || log.details.newStatus) ? ` — ${log.details.status || log.details.newStatus}` : '')}
+                          <span style={{ color: '#888', marginLeft: 8 }}>
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
         {/* Full Activity Log Modal */}
         {showActivityModal && (
           <ActivityLogModal
