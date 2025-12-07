@@ -282,30 +282,7 @@ export default function HotelAdminRooms() {
                 )}
               </div>
 
-              <div className="room-modal-log expanded">
-                <h4>Activity Log</h4>
-                <div style={{ marginBottom: 8 }}>
-                  <small style={{ color: '#666' }}>Quick view — click "View Activity Log" for full details.</small>
-                </div>
-                {(() => {
-                  if (logsLoading) return <div>Loading activity logs...</div>;
-                  if (!activityLogs || activityLogs.length === 0) return <div>No activity found for this room.</div>;
-                  return (
-                    <ul>
-                      {activityLogs.map(log => (
-                        <li key={log._id}>
-                          <b>{String(log.actionType || '').charAt(0).toUpperCase() + String(log.actionType || '').slice(1)}</b>
-                          {log.details && log.details.roomNumber ? ` — Room ${log.details.roomNumber}` : ''}
-                          {log.change ? ` — ${log.change.oldValue || ''} → ${log.change.newValue || ''}` : (log.details && (log.details.status || log.details.newStatus) ? ` — ${log.details.status || log.details.newStatus}` : '')}
-                          <span style={{ color: '#888', marginLeft: 8 }}>
-                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  );
-                })()}
-              </div>
+              {/* Quick preview removed to avoid duplication — use "View Activity Log" instead */}
             </div>
           </div>
         )}
@@ -476,12 +453,26 @@ function ActivityLogModal({ room, logs = [], loading = false, onClose }) {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
 
+  function matchesType(log, type) {
+    if (!log) return false;
+    const at = String(log.actionType || '').toLowerCase();
+    const changeField = log.change && String(log.change.field || '').toLowerCase();
+    const detailsText = (log.details && typeof log.details === 'object') ? JSON.stringify(log.details).toLowerCase() : String(log.details || '').toLowerCase();
+    if (type === 'all') return true;
+    if (type === 'status') {
+      // match logs that contain status changes or mention status in details
+      return changeField === 'status' || detailsText.includes('status');
+    }
+    // booking/request - match by actionType or details text
+    return at.includes(type) || detailsText.includes(type);
+  }
+
   const filtered = (logs || []).filter(l => {
     if (!l) return false;
-    if (typeFilter !== 'all' && String(l.actionType || '').toLowerCase() !== typeFilter) return false;
+    if (!matchesType(l, typeFilter)) return false;
     if (!query) return true;
     const q = query.toLowerCase();
-    const text = [l.actionType, l.details && JSON.stringify(l.details), l.change && JSON.stringify(l.change)].join(' ').toLowerCase();
+    const text = [l.actionType, l.details && JSON.stringify(l.details), l.change && JSON.stringify(l.change), l.description, l.user].join(' ').toLowerCase();
     return text.includes(q);
   });
 
