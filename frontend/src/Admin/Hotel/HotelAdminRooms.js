@@ -330,30 +330,7 @@ export default function HotelAdminRooms() {
                 )}
               </div>
 
-              <div className="room-modal-log expanded">
-                <h4>Activity Log</h4>
-                <div style={{ marginBottom: 8 }}>
-                  <small style={{ color: '#666' }}>Quick view — click "View Activity Log" for full details.</small>
-                </div>
-                {(() => {
-                  if (logsLoading) return <div>Loading activity logs...</div>;
-                  if (!activityLogs || activityLogs.length === 0) return <div>No activity found for this room.</div>;
-                  return (
-                    <ul>
-                      {activityLogs.map(log => (
-                        <li key={log._id}>
-                          <b>{String(log.actionType || '').charAt(0).toUpperCase() + String(log.actionType || '').slice(1)}</b>
-                          {log.details && log.details.roomNumber ? ` — Room ${log.details.roomNumber}` : ''}
-                          {log.change ? ` — ${log.change.oldValue || ''} → ${log.change.newValue || ''}` : (log.details && (log.details.status || log.details.newStatus) ? ` — ${log.details.status || log.details.newStatus}` : '')}
-                          <span style={{ color: '#888', marginLeft: 8 }}>
-                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  );
-                })()}
-              </div>
+              {/* quick activity preview removed - full view available via "View Activity Log" button */}
             </div>
           </div>
         )}
