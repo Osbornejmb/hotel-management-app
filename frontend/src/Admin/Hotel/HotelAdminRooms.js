@@ -16,6 +16,7 @@ export default function HotelAdminRooms() {
   const [confirmModal, setConfirmModal] = useState({ open: false, jobType: '', room: null });
   const [activityLogs, setActivityLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
   // Note: removed floor/type selection to show all rooms in a single scrollable view
   
 
@@ -256,6 +257,13 @@ export default function HotelAdminRooms() {
               </div>
 
               <div className="room-modal-actions-right">
+                <button
+                  className="modal-btn"
+                  onClick={() => setShowActivityModal(true)}
+                  title={`View full activity log for room ${modalRoom.roomNumber}`}
+                >
+                  View Activity Log
+                </button>
                 {modalRoom.status && modalRoom.status.toLowerCase() === 'checked-out' && (
                   <>
                     <button
@@ -276,6 +284,9 @@ export default function HotelAdminRooms() {
 
               <div className="room-modal-log expanded">
                 <h4>Activity Log</h4>
+                <div style={{ marginBottom: 8 }}>
+                  <small style={{ color: '#666' }}>Quick view — click "View Activity Log" for full details.</small>
+                </div>
                 {logsLoading ? (
                   <div>Loading activity logs...</div>
                 ) : activityLogs.length === 0 ? (
@@ -297,6 +308,16 @@ export default function HotelAdminRooms() {
               </div>
             </div>
           </div>
+
+        {/* Full Activity Log Modal */}
+        {showActivityModal && (
+          <ActivityLogModal
+            room={modalRoom}
+            logs={activityLogs}
+            loading={logsLoading}
+            onClose={() => setShowActivityModal(false)}
+          />
+        )}
         )}
 
         {/* Confirmation Modal */}
@@ -374,6 +395,82 @@ function RequestModal({ jobType, room, onClose }) {
               {loading ? 'Submitting...' : 'Confirm'}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Full-screen Activity Log Modal (clearer layout for browsing logs)
+function ActivityLogModal({ room, logs = [], loading = false, onClose }) {
+  const [query, setQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  const filtered = (logs || []).filter(l => {
+    if (!l) return false;
+    if (typeFilter !== 'all' && String(l.actionType || '').toLowerCase() !== typeFilter) return false;
+    if (!query) return true;
+    const q = query.toLowerCase();
+    const text = [l.actionType, l.details && JSON.stringify(l.details), l.change && JSON.stringify(l.change)].join(' ').toLowerCase();
+    return text.includes(q);
+  });
+
+  return (
+    <div className="room-modal-backdrop" onClick={onClose}>
+      <div className="room-modal activity-log-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="room-modal-title">Activity Log — Room {room?.roomNumber}</div>
+            <div style={{ fontSize: '0.95rem', color: '#666' }}>{room?.roomType} — {room?.description}</div>
+          </div>
+          <button className="room-modal-close" onClick={onClose} aria-label="Close">×</button>
+        </div>
+
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            aria-label="Search activity"
+            placeholder="Search logs..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: '1px solid #dcdcdc' }}
+          />
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{ padding: '0.5rem', borderRadius: 8 }}>
+            <option value="all">All Types</option>
+            <option value="booking">Booking</option>
+            <option value="status">Status</option>
+            <option value="request">Request</option>
+          </select>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          {loading ? (
+            <div>Loading activity logs...</div>
+          ) : filtered.length === 0 ? (
+            <div>No matching activity found.</div>
+          ) : (
+            <div className="activity-log-list">
+              {filtered.map(log => (
+                <div key={log._id || Math.random()} className="activity-log-entry">
+                  <div className="activity-log-entry-left">
+                    <div className="activity-log-action">{String(log.actionType || '').charAt(0).toUpperCase() + String(log.actionType || '').slice(1)}</div>
+                    <div className="activity-log-timestamp">{log.timestamp ? new Date(log.timestamp).toLocaleString() : ''}</div>
+                  </div>
+                  <div className="activity-log-entry-right">
+                    <div className="activity-log-message">
+                      {log.change ? (
+                        <span><strong>{log.change.field}</strong>: {String(log.change.oldValue || '')} → {String(log.change.newValue || '')}</span>
+                      ) : (log.details ? (
+                        <span>{typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</span>
+                      ) : (
+                        <span>{log.description || ''}</span>
+                      ))}
+                    </div>
+                    {log.user && <div className="activity-log-user">By: {log.user}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

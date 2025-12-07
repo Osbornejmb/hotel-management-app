@@ -502,3 +502,30 @@
 .request-status { margin-top:8px; font-size:0.95rem; }
 .request-success { color: #1e7e34; }
 .request-error { color: #c82333; }
+
+/* Activity Log Modal Styles */
+.activity-log-modal {
+    width: 900px;
+    max-width: 96vw;
+    max-height: 88vh;
+    overflow: auto;
+    padding: 1.25rem;
+}
+.activity-log-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.activity-log-entry {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #fafafa;
+    border: 1px solid #eee;
+    align-items: flex-start;
+}
+.activity-log-entry-left { width: 160px; min-width: 140px; display:flex; flex-direction:column; gap:6px; }
+.activity-log-action { font-weight:700; color:#333; }
+.activity-log-timestamp { font-size:0.85rem; color:#888; }
+.activity-log-entry-right { flex:1; display:flex; flex-direction:column; gap:6px; }
+.activity-log-message { color:#333; font-size:0.98rem; }
+.activity-log-user { font-size:0.88rem; color:#666; }
+
+.activity-log-entry:nth-child(odd) { background: #fff; }
