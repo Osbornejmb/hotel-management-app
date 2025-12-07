@@ -6,6 +6,7 @@ import axios from 'axios';
 import CheckoutUpsellModal from './CheckoutUpsellModal';
 import OrderConfirmationModal from './OrderConfirmationModal';
 import { useCheckoutPopup } from './CheckoutPopupContext';
+import { isRoomBooked } from '../utils/roomUtils';
 
 // Custom hook to manage notification sounds
 const useNotificationSound = () => {
@@ -840,6 +841,16 @@ function Facilities() {
   // Complete the checkout process
   const completeCheckout = async () => {
     if (!roomNumber || cart.length === 0) return;
+    try {
+      const allowed = await isRoomBooked(roomNumber);
+      if (!allowed) {
+        showCheckoutPopup({ success: false, message: 'Cannot checkout — room is not currently occupied.' });
+        return;
+      }
+    } catch (err) {
+      showCheckoutPopup({ success: false, message: 'Cannot checkout — unable to verify room occupancy.' });
+      return;
+    }
     
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/api/cart/${roomNumber}/checkout`);
@@ -857,6 +868,16 @@ function Facilities() {
   // Handle checkout button click - show upsell modal first
   const handleCheckoutClick = async () => {
     if (!roomNumber || cart.length === 0) return;
+    try {
+      const allowed = await isRoomBooked(roomNumber);
+      if (!allowed) {
+        showCheckoutPopup({ success: false, message: 'Cannot checkout — room is not currently occupied.' });
+        return;
+      }
+    } catch (err) {
+      showCheckoutPopup({ success: false, message: 'Cannot checkout — unable to verify room occupancy.' });
+      return;
+    }
     setPendingCheckout(true);
     await fetchUpsellRecommendations();
   };

@@ -5,6 +5,7 @@ import { useAddCartPopup } from './AddCartPopupContext';
 import { useCheckoutPopup } from './CheckoutPopupContext';
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { isRoomBooked } from '../utils/roomUtils';
 
 // Custom hook to manage notification sounds
 const useNotificationSound = () => {
@@ -1760,6 +1761,17 @@ export default function CustomerInterface() {
                 <button
                   onClick={async () => {
                       if (!roomNumber || cart.length === 0) return;
+                      // Ensure room is currently booked/occupied before checkout
+                      try {
+                        const allowed = await isRoomBooked(roomNumber);
+                        if (!allowed) {
+                          showCheckoutPopup({ success: false, message: 'Cannot checkout — room is not currently occupied.' });
+                          return;
+                        }
+                      } catch (err) {
+                        showCheckoutPopup({ success: false, message: 'Cannot checkout — unable to verify room occupancy.' });
+                        return;
+                      }
                       // Start upsell flow: fetch recommendations first
                       setPendingCheckout(true);
                       setIsUpsellLoading(true);
