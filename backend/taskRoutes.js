@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Task = require('./task');
 const Employee = require('./Employee');
+const { updateRoomStatusOnTaskChange } = require('./roomStatusUtils');
 
 // Notification helper function - UPDATED
 const sendTaskNotification = async (task, action, io) => {
@@ -169,16 +170,15 @@ router.patch('/:taskId/status', async (req, res) => {
 
     console.log('Task status updated successfully:', task.taskId, task.status);
 
-    // If task is completed and it's a maintenance task, update room status to available
-    if (status === 'COMPLETED' && task.type === 'maintenance') {
-      const Room = require('./Room');
-      const room = await Room.findOne({ roomNumber: task.room });
-      
-      if (room && room.status === 'maintenance') {
-        room.status = 'available';
-        await room.save();
-        console.log(`Room ${task.room} status updated to available after maintenance completion`);
+    // Update room status based on task status change
+    try {
+      const roomStatusChange = await updateRoomStatusOnTaskChange(task, status);
+      if (roomStatusChange) {
+        console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
       }
+    } catch (roomStatusErr) {
+      console.error('Error updating room status on task change:', roomStatusErr);
+      // Continue with task update even if room status update fails
     }
 
     // Send notification after status update
