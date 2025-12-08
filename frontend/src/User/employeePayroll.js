@@ -13,9 +13,19 @@ const EmployeePayroll = () => {
       const token = localStorage.getItem('token');
       if (token) {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Token payload:', payload);
+        
+        // Try different field names that might contain the employee ID
+        const cardId = payload.cardId || payload.employeeId || payload.id || '';
+        const name = payload.name || payload.employeeName || '';
+        
+        if (!cardId) {
+          console.warn('No cardId/employeeId found in token. Available fields:', Object.keys(payload));
+        }
+        
         return { 
-          cardId: payload.cardId || '',
-          name: payload.name || '',
+          cardId: cardId,
+          name: name,
           id: payload.id || ''
         };
       }
@@ -33,7 +43,10 @@ const EmployeePayroll = () => {
         setEmployeeInfo(employee);
         
         if (!employee.cardId) {
-          throw new Error('Card ID not found in token.');
+          console.error('Card ID not found in token. Employee data:', employee);
+          setError('Card ID not found in token. Please log in again.');
+          setPayrollData([]);
+          return;
         }
 
         const token = localStorage.getItem('token');
