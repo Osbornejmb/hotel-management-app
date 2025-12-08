@@ -276,6 +276,13 @@ router.patch('/:id/assign', async (req, res) => {
       return res.status(404).json({ error: 'Request not found' });
     }
 
+    console.log('Request before update:', { 
+      taskId: request.taskId, 
+      room: request.room, 
+      status: request.status,
+      assignedTo: request.assignedTo 
+    });
+
     // Capture prior room status if transitioning to in-progress
     if (request.status !== 'in-progress' && !request.priorStatus) {
       try {
@@ -292,14 +299,37 @@ router.patch('/:id/assign', async (req, res) => {
       }
     }
 
-    // Update the request
-    request.assignedTo = assignedTo;
-    request.status = 'in-progress';
-    await request.save();
+    // Update the request using findByIdAndUpdate to ensure all fields are preserved
+    const updateData = {
+      assignedTo: assignedTo,
+      status: 'in-progress'
+    };
+    
+    // Add priorStatus to update if it was set
+    if (request.priorStatus) {
+      updateData.priorStatus = request.priorStatus;
+    }
+
+    const updatedRequest = await Request.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedRequest) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    console.log('Request after update:', { 
+      taskId: updatedRequest.taskId, 
+      room: updatedRequest.room, 
+      status: updatedRequest.status,
+      assignedTo: updatedRequest.assignedTo 
+    });
 
     // Update room status based on request status change
     try {
-      const roomStatusChange = await updateRoomStatusOnRequestChange(request, 'in-progress');
+      const roomStatusChange = await updateRoomStatusOnRequestChange(updatedRequest, 'in-progress');
       if (roomStatusChange) {
         console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
       }
@@ -309,7 +339,7 @@ router.patch('/:id/assign', async (req, res) => {
     }
 
     // Reload and populate the request to get the full employee data
-    const populatedRequest = await Request.findById(request._id)
+    const populatedRequest = await Request.findById(updatedRequest._id)
       .populate('assignedTo', 'name employeeId jobTitle');
 
     // Send notification after assignment (with error handling)
@@ -345,6 +375,12 @@ router.patch('/:id/status', async (req, res) => {
       return res.status(404).json({ error: 'Request not found' });
     }
 
+    console.log('Request before status update:', { 
+      taskId: request.taskId, 
+      room: request.room, 
+      status: request.status 
+    });
+
     // Capture prior room status if transitioning to in-progress
     if (status === 'in-progress' && request.status !== 'in-progress' && !request.priorStatus) {
       try {
@@ -368,15 +404,36 @@ router.patch('/:id/status', async (req, res) => {
       updates.completedAt = new Date();
     }
 
-    request.status = status;
-    if (updates.completedAt) {
-      request.completedAt = updates.completedAt;
+    // Add priorStatus to update if it was set
+    if (request.priorStatus) {
+      updates.priorStatus = request.priorStatus;
     }
-    await request.save();
+
+    console.log('Updates for status change:', { 
+      status: updates.status,
+      priorStatus: updates.priorStatus,
+      completedAt: updates.completedAt
+    });
+
+    const updatedRequest = await Request.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedRequest) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    console.log('Request after update in status:', { 
+      taskId: updatedRequest.taskId, 
+      room: updatedRequest.room, 
+      status: updatedRequest.status 
+    });
 
     // Update room status based on request status change
     try {
-      const roomStatusChange = await updateRoomStatusOnRequestChange(request, status);
+      const roomStatusChange = await updateRoomStatusOnRequestChange(updatedRequest, status);
       if (roomStatusChange) {
         console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
       }
@@ -386,7 +443,7 @@ router.patch('/:id/status', async (req, res) => {
     }
 
     // Reload and populate the request to get the full employee data
-    const populatedRequest = await Request.findById(request._id)
+    const populatedRequest = await Request.findById(updatedRequest._id)
       .populate('assignedTo', 'name employeeId jobTitle');
 
     // Send notification after status change (with error handling)
