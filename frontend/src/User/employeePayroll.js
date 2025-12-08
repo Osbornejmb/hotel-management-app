@@ -13,14 +13,16 @@ const EmployeePayroll = () => {
       const token = localStorage.getItem('token');
       if (token) {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('Token payload:', payload);
+        console.log('Full token payload:', payload);
         
-        // Try different field names that might contain the employee ID
-        const cardId = payload.cardId || payload.employeeId || payload.id || '';
+        // Extract employee name - this is the key for filtering
         const name = payload.name || payload.employeeName || '';
+        const cardId = payload.cardId || payload.employeeId || payload.id || '';
         
-        if (!cardId) {
-          console.warn('No cardId/employeeId found in token. Available fields:', Object.keys(payload));
+        console.log('Extracted - Name:', name, 'CardId:', cardId);
+        
+        if (!name) {
+          console.warn('No name found in token. Available fields:', Object.keys(payload));
         }
         
         return { 
@@ -42,58 +44,58 @@ const EmployeePayroll = () => {
         const employee = getEmployeeFromToken();
         setEmployeeInfo(employee);
         
-        if (!employee.cardId) {
-          console.error('Card ID not found in token. Employee data:', employee);
-          setError('Card ID not found in token. Please log in again.');
+        console.log('Employee from token:', employee);
+        
+        if (!employee.name && !employee.cardId) {
+          console.error('No employee identifier found in token');
+          setError('Unable to identify employee. Please log in again.');
           setPayrollData([]);
+          setLoading(false);
           return;
         }
 
         const token = localStorage.getItem('token');
         
-        // Fetch attendance data for current employee - try by cardId first
-        let response = await fetch(`${API_BASE_URL}/api/attendance?cardId=${employee.cardId}`, {
+        // Fetch all attendance records
+        const response = await fetch(`${API_BASE_URL}/api/attendances`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
 
-        if (!response.ok && response.status === 404) {
-          // Try fetching all records if cardId doesn't work
-          console.log('CardId query failed, fetching all attendance records...');
-          response = await fetch(`${API_BASE_URL}/api/attendance`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-        }
-
         if (!response.ok) {
-          throw new Error(`Failed to fetch attendance data: ${response.status}`);
+          console.error('Failed to fetch attendance data:', response.status);
+          setPayrollData([]);
+          setError(`Failed to fetch data: ${response.status}`);
+          setLoading(false);
+          return;
         }
 
         let attendanceData = await response.json();
+        console.log('Total attendance records fetched:', attendanceData.length);
+        console.log('First few records:', attendanceData.slice(0, 3));
         
-        console.log('Attendance data received (total records):', attendanceData.length);
-        console.log('Employee info for filtering:', employee);
-        
-        // Filter by employee name if multiple records were fetched
-        if (employee.name && attendanceData.length > 0) {
-          const beforeFilter = attendanceData.length;
-          attendanceData = attendanceData.filter(record => 
-            record.name === employee.name || 
-            record.cardId === employee.cardId ||
-            record.employeeId === employee.cardId
-          );
-          console.log(`Filtered from ${beforeFilter} to ${attendanceData.length} records`);
+        if (!Array.isArray(attendanceData)) {
+          console.error('Invalid attendance data format:', typeof attendanceData);
+          setPayrollData([]);
+          setError('Invalid data format');
+          setLoading(false);
+          return;
         }
         
-        console.log('Filtered attendance data:', attendanceData);
+        // Filter records for current employee by name
+        if (employee.name) {
+          attendanceData = attendanceData.filter(record => 
+            record.name && record.name.toLowerCase() === employee.name.toLowerCase()
+          );
+          console.log(`Filtered to ${attendanceData.length} records for employee: ${employee.name}`);
+        }
         
-        if (!Array.isArray(attendanceData) || attendanceData.length === 0) {
-          console.log('No attendance data found for employee:', employee.name || employee.cardId);
+        if (attendanceData.length === 0) {
+          console.warn('No attendance records found for employee:', employee.name);
           setPayrollData([]);
           setError(null);
+          setLoading(false);
           return;
         }
         
@@ -104,7 +106,13 @@ const EmployeePayroll = () => {
         
         attendanceData.forEach(record => {
           // Get the month-year as period
-          const recordDate = record.clockIn ? new Date(record.clockIn) : new Date(record.date);
+          let recordDate = new Date();
+          if (record.clockIn) {
+            recordDate = new Date(record.clockIn);
+          } else if (record.date) {
+            recordDate = new Date(record.date);
+          }
+          
           const period = recordDate.toLocaleString('default', { month: 'long', year: 'numeric' });
           
           if (!payrollByPeriod[period]) {
@@ -117,11 +125,13 @@ const EmployeePayroll = () => {
           
           // Calculate hours from clockIn and clockOut if totalHours is not set
           let hours = record.totalHours || 0;
-          if (!hours && record.clockIn && record.clockOut) {
+          if ((!hours || hours === 0) && record.clockIn && record.clockOut) {
             const clockIn = new Date(record.clockIn);
             const clockOut = new Date(record.clockOut);
             hours = (clockOut - clockIn) / (1000 * 60 * 60); // convert ms to hours
           }
+          
+          console.log(`Record: ${record.name} - ${record.clockIn} to ${record.clockOut} = ${hours} hours`);
           
           payrollByPeriod[period].totalHours += hours;
           payrollByPeriod[period].recordCount += 1;
