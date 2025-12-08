@@ -13,8 +13,9 @@ const requestSchema = new mongoose.Schema({
   
   // ASSIGNED TO - Employee assigned to handle the request
   assignedTo: {
-    type: String,
-    default: 'Unassigned'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
+    required: false
   },
   
   // ROOM - Room number or identifier

@@ -478,7 +478,7 @@ const TaskRequests = () => {
 
   const filteredTasks = tasks.filter(task => {
     const priorityMatch = filter === 'all' || task.priority === filter;
-    const isNotAssigned = task.assignedTo === 'Unassigned' || task.assignedTo === 'unassigned';
+    const isNotAssigned = !task.assignedTo || task.assignedTo === 'Unassigned' || task.assignedTo === 'unassigned';
     return priorityMatch && isNotAssigned;
   });
 
