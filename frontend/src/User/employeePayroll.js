@@ -51,28 +51,47 @@ const EmployeePayroll = () => {
 
         const token = localStorage.getItem('token');
         
-        // Fetch attendance data for current employee
-        const response = await fetch(`${API_BASE_URL}/api/attendance?cardId=${employee.cardId}`, {
+        // Fetch attendance data for current employee - try by cardId first
+        let response = await fetch(`${API_BASE_URL}/api/attendance?cardId=${employee.cardId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            setPayrollData([]);
-            setError(null);
-            return;
-          }
-          throw new Error('Failed to fetch attendance data');
+        if (!response.ok && response.status === 404) {
+          // Try fetching all records if cardId doesn't work
+          console.log('CardId query failed, fetching all attendance records...');
+          response = await fetch(`${API_BASE_URL}/api/attendance`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
         }
 
-        const attendanceData = await response.json();
+        if (!response.ok) {
+          throw new Error(`Failed to fetch attendance data: ${response.status}`);
+        }
+
+        let attendanceData = await response.json();
         
-        console.log('Attendance data received:', attendanceData);
+        console.log('Attendance data received (total records):', attendanceData.length);
+        console.log('Employee info for filtering:', employee);
+        
+        // Filter by employee name if multiple records were fetched
+        if (employee.name && attendanceData.length > 0) {
+          const beforeFilter = attendanceData.length;
+          attendanceData = attendanceData.filter(record => 
+            record.name === employee.name || 
+            record.cardId === employee.cardId ||
+            record.employeeId === employee.cardId
+          );
+          console.log(`Filtered from ${beforeFilter} to ${attendanceData.length} records`);
+        }
+        
+        console.log('Filtered attendance data:', attendanceData);
         
         if (!Array.isArray(attendanceData) || attendanceData.length === 0) {
-          console.log('No attendance data found for cardId:', employee.cardId);
+          console.log('No attendance data found for employee:', employee.name || employee.cardId);
           setPayrollData([]);
           setError(null);
           return;

@@ -73,15 +73,19 @@ router.post('/', async (req, res) => {
 // GET all attendance records (for payroll calculation)
 router.get('/', async (req, res) => {
   try {
-    const { cardId } = req.query;
+    const { cardId, name, employeeId } = req.query;
     
     let filter = {};
     if (cardId) {
       filter = { cardId: cardId };
+    } else if (name) {
+      filter = { name: name };
+    } else if (employeeId) {
+      filter = { employeeId: employeeId };
     }
     
-    const attendanceRecords = await Attendance.find(filter);
-    console.log(`[attendanceRoutes] GET / - returning ${attendanceRecords.length} records for cardId: ${cardId || 'all'} from ${req.ip}`);
+    const attendanceRecords = await Attendance.find(filter).sort({ clockIn: -1 });
+    console.log(`[attendanceRoutes] GET / - Query: cardId=${cardId}, name=${name}, employeeId=${employeeId} - returning ${attendanceRecords.length} records from ${req.ip}`);
 
     // Normalize records to ensure frontend receives consistent types
     const normalized = attendanceRecords.map(rec => {
