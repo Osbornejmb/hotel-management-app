@@ -8,6 +8,8 @@ const EmployeeDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [employeeInfo, setEmployeeInfo] = useState({ name: '', employeeId: '' });
   const [workHours, setWorkHours] = useState(0);
+  const [isClockedIn, setIsClockedIn] = useState(false);
+  const [clockInTime, setClockInTime] = useState(null);
 
   // Use your backend URL
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
@@ -118,6 +120,17 @@ const EmployeeDashboard = () => {
               
               console.log('Today\'s attendance records:', todayRecords);
               
+              // Check if currently clocked in (has clockIn but no clockOut)
+              const currentSession = todayRecords.find(record => record.clockIn && !record.clockOut);
+              if (currentSession) {
+                setIsClockedIn(true);
+                setClockInTime(new Date(currentSession.clockIn));
+                console.log('Employee is currently clocked in since:', currentSession.clockIn);
+              } else {
+                setIsClockedIn(false);
+                setClockInTime(null);
+              }
+              
               // Calculate total hours - check for totalHours or calculate from clockIn/clockOut
               let todayHours = 0;
               
@@ -151,6 +164,105 @@ const EmployeeDashboard = () => {
 
     fetchData();
   }, []);
+
+  // Real-time work hours counter when clocked in
+  useEffect(() => {
+    if (!isClockedIn || !clockInTime) {
+      return;
+    }
+
+    // Update work hours every second
+    const interval = setInterval(() => {
+      const now = new Date();
+      const elapsed = (now - clockInTime) / (1000 * 60 * 60); // Convert to hours
+      
+      // Get today's completed hours from previous sessions + current session
+      const token = localStorage.getItem('token');
+      if (token) {
+        const fetchCompletedHours = async () => {
+          try {
+            const employee = getEmployeeFromToken();
+            const attendanceResponse = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (attendanceResponse.ok) {
+              const attendanceData = await attendanceResponse.json();
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Get completed hours from finished sessions
+              let completedHours = 0;
+              attendanceData.forEach(record => {
+                const recordDate = record.clockIn ? new Date(record.clockIn).toISOString().split('T')[0] : null;
+                if (recordDate === today && record.clockIn && record.clockOut) {
+                  const clockIn = new Date(record.clockIn);
+                  const clockOut = new Date(record.clockOut);
+                  completedHours += (clockOut - clockIn) / (1000 * 60 * 60);
+                }
+              });
+              
+              // Total = completed hours + current session
+              const totalHours = completedHours + elapsed;
+              setWorkHours(totalHours);
+            }
+          } catch (err) {
+            console.warn('Error fetching real-time hours:', err);
+          }
+        };
+        
+        fetchCompletedHours();
+      }
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [isClockedIn, clockInTime]);
+
+  // Polling to detect clock out
+  useEffect(() => {
+    if (!isClockedIn) {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const employee = getEmployeeFromToken();
+        
+        const attendanceResponse = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (attendanceResponse.ok) {
+          const attendanceData = await attendanceResponse.json();
+          const today = new Date().toISOString().split('T')[0];
+          
+          // Check if still clocked in
+          const currentSession = attendanceData.find(record => {
+            const recordDate = record.clockIn ? new Date(record.clockIn).toISOString().split('T')[0] : null;
+            return recordDate === today && record.clockIn && !record.clockOut;
+          });
+          
+          // If no active session, employee clocked out
+          if (!currentSession) {
+            console.log('Employee has clocked out');
+            setIsClockedIn(false);
+            setClockInTime(null);
+            setWorkHours(0); // Clear work hours
+          }
+        }
+      } catch (err) {
+        console.warn('Error checking clock status:', err);
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [isClockedIn]);
 
   // Calculate stats based on filtered tasks and actual work hours
   const calculateStats = () => {

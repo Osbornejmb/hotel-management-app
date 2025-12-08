@@ -4,7 +4,7 @@ const EmployeePayroll = () => {
   const [payrollData, setPayrollData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('');
+  const [employeeInfo, setEmployeeInfo] = useState({ name: '', employeeId: '' });
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
 
@@ -13,12 +13,16 @@ const EmployeePayroll = () => {
       const token = localStorage.getItem('token');
       if (token) {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        return { employeeId: payload.employeeId };
+        return { 
+          cardId: payload.cardId || '',
+          name: payload.name || '',
+          id: payload.id || ''
+        };
       }
     } catch (error) {
       console.error('Error decoding token:', error);
     }
-    return { employeeId: '' };
+    return { cardId: '', name: '', id: '' };
   };
 
   useEffect(() => {
@@ -26,21 +30,23 @@ const EmployeePayroll = () => {
       try {
         setLoading(true);
         const employee = getEmployeeFromToken();
-        if (!employee.employeeId) {
-          throw new Error('Employee ID not found in token.');
+        setEmployeeInfo(employee);
+        
+        if (!employee.cardId) {
+          throw new Error('Card ID not found in token.');
         }
 
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/attendance/${employee.employeeId}`, {
+        
+        // Fetch attendance data for current employee
+        const response = await fetch(`${API_BASE_URL}/api/attendance?cardId=${employee.cardId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
 
-        // Handle both 404 (no records) and other errors
         if (!response.ok) {
           if (response.status === 404) {
-            // No attendance records for this employee yet
             setPayrollData([]);
             setError(null);
             return;
@@ -50,59 +56,59 @@ const EmployeePayroll = () => {
 
         const attendanceData = await response.json();
         
-        // Handle empty data
         if (!Array.isArray(attendanceData) || attendanceData.length === 0) {
           setPayrollData([]);
           setError(null);
           return;
         }
         
-        // Process attendance into payroll periods
-        const processedPayroll = attendanceData.reduce((acc, entry) => {
-          // Use clockIn date if available, fallback to date field
-          const entryDate = entry.clockIn ? new Date(entry.clockIn) : new Date(entry.date);
-          const period = entryDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+        // Group attendance by month/period and calculate payroll
+        const payrollByPeriod = {};
+        const HOURLY_RATE = 95; // PHP per hour
+        const TAX_RATE = 0.10; // 10% tax/deductions
+        
+        attendanceData.forEach(record => {
+          // Get the month-year as period
+          const recordDate = record.clockIn ? new Date(record.clockIn) : new Date(record.date);
+          const period = recordDate.toLocaleString('default', { month: 'long', year: 'numeric' });
           
-          if (!acc[period]) {
-            acc[period] = {
-              id: period,
+          if (!payrollByPeriod[period]) {
+            payrollByPeriod[period] = {
               period: period,
               totalHours: 0,
-              grossPay: 0,
-              deductions: 0,
-              netPay: 0,
-              paymentDate: 'N/A',
-              status: 'Processed'
+              recordCount: 0
             };
           }
-          acc[period].totalHours += entry.totalHours || 0;
-          return acc;
-        }, {});
-
-        const payrollArray = Object.values(processedPayroll).map(periodData => {
-          // Calculate monetary values based on hours
-          // NOTE: Using standard rate of $30/hr - can be updated with employee-specific rates
-          const HOURLY_RATE = 30;
-          const DEDUCTION_RATE = 0.15; // 15% for taxes, benefits, etc.
           
-          const grossPay = periodData.totalHours * HOURLY_RATE;
-          const deductions = grossPay * DEDUCTION_RATE;
+          payrollByPeriod[period].totalHours += record.totalHours || 0;
+          payrollByPeriod[period].recordCount += 1;
+        });
+        
+        // Calculate payroll amounts for each period
+        const formattedPayroll = Object.values(payrollByPeriod).map(record => {
+          const totalHours = parseFloat(record.totalHours).toFixed(2);
+          const grossPay = totalHours * HOURLY_RATE;
+          const deductions = grossPay * TAX_RATE;
           const netPay = grossPay - deductions;
-
+          
           return {
-            ...periodData,
-            totalHours: periodData.totalHours.toFixed(2),
-            grossPay: `$${grossPay.toFixed(2)}`,
-            overtime: `$0.00`, // Overtime calculation requires employee-specific rates
-            deductions: `$${deductions.toFixed(2)}`,
-            netPay: `$${netPay.toFixed(2)}`,
+            id: record.period,
+            period: record.period,
+            totalHours: totalHours,
+            hourlyRate: `₱${HOURLY_RATE.toFixed(2)}`,
+            grossPay: `₱${grossPay.toFixed(2)}`,
+            deductions: `₱${deductions.toFixed(2)}`,
+            netPay: `₱${netPay.toFixed(2)}`,
+            status: 'Processed',
+            paymentDate: 'N/A',
+            recordCount: record.recordCount
           };
+        }).sort((a, b) => {
+          // Sort by period (most recent first)
+          return new Date(b.period) - new Date(a.period);
         });
 
-        setPayrollData(payrollArray);
-        if (payrollArray.length > 0) {
-          setSelectedPeriod(payrollArray[0].period);
-        }
+        setPayrollData(formattedPayroll);
         setError(null);
 
       } catch (err) {
@@ -116,80 +122,84 @@ const EmployeePayroll = () => {
     fetchPayrollData();
   }, []);
 
-  const currentPayroll = payrollData.find(item => item.period === selectedPeriod) || payrollData[0];
-
   if (loading) {
-    return <div className="p-4">Loading payroll data...</div>;
+    return (
+      <div className="p-8 text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p className="mt-4 text-gray-600">Loading payroll data...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-4">Error: {error}</div>;
-  }
-
-  if (payrollData.length === 0) {
-    return <div className="p-4 text-center">No Data Yet</div>;
+    return (
+      <div className="p-8 bg-red-50 border border-red-200 rounded-lg">
+        <h3 className="text-red-800 font-semibold mb-2">Error</h3>
+        <p className="text-red-700">{error}</p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Payroll</h1>
-        <select 
-          value={selectedPeriod}
-          onChange={(e) => setSelectedPeriod(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-        >
-          {payrollData.map(item => (
-            <option key={item.period} value={item.period}>{item.period}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Current Period Summary</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div><div className="text-xs text-gray-500">Period</div><div className="font-medium">{currentPayroll.period}</div></div>
-            <div><div className="text-xs text-gray-500">Total Hours</div><div className="font-medium">{currentPayroll.totalHours}</div></div>
-            <div><div className="text-xs text-gray-500">Gross Pay</div><div className="font-medium text-green-600">{currentPayroll.grossPay}</div></div>
-            <div><div className="text-xs text-gray-500">Overtime</div><div className="font-medium">{currentPayroll.overtime}</div></div>
-          </div>
-          <div className="space-y-3">
-            <div><div className="text-xs text-gray-500">Deductions</div><div className="font-medium text-red-600">{currentPayroll.deductions}</div></div>
-            <div><div className="text-xs text-gray-500">Net Pay</div><div className="font-bold text-lg text-blue-600">{currentPayroll.netPay}</div></div>
-            <div><div className="text-xs text-gray-500">Payment Date</div><div className="font-medium">{currentPayroll.paymentDate}</div></div>
-            <div><div className="text-xs text-gray-500">Status</div><span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">{currentPayroll.status}</span></div>
-          </div>
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">My Payroll</h1>
+          {employeeInfo.name && (
+            <p className="text-gray-600 mt-1">Employee: {employeeInfo.name}</p>
+          )}
         </div>
-      </div>
 
-      <div>
-        <h2 className="font-semibold text-gray-900 mb-4">Payroll History</h2>
-        <div className="space-y-3">
-          {payrollData.map(item => (
-            <div 
-              key={item.id} 
-              className={`bg-white rounded-lg p-4 shadow-sm border cursor-pointer transition-colors ${
-                item.period === selectedPeriod ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedPeriod(item.period)}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-gray-900">{item.period}</div>
-                  <div className="text-sm text-gray-500">{item.totalHours} hours</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">{item.netPay}</div>
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">{item.status}</span>
-                </div>
-              </div>
+        {payrollData.length === 0 ? (
+          <div className="bg-white rounded-lg p-8 text-center border border-gray-200 shadow-sm">
+            <div className="text-gray-500 text-lg">No payroll records found</div>
+            <p className="text-gray-400 mt-2">Your payroll history will appear here</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-100 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Period</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Hours</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Hourly Rate</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Gross Pay</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Deductions</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Pay</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {payrollData.map((record) => (
+                    <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{record.period}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{record.totalHours} hrs</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{record.hourlyRate}</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-green-600">{record.grossPay}</td>
+                      <td className="px-6 py-4 text-sm text-red-600">{record.deductions}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-blue-600">{record.netPay}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{record.paymentDate}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          record.status === 'Paid' 
+                            ? 'bg-green-100 text-green-800'
+                            : record.status === 'Pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {record.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-export default EmployeePayroll;
