@@ -308,20 +308,22 @@ router.patch('/:id/assign', async (req, res) => {
       // Continue with request update even if room status update fails
     }
 
-    await request.populate('assignedTo', 'name employeeId jobTitle');
+    // Reload and populate the request to get the full employee data
+    const populatedRequest = await Request.findById(request._id)
+      .populate('assignedTo', 'name employeeId jobTitle');
 
     // Send notification after assignment (with error handling)
     try {
       const io = req.app.get('io');
       if (io) {
-        await sendRequestNotification(request, 'assigned', io);
+        await sendRequestNotification(populatedRequest, 'assigned', io);
       }
     } catch (notificationError) {
       console.error('Notification failed but assignment was successful:', notificationError);
       // Continue with response even if notification fails
     }
 
-    res.json(request);
+    res.json(populatedRequest);
   } catch (err) {
     console.error('Error assigning request:', err);
     res.status(500).json({ error: 'Failed to assign request', details: err.message });
@@ -383,20 +385,22 @@ router.patch('/:id/status', async (req, res) => {
       // Continue with request update even if room status update fails
     }
 
-    await request.populate('assignedTo', 'name employeeId jobTitle');
+    // Reload and populate the request to get the full employee data
+    const populatedRequest = await Request.findById(request._id)
+      .populate('assignedTo', 'name employeeId jobTitle');
 
     // Send notification after status change (with error handling)
     try {
       const io = req.app.get('io');
       if (io) {
-        await sendRequestNotification(request, 'status_changed', io);
+        await sendRequestNotification(populatedRequest, 'status_changed', io);
       }
     } catch (notificationError) {
       console.error('Notification failed but status update was successful:', notificationError);
       // Continue with response even if notification fails
     }
 
-    res.json(request);
+    res.json(populatedRequest);
   } catch (err) {
     console.error('Error updating status:', err);
     res.status(500).json({ error: 'Failed to update status', details: err.message });
