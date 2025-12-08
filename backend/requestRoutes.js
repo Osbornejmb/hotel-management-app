@@ -329,9 +329,18 @@ router.patch('/:id/assign', async (req, res) => {
 
     // Update room status based on request status change
     try {
+      console.log('About to call updateRoomStatusOnRequestChange with:', {
+        taskId: updatedRequest.taskId,
+        room: updatedRequest.room,
+        taskType: updatedRequest.taskType,
+        newRequestStatus: 'in-progress',
+        priorStatus: updatedRequest.priorStatus
+      });
       const roomStatusChange = await updateRoomStatusOnRequestChange(updatedRequest, 'in-progress');
       if (roomStatusChange) {
-        console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
+        console.log(`✅ Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
+      } else {
+        console.log('No room status change returned from updateRoomStatusOnRequestChange');
       }
     } catch (roomStatusErr) {
       console.error('Error updating room status on request change:', roomStatusErr);
@@ -433,9 +442,19 @@ router.patch('/:id/status', async (req, res) => {
 
     // Update room status based on request status change
     try {
+      console.log('About to call updateRoomStatusOnRequestChange with:', {
+        taskId: updatedRequest.taskId,
+        room: updatedRequest.room,
+        taskType: updatedRequest.taskType,
+        currentStatus: updatedRequest.status,
+        newRequestStatus: status,
+        priorStatus: updatedRequest.priorStatus
+      });
       const roomStatusChange = await updateRoomStatusOnRequestChange(updatedRequest, status);
       if (roomStatusChange) {
-        console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
+        console.log(`✅ Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
+      } else {
+        console.log('No room status change returned from updateRoomStatusOnRequestChange');
       }
     } catch (roomStatusErr) {
       console.error('Error updating room status on request change:', roomStatusErr);

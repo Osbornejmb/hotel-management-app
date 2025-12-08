@@ -187,12 +187,28 @@ router.patch('/:taskId/status', async (req, res) => {
     await task.save();
 
     console.log('Task status updated successfully:', task.taskId, task.status);
+    console.log('Task object after save:', {
+      taskId: task.taskId,
+      room: task.room,
+      type: task.type,
+      status: task.status,
+      priorStatus: task.priorStatus
+    });
 
     // Update room status based on task status change
     try {
+      console.log('About to call updateRoomStatusOnTaskChange with:', {
+        taskId: task.taskId,
+        room: task.room,
+        type: task.type,
+        newTaskStatus: status,
+        priorStatus: task.priorStatus
+      });
       const roomStatusChange = await updateRoomStatusOnTaskChange(task, status);
       if (roomStatusChange) {
         console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
+      } else {
+        console.log('No room status change returned');
       }
     } catch (roomStatusErr) {
       console.error('Error updating room status on task change:', roomStatusErr);
