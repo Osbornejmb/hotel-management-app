@@ -51,20 +51,28 @@ async function updateRoomStatusOnTaskChange(task, newTaskStatus) {
     // Task is completed
     else if (newTaskStatus === 'COMPLETED') {
       console.log(`Task completed - checking priorStatus: ${task.priorStatus}`);
-      // When task completes, restore room to the prior status stored in the task
-      // This is more reliable than trying to infer the status
+      // When task completes, determine the correct final status based on prior status
       if (task.priorStatus) {
-        newRoomStatus = task.priorStatus;
-        console.log(`Using stored prior status from task: ${task.priorStatus}`);
+        console.log(`Using stored prior status to determine final state: ${task.priorStatus}`);
+        // If room was checked-out before task, it should become available when task completes
+        if (task.priorStatus === 'checked-out') {
+          newRoomStatus = 'available';
+          console.log(`Prior status was checked-out, setting to available`);
+        }
+        // If room was occupied before task, it should return to occupied when task completes
+        else if (task.priorStatus === 'occupied') {
+          newRoomStatus = 'occupied';
+          console.log(`Prior status was occupied, setting to occupied`);
+        }
+        // For any other prior status, restore it
+        else {
+          newRoomStatus = task.priorStatus;
+          console.log(`Restoring prior status: ${task.priorStatus}`);
+        }
       } else {
         // Fallback for tasks that don't have priorStatus stored
-        // If room was checked-out, it becomes available
-        if (oldRoomStatus === 'checked-out') {
-          newRoomStatus = 'available';
-          console.log(`Fallback: room was checked-out, setting to available`);
-        }
-        // If room was occupied, it returns to occupied
-        else if (oldRoomStatus === 'cleaning' || oldRoomStatus === 'maintenance') {
+        // If room is currently in cleaning/maintenance, determine next state
+        if (oldRoomStatus === 'cleaning' || oldRoomStatus === 'maintenance') {
           // Check if there's a guest to determine if it should be occupied or available
           if (room.guestName) {
             newRoomStatus = 'occupied';
@@ -73,6 +81,11 @@ async function updateRoomStatusOnTaskChange(task, newTaskStatus) {
             newRoomStatus = 'available';
             console.log(`Fallback: room has no guest, setting to available`);
           }
+        }
+        // If room was checked-out, it becomes available
+        else if (oldRoomStatus === 'checked-out') {
+          newRoomStatus = 'available';
+          console.log(`Fallback: room was checked-out, setting to available`);
         } else {
           console.log(`Fallback: room status ${oldRoomStatus} - no status change`);
         }
@@ -150,10 +163,24 @@ async function updateRoomStatusOnRequestChange(request, newRequestStatus) {
     // Request is completed
     else if (newRequestStatus === 'completed') {
       console.log(`Request completed - checking priorStatus: ${request.priorStatus}`);
-      // When request completes, restore room to the prior status stored in the request
+      // When request completes, determine the correct final status based on prior status
       if (request.priorStatus) {
-        newRoomStatus = request.priorStatus;
-        console.log(`Using stored prior status from request: ${request.priorStatus}`);
+        console.log(`Using stored prior status to determine final state: ${request.priorStatus}`);
+        // If room was checked-out before request, it should become available when request completes
+        if (request.priorStatus === 'checked-out') {
+          newRoomStatus = 'available';
+          console.log(`Prior status was checked-out, setting to available`);
+        }
+        // If room was occupied before request, it should return to occupied when request completes
+        else if (request.priorStatus === 'occupied') {
+          newRoomStatus = 'occupied';
+          console.log(`Prior status was occupied, setting to occupied`);
+        }
+        // For any other prior status, restore it
+        else {
+          newRoomStatus = request.priorStatus;
+          console.log(`Restoring prior status: ${request.priorStatus}`);
+        }
       } else {
         // Fallback for requests that don't have priorStatus stored
         if (oldRoomStatus === 'checked-out') {
