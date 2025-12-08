@@ -56,7 +56,10 @@ const EmployeePayroll = () => {
 
         const attendanceData = await response.json();
         
+        console.log('Attendance data received:', attendanceData);
+        
         if (!Array.isArray(attendanceData) || attendanceData.length === 0) {
+          console.log('No attendance data found for cardId:', employee.cardId);
           setPayrollData([]);
           setError(null);
           return;
@@ -80,9 +83,19 @@ const EmployeePayroll = () => {
             };
           }
           
-          payrollByPeriod[period].totalHours += record.totalHours || 0;
+          // Calculate hours from clockIn and clockOut if totalHours is not set
+          let hours = record.totalHours || 0;
+          if (!hours && record.clockIn && record.clockOut) {
+            const clockIn = new Date(record.clockIn);
+            const clockOut = new Date(record.clockOut);
+            hours = (clockOut - clockIn) / (1000 * 60 * 60); // convert ms to hours
+          }
+          
+          payrollByPeriod[period].totalHours += hours;
           payrollByPeriod[period].recordCount += 1;
         });
+        
+        console.log('Payroll by period:', payrollByPeriod);
         
         // Calculate payroll amounts for each period
         const formattedPayroll = Object.values(payrollByPeriod).map(record => {
@@ -108,6 +121,7 @@ const EmployeePayroll = () => {
           return new Date(b.period) - new Date(a.period);
         });
 
+        console.log('Formatted payroll:', formattedPayroll);
         setPayrollData(formattedPayroll);
         setError(null);
 
