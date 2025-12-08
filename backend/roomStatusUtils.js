@@ -32,19 +32,25 @@ async function updateRoomStatusOnTaskChange(task, newTaskStatus) {
     }
     // Task is completed
     else if (newTaskStatus === 'COMPLETED') {
-      // When task completes, restore room to appropriate status
-      // If room was checked-out, it becomes available
-      if (oldRoomStatus === 'checked-out') {
-        newRoomStatus = 'available';
-      }
-      // If room was occupied, it returns to occupied
-      else if (oldRoomStatus === 'cleaning' || oldRoomStatus === 'maintenance') {
-        // Need to check the guest info to determine if it should be occupied or available
-        // For now, we'll set it to occupied if there's a guest, otherwise available
-        if (room.guestName) {
-          newRoomStatus = 'occupied';
-        } else {
+      // When task completes, restore room to the prior status stored in the task
+      // This is more reliable than trying to infer the status
+      if (task.priorStatus) {
+        newRoomStatus = task.priorStatus;
+        console.log(`Using stored prior status from task: ${task.priorStatus}`);
+      } else {
+        // Fallback for tasks that don't have priorStatus stored
+        // If room was checked-out, it becomes available
+        if (oldRoomStatus === 'checked-out') {
           newRoomStatus = 'available';
+        }
+        // If room was occupied, it returns to occupied
+        else if (oldRoomStatus === 'cleaning' || oldRoomStatus === 'maintenance') {
+          // Check if there's a guest to determine if it should be occupied or available
+          if (room.guestName) {
+            newRoomStatus = 'occupied';
+          } else {
+            newRoomStatus = 'available';
+          }
         }
       }
     }
@@ -70,9 +76,73 @@ async function updateRoomStatusOnTaskChange(task, newTaskStatus) {
 }
 
 /**
- * Transition a room to checked-out status
- * Called when guest checks out
+ * Update room status when a request status changes
+ * Handles transitions based on request type and current room status
  */
+async function updateRoomStatusOnRequestChange(request, newRequestStatus) {
+  try {
+    // Normalize room identifier and perform a case-insensitive trimmed match
+    const roomNumberQuery = (request.room || '').toString().trim();
+    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const room = await Room.findOne({ roomNumber: { $regex: `^${escapeRegExp(roomNumberQuery)}$`, $options: 'i' } });
+    if (!room) {
+      console.warn(`Room ${request.room} not found for request status update (queried as: '${roomNumberQuery}')`);
+      return null;
+    }
+
+    const oldRoomStatus = room.status;
+    let newRoomStatus = null;
+
+    // Request is starting (in-progress)
+    if (newRequestStatus === 'in-progress') {
+      // When request starts, room status should reflect the task type
+      const taskType = (request.taskType || '').toString().toLowerCase();
+      if (taskType === 'cleaning') {
+        newRoomStatus = 'cleaning';
+      } else if (taskType === 'maintenance' || taskType === 'repair') {
+        newRoomStatus = 'maintenance';
+      }
+    }
+    // Request is completed
+    else if (newRequestStatus === 'completed') {
+      // When request completes, restore room to the prior status stored in the request
+      if (request.priorStatus) {
+        newRoomStatus = request.priorStatus;
+        console.log(`Using stored prior status from request: ${request.priorStatus}`);
+      } else {
+        // Fallback for requests that don't have priorStatus stored
+        if (oldRoomStatus === 'checked-out') {
+          newRoomStatus = 'available';
+        } else if (oldRoomStatus === 'cleaning' || oldRoomStatus === 'maintenance') {
+          if (room.guestName) {
+            newRoomStatus = 'occupied';
+          } else {
+            newRoomStatus = 'available';
+          }
+        }
+      }
+    }
+
+    // Only update if status actually changed
+    if (newRoomStatus && newRoomStatus !== oldRoomStatus) {
+      console.log(`Updating room '${room.roomNumber}' status: ${oldRoomStatus} -> ${newRoomStatus} (request ${request.taskId} -> ${newRequestStatus})`);
+      room.status = newRoomStatus;
+      await room.save();
+
+      console.log(`Room '${room.roomNumber}' saved. Current status: ${room.status}`);
+      return { oldStatus: oldRoomStatus, newStatus: newRoomStatus };
+    } else {
+      console.log(`No room status change needed for room '${room.roomNumber}' (old: ${oldRoomStatus}, computed: ${newRoomStatus})`);
+    }
+
+    return null;
+  } catch (err) {
+    console.error('Error updating room status on request change:', err);
+    throw err;
+  }
+}
+
+
 async function setRoomCheckedOut(roomNumber) {
   try {
     const room = await Room.findOne({ roomNumber });
@@ -140,6 +210,7 @@ async function getPriorRoomStatus(roomNumber, taskId) {
 
 module.exports = {
   updateRoomStatusOnTaskChange,
+  updateRoomStatusOnRequestChange,
   setRoomCheckedOut,
   setRoomOccupied,
   getPriorRoomStatus

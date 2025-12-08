@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Task = require('./task');
 const Employee = require('./Employee');
+const Room = require('./Room');
 const { updateRoomStatusOnTaskChange } = require('./roomStatusUtils');
 
 // Notification helper function - UPDATED
@@ -163,6 +164,23 @@ router.patch('/:taskId/status', async (req, res) => {
     const task = await Task.findOne({ taskId });
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // If task is transitioning to IN_PROGRESS, capture the current room status
+    if (status === 'IN_PROGRESS' && task.status !== 'IN_PROGRESS') {
+      try {
+        const roomNumberQuery = (task.room || '').toString().trim();
+        const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const room = await Room.findOne({ roomNumber: { $regex: `^${escapeRegExp(roomNumberQuery)}$`, $options: 'i' } });
+        
+        if (room && !task.priorStatus) {
+          task.priorStatus = room.status;
+          console.log(`Captured prior room status: ${room.status} for task ${taskId}`);
+        }
+      } catch (err) {
+        console.warn('Could not capture prior room status:', err.message);
+        // Continue without prior status - the system will try to infer it
+      }
     }
 
     task.status = status;

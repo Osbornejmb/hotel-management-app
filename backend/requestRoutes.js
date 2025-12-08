@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Request = require('./Request');
 const Employee = require('./Employee');
+const Room = require('./Room');
+const { updateRoomStatusOnRequestChange } = require('./roomStatusUtils');
 
 // Notification helper function - UPDATED with better error handling
 const sendRequestNotification = async (request, action, io) => {
@@ -268,18 +270,45 @@ router.patch('/:id/assign', async (req, res) => {
       }
     }
 
-    const request = await Request.findByIdAndUpdate(
-      req.params.id,
-      { 
-        assignedTo,
-        status: 'in-progress'
-      },
-      { new: true, runValidators: true }
-    ).populate('assignedTo', 'name employeeId jobTitle');
-
+    // Get the request first to capture prior status
+    const request = await Request.findById(req.params.id);
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
+
+    // Capture prior room status if transitioning to in-progress
+    if (request.status !== 'in-progress' && !request.priorStatus) {
+      try {
+        const roomNumberQuery = (request.room || '').toString().trim();
+        const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const room = await Room.findOne({ roomNumber: { $regex: `^${escapeRegExp(roomNumberQuery)}$`, $options: 'i' } });
+        
+        if (room) {
+          request.priorStatus = room.status;
+          console.log(`Captured prior room status: ${room.status} for request ${request.taskId}`);
+        }
+      } catch (err) {
+        console.warn('Could not capture prior room status:', err.message);
+      }
+    }
+
+    // Update the request
+    request.assignedTo = assignedTo;
+    request.status = 'in-progress';
+    await request.save();
+
+    // Update room status based on request status change
+    try {
+      const roomStatusChange = await updateRoomStatusOnRequestChange(request, 'in-progress');
+      if (roomStatusChange) {
+        console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
+      }
+    } catch (roomStatusErr) {
+      console.error('Error updating room status on request change:', roomStatusErr);
+      // Continue with request update even if room status update fails
+    }
+
+    await request.populate('assignedTo', 'name employeeId jobTitle');
 
     // Send notification after assignment (with error handling)
     try {
@@ -308,6 +337,28 @@ router.patch('/:id/status', async (req, res) => {
       return res.status(400).json({ error: 'status field is required' });
     }
 
+    // Get the request first
+    const request = await Request.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    // Capture prior room status if transitioning to in-progress
+    if (status === 'in-progress' && request.status !== 'in-progress' && !request.priorStatus) {
+      try {
+        const roomNumberQuery = (request.room || '').toString().trim();
+        const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const room = await Room.findOne({ roomNumber: { $regex: `^${escapeRegExp(roomNumberQuery)}$`, $options: 'i' } });
+        
+        if (room) {
+          request.priorStatus = room.status;
+          console.log(`Captured prior room status: ${room.status} for request ${request.taskId}`);
+        }
+      } catch (err) {
+        console.warn('Could not capture prior room status:', err.message);
+      }
+    }
+
     const updates = { status };
     
     // Auto-set completedAt if status is completed
@@ -315,15 +366,24 @@ router.patch('/:id/status', async (req, res) => {
       updates.completedAt = new Date();
     }
 
-    const request = await Request.findByIdAndUpdate(
-      req.params.id,
-      updates,
-      { new: true, runValidators: true }
-    ).populate('assignedTo', 'name employeeId jobTitle');
-
-    if (!request) {
-      return res.status(404).json({ error: 'Request not found' });
+    request.status = status;
+    if (updates.completedAt) {
+      request.completedAt = updates.completedAt;
     }
+    await request.save();
+
+    // Update room status based on request status change
+    try {
+      const roomStatusChange = await updateRoomStatusOnRequestChange(request, status);
+      if (roomStatusChange) {
+        console.log(`Room status updated: ${roomStatusChange.oldStatus} -> ${roomStatusChange.newStatus}`);
+      }
+    } catch (roomStatusErr) {
+      console.error('Error updating room status on request change:', roomStatusErr);
+      // Continue with request update even if room status update fails
+    }
+
+    await request.populate('assignedTo', 'name employeeId jobTitle');
 
     // Send notification after status change (with error handling)
     try {

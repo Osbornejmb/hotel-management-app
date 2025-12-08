@@ -74,6 +74,12 @@ const requestSchema = new mongoose.Schema({
   notes: {
     type: String,
     default: ''
+  },
+  
+  priorStatus: {
+    type: String,
+    required: false,
+    description: 'Room status before request started - used to restore room to correct status when request completes'
   }
 }, {
   timestamps: true // Adds createdAt and updatedAt automatically

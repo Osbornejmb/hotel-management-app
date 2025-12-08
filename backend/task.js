@@ -70,7 +70,12 @@ const taskSchema = new mongoose.Schema({
       default: Date.now
     },
     addedBy: String
-  }]
+  }],
+  priorStatus: {
+    type: String,
+    required: false,
+    description: 'Room status before task started - used to restore room to correct status when task completes'
+  }
 });
 
 taskSchema.pre('save', function(next) {
