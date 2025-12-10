@@ -109,7 +109,6 @@ router.post('/reset-password-request', async (req, res) => {
     const emailResult = await sendEmployeeCredentials({
       email: employee.email,
       name: employee.name,
-      username: employee.username,
       password: temporaryPassword,
       employeeId: employee.employeeId
     });
@@ -256,7 +255,6 @@ router.post('/', async (req, res) => {
     const emailResult = await sendEmployeeCredentials({
       email: body.email,
       name: name,
-      username: username,
       password: password,
       employeeId: employeeId,
       cardId: body.idCard // Include card ID in the email
