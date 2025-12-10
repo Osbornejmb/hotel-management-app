@@ -102,7 +102,6 @@ const EmployeePayroll = () => {
         // Group attendance by month/period and calculate payroll
         const payrollByPeriod = {};
         const HOURLY_RATE = 95; // PHP per hour
-        const TAX_RATE = 0.10; // 10% tax/deductions
         
         attendanceData.forEach(record => {
           // Get the month-year as period
@@ -142,18 +141,14 @@ const EmployeePayroll = () => {
         // Calculate payroll amounts for each period
         const formattedPayroll = Object.values(payrollByPeriod).map(record => {
           const totalHours = parseFloat(record.totalHours).toFixed(2);
-          const grossPay = totalHours * HOURLY_RATE;
-          const deductions = grossPay * TAX_RATE;
-          const netPay = grossPay - deductions;
+          const amount = Math.round(totalHours * HOURLY_RATE * 100) / 100;
           
           return {
             id: record.period,
             period: record.period,
             totalHours: totalHours,
             hourlyRate: `₱${HOURLY_RATE.toFixed(2)}`,
-            grossPay: `₱${grossPay.toFixed(2)}`,
-            deductions: `₱${deductions.toFixed(2)}`,
-            netPay: `₱${netPay.toFixed(2)}`,
+            amount: `₱${amount.toFixed(2)}`,
             status: 'Processed',
             paymentDate: 'N/A',
             recordCount: record.recordCount
@@ -220,9 +215,7 @@ const EmployeePayroll = () => {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Period</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Hours</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Hourly Rate</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Gross Pay</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Deductions</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Pay</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                   </tr>
@@ -233,9 +226,7 @@ const EmployeePayroll = () => {
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{record.period}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">{record.totalHours} hrs</td>
                       <td className="px-6 py-4 text-sm text-gray-700">{record.hourlyRate}</td>
-                      <td className="px-6 py-4 text-sm font-semibold text-green-600">{record.grossPay}</td>
-                      <td className="px-6 py-4 text-sm text-red-600">{record.deductions}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-blue-600">{record.netPay}</td>
+                      <td className="px-6 py-4 text-sm font-bold text-blue-600">{record.amount}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{record.paymentDate}</td>
                       <td className="px-6 py-4 text-sm">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

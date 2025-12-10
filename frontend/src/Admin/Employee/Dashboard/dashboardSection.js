@@ -81,19 +81,22 @@ async function fetchPayrollStatus() {
   }
 }
 
-// Helper: fetch pending tasks - only unassigned tasks
+// Helper: fetch pending tasks - tasks that are not started or in progress (pending)
 async function fetchPendingTasks() {
   try {
     const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     
-    // Fetch tasks endpoint and count only UNASSIGNED tasks
+    // Fetch tasks endpoint and count tasks that are NOT_STARTED or IN_PROGRESS
     const res = await fetch(`${apiBase}/api/tasks`);
     if (res.ok) {
       const data = await res.json();
-      // Count only unassigned tasks
-      const unassigned = data.filter((task) => task.status === "UNASSIGNED");
-      console.log('Unassigned tasks:', unassigned.length);
-      return unassigned.length;
+      console.log('All tasks fetched:', data);
+      // Count pending tasks (NOT_STARTED or IN_PROGRESS, excluding COMPLETED)
+      const pending = data.filter((task) => task.status !== "COMPLETED");
+      console.log('Pending tasks count:', pending.length, 'Filtered from:', data.length, 'tasks');
+      return pending.length;
+    } else {
+      console.error('Failed to fetch tasks:', res.status);
     }
     
     return 0;
@@ -199,12 +202,41 @@ const Card = ({ title, value, children }) => {
   );
 };
 
-// PieChart placeholder
-const PieChart = () => {
+// PieChart component - now dynamic based on payroll data
+const PieChart = ({ paid = 0, unpaid = 0 }) => {
+  const total = paid + unpaid;
+  if (total === 0) {
+    return (
+      <svg width="100" height="100">
+        <circle cx="50" cy="50" r="45" fill="#e5e7eb" />
+      </svg>
+    );
+  }
+  
+  const paidPercentage = (paid / total) * 100;
+  const unpaidPercentage = (unpaid / total) * 100;
+  
+  // Calculate pie slice angles
+  const paidAngle = (paidPercentage / 100) * 360;
+  const unpaidAngle = (unpaidPercentage / 100) * 360;
+  
+  // Convert angles to radians and calculate path
+  const paidRad = (paidAngle * Math.PI) / 180;
+  const x1 = 50 + 45 * Math.sin(0);
+  const y1 = 50 - 45 * Math.cos(0);
+  const x2 = 50 + 45 * Math.sin(paidRad);
+  const y2 = 50 - 45 * Math.cos(paidRad);
+  const largeArc = paidAngle > 180 ? 1 : 0;
+  
   return (
     <svg width="100" height="100">
       <circle cx="50" cy="50" r="45" fill="#e5e7eb" />
-      <path d="M50,50 L50,5 A45,45 0 0,1 95,50 Z" fill="#38bdf8" />
+      {paid > 0 && (
+        <path 
+          d={`M50,50 L${x1},${y1} A45,45 0 ${largeArc},1 ${x2},${y2} Z`} 
+          fill="#38bdf8" 
+        />
+      )}
     </svg>
   );
 };
@@ -263,7 +295,7 @@ const DashboardSection = () => {
         <Card title="Present Today" value={presentToday} />
         <Card title="Payroll Status">
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <PieChart />
+            <PieChart paid={payrollStatus.paid} unpaid={payrollStatus.unpaid} />
             <div>
               <div
                 style={{
