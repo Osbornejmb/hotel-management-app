@@ -41,35 +41,37 @@ async function fetchPresentToday() {
   }
 }
 
-// Helper: fetch payroll status
+// Helper: fetch payroll status with real data
 async function fetchPayrollStatus() {
   try {
     const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     
-    // Try payrolls endpoint first
-    let res = await fetch(`${apiBase}/api/payrolls`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const paid = data.filter((p) => p.status === "Paid" || p.status === "paid").length;
-        const unpaid = data.filter((p) => p.status === "Unpaid" || p.status === "unpaid").length;
-        const total = data.reduce((sum, p) => sum + (p.amount || p.netPay || 0), 0);
-        console.log('Payroll data:', { paid, unpaid, total, count: data.length });
-        return { paid, unpaid, total };
-      }
-    }
-    
-    // Fallback: Count unique employees from attendance records (those who have worked)
-    res = await fetch(`${apiBase}/api/attendances`);
+    // Fetch attendance records to calculate real payroll
+    const res = await fetch(`${apiBase}/api/attendances`);
     if (res.ok) {
       const attendanceData = await res.json();
-      const uniqueEmployees = new Set();
-      attendanceData.forEach(att => {
-        if (att.name) uniqueEmployees.add(att.name);
-      });
-      const employeeCount = uniqueEmployees.size;
-      console.log('Fallback to attendance: unique employees =', employeeCount);
-      return { paid: 0, unpaid: employeeCount, total: 0 };
+      if (Array.isArray(attendanceData) && attendanceData.length > 0) {
+        // Group by employee and sum hours
+        const employeeMap = {};
+        attendanceData.forEach(record => {
+          if (!record.cardId) return;
+          if (!employeeMap[record.cardId]) {
+            employeeMap[record.cardId] = { totalHours: 0 };
+          }
+          employeeMap[record.cardId].totalHours += record.totalHours || 0;
+        });
+        
+        const hourlyRate = 95; // PHP per hour
+        const employees = Object.values(employeeMap);
+        const total = employees.reduce((sum, emp) => sum + (emp.totalHours * hourlyRate), 0);
+        
+        // Assume all are unpaid initially (you can modify this logic based on your requirements)
+        const unpaid = employees.length;
+        const paid = 0;
+        
+        console.log('Payroll data:', { paid, unpaid, total, count: employees.length });
+        return { paid, unpaid, total };
+      }
     }
     
     return { paid: 0, unpaid: 0, total: 0 };
@@ -79,33 +81,51 @@ async function fetchPayrollStatus() {
   }
 }
 
-// Helper: fetch pending tasks
+// Helper: fetch pending tasks - only unassigned tasks
 async function fetchPendingTasks() {
   try {
     const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
     
-    // Try requests endpoint first (task requests)
-    let res = await fetch(`${apiBase}/api/requests`);
+    // Fetch tasks endpoint and count only UNASSIGNED tasks
+    const res = await fetch(`${apiBase}/api/tasks`);
     if (res.ok) {
       const data = await res.json();
-      const pending = data.filter((task) => task.status !== "COMPLETED" && task.status !== "completed");
-      console.log('Pending tasks from requests:', pending.length);
-      return pending.length;
-    }
-    
-    // Fallback: try tasks endpoint
-    res = await fetch(`${apiBase}/api/tasks`);
-    if (res.ok) {
-      const data = await res.json();
-      const pending = data.filter((task) => task.status === "pending" || task.status === "Pending" || task.status !== "COMPLETED");
-      console.log('Pending tasks from tasks:', pending.length);
-      return pending.length;
+      // Count only unassigned tasks
+      const unassigned = data.filter((task) => task.status === "UNASSIGNED");
+      console.log('Unassigned tasks:', unassigned.length);
+      return unassigned.length;
     }
     
     return 0;
   } catch (err) {
     console.error("fetchPendingTasks error", err);
     return 0;
+  }
+}
+
+// Helper: fetch task completion analytics
+async function fetchTaskCompletionAnalytics() {
+  try {
+    const apiBase = process.env.REACT_APP_API_URL || 'https://hotel-management-app-qo2l.onrender.com';
+    const res = await fetch(`${apiBase}/api/tasks`);
+    if (res.ok) {
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        return { completed: 0, total: 0, percentage: 0 };
+      }
+      
+      const completed = data.filter((task) => task.status === "COMPLETED").length;
+      const total = data.length;
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+      
+      console.log('Task completion:', { completed, total, percentage });
+      return { completed, total, percentage };
+    }
+    
+    return { completed: 0, total: 0, percentage: 0 };
+  } catch (err) {
+    console.error("fetchTaskCompletionAnalytics error", err);
+    return { completed: 0, total: 0, percentage: 0 };
   }
 }
 
@@ -208,6 +228,7 @@ const DashboardSection = () => {
   const [payrollStatus, setPayrollStatus] = useState({ paid: 0, unpaid: 0, total: 0 });
   const [recentLogs, setRecentLogs] = useState([]);
   const [pendingTasks, setPendingTasks] = useState(0);
+  const [taskCompletion, setTaskCompletion] = useState({ completed: 0, total: 0, percentage: 0 });
 
   useEffect(() => {
     fetchTotalEmployees().then(setTotalEmployees).catch(() => {});
@@ -215,6 +236,7 @@ const DashboardSection = () => {
     fetchPayrollStatus().then(setPayrollStatus).catch(() => {});
     fetchRecentLogs().then(setRecentLogs).catch(() => {});
     fetchPendingTasks().then(setPendingTasks).catch(() => {});
+    fetchTaskCompletionAnalytics().then(setTaskCompletion).catch(() => {});
   }, []);
 
   return (
@@ -318,7 +340,38 @@ const DashboardSection = () => {
           </table>
         </Card>
         <Card title="Task Completion Rate">
-          <BarChart />
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <svg width="100" height="100">
+              {/* Outer circle background */}
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+              {/* Progress circle */}
+              <circle 
+                cx="50" 
+                cy="50" 
+                r="40" 
+                fill="none" 
+                stroke="#38bdf8" 
+                strokeWidth="8"
+                strokeDasharray={`${(taskCompletion.percentage / 100) * 251.2} 251.2`}
+                strokeLinecap="round"
+                transform="rotate(-90 50 50)"
+              />
+              {/* Percentage text */}
+              <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="#2c3e50">
+                {taskCompletion.percentage}%
+              </text>
+            </svg>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", marginBottom: 8, justifyContent: "center", gap: 8 }}>
+                <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#38bdf8", display: "inline-block" }} />
+                Completed: {taskCompletion.completed}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#e5e7eb", display: "inline-block" }} />
+                Total: {taskCompletion.total}
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
     </div>

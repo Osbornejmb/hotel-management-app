@@ -353,6 +353,7 @@ const PayrollSection = () => {
   const [payrolls, setPayrolls] = useState([]);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [expandedPayrollId, setExpandedPayrollId] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -684,62 +685,114 @@ const PayrollSection = () => {
           </thead>
           <tbody>
             {displayedPayrolls.map((p, idx) => (
-              <tr key={p.id || idx} style={{ 
-                borderBottom: '1px solid #ecf0f1',
-                transition: 'background 0.2s ease',
-                backgroundColor: p.status === 'Unpaid' ? '#fffbfb' : 'transparent'
-              }}>
-                <td style={{ padding: '16px 12px', fontWeight: 500 }}>{p.id}</td>
-                <td style={{ padding: '16px 12px' }}>{p.employee}</td>
-                <td style={{ padding: '16px 12px' }}>{p.totalHours} hrs</td>
-                <td style={{ padding: '16px 12px' }}>₱95/hr</td>
-                <td style={{ padding: '16px 12px', fontWeight: 600 }}>₱{p.amount}</td>
-                <td style={{ padding: '16px 12px' }}>
-                  <span style={{
-                    color: p.status === 'Paid' ? '#2ecc71' : '#e74c3c',
-                    fontWeight: 600,
-                    padding: '6px 12px',
-                    borderRadius: 20,
-                    background: p.status === 'Paid' ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)',
-                    display: 'inline-block',
-                    fontSize: '0.85rem'
-                  }}>
-                    {p.status}
-                  </span>
-                </td>
-                <td style={{ padding: '16px 12px' }}>
-                  <button 
-                    onClick={() => p.action === 'Pay' ? handlePayClick(p) : handleViewClick(p)}
-                    style={{
-                      color: p.action === 'Pay' ? '#fff' : '#7f8c8d',
-                      background: p.action === 'Pay' ? '#e74c3c' : 'rgba(127, 140, 141, 0.1)',
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '8px 16px',
+              <React.Fragment key={p.id || idx}>
+                <tr style={{ 
+                  borderBottom: '1px solid #ecf0f1',
+                  transition: 'background 0.2s ease',
+                  backgroundColor: p.status === 'Unpaid' ? '#fffbfb' : 'transparent'
+                }}>
+                  <td style={{ padding: '16px 12px', fontWeight: 500 }}>
+                    <button
+                      onClick={() => setExpandedPayrollId(expandedPayrollId === p.id ? null : p.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        padding: '0 8px',
+                        color: '#3498db'
+                      }}
+                      title="Click to expand attendance records"
+                    >
+                      {expandedPayrollId === p.id ? '▼' : '▶'} {p.id}
+                    </button>
+                  </td>
+                  <td style={{ padding: '16px 12px' }}>{p.employee}</td>
+                  <td style={{ padding: '16px 12px' }}>{p.totalHours} hrs</td>
+                  <td style={{ padding: '16px 12px' }}>₱95/hr</td>
+                  <td style={{ padding: '16px 12px', fontWeight: 600 }}>₱{p.amount}</td>
+                  <td style={{ padding: '16px 12px' }}>
+                    <span style={{
+                      color: p.status === 'Paid' ? '#2ecc71' : '#e74c3c',
                       fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      minWidth: '80px'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (p.action === 'Pay') {
-                        e.target.style.background = '#c0392b';
-                      } else {
-                        e.target.style.background = 'rgba(127, 140, 141, 0.2)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (p.action === 'Pay') {
-                        e.target.style.background = '#e74c3c';
-                      } else {
-                        e.target.style.background = 'rgba(127, 140, 141, 0.1)';
-                      }
-                    }}
-                  >
-                    {p.action}
-                  </button>
-                </td>
-              </tr>
+                      padding: '6px 12px',
+                      borderRadius: 20,
+                      background: p.status === 'Paid' ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)',
+                      display: 'inline-block',
+                      fontSize: '0.85rem'
+                    }}>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '16px 12px' }}>
+                    <button 
+                      onClick={() => p.action === 'Pay' ? handlePayClick(p) : handleViewClick(p)}
+                      style={{
+                        color: p.action === 'Pay' ? '#fff' : '#7f8c8d',
+                        background: p.action === 'Pay' ? '#e74c3c' : 'rgba(127, 140, 141, 0.1)',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '8px 16px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        minWidth: '80px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (p.action === 'Pay') {
+                          e.target.style.background = '#c0392b';
+                        } else {
+                          e.target.style.background = 'rgba(127, 140, 141, 0.2)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (p.action === 'Pay') {
+                          e.target.style.background = '#e74c3c';
+                        } else {
+                          e.target.style.background = 'rgba(127, 140, 141, 0.1)';
+                        }
+                      }}
+                    >
+                      {p.action}
+                    </button>
+                  </td>
+                </tr>
+                
+                {/* Expanded attendance records */}
+                {expandedPayrollId === p.id && p.records && p.records.length > 0 && (
+                  <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #ecf0f1' }}>
+                    <td colSpan={7} style={{ padding: '16px 12px' }}>
+                      <div style={{ fontSize: '12px', color: '#2c3e50' }}>
+                        <div style={{ fontWeight: 600, marginBottom: '8px' }}>Attendance Records:</div>
+                        <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid #ddd' }}>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>Date</th>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>Clock In</th>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>Clock Out</th>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>Hours</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {p.records.map((rec, recIdx) => (
+                              <tr key={recIdx} style={{ borderBottom: '1px solid #ecf0f1' }}>
+                                <td style={{ padding: '8px' }}>{rec.date || 'N/A'}</td>
+                                <td style={{ padding: '8px' }}>
+                                  {rec.clockIn ? new Date(rec.clockIn).toLocaleTimeString() : '—'}
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  {rec.clockOut ? new Date(rec.clockOut).toLocaleTimeString() : '—'}
+                                </td>
+                                <td style={{ padding: '8px' }}>{(rec.totalHours || 0).toFixed(2)} hrs</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
             
             {displayedPayrolls.length === 0 && (
