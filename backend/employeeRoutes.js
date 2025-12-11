@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const Employee = require('./Employee'); // use existing Employee.js model
 const jwt = require('jsonwebtoken');
-const { sendEmployeeCredentials } = require('./emailService'); // Import email function
+// const { sendEmployeeCredentials } = require('./emailService'); // Email service disabled
 
 // Middleware to verify JWT token and attach employee to request
 const authenticateEmployee = async (req, res, next) => {
@@ -105,14 +105,15 @@ router.post('/reset-password-request', async (req, res) => {
     employee.password = temporaryPassword;
     await employee.save();
 
-    // Send email with temporary password
-    const emailResult = await sendEmployeeCredentials({
-      email: employee.email,
-      name: employee.name,
-      username: employee.username,
-      password: temporaryPassword,
-      employeeId: employee.employeeId
-    });
+    // Send email with temporary password - DISABLED
+    // const emailResult = await sendEmployeeCredentials({
+    //   email: employee.email,
+    //   name: employee.name,
+    //   username: employee.username,
+    //   password: temporaryPassword,
+    //   employeeId: employee.employeeId
+    // });
+    const emailResult = { success: false, message: 'Email service disabled' };
 
     if (emailResult.success) {
       res.json({ 
@@ -256,17 +257,17 @@ router.post('/', async (req, res) => {
     await doc.save();
     console.log(`Employee ${name} (ID: ${employeeId}) saved successfully`);
 
-    // Send email with credentials (non-blocking)
-    let emailResult = { success: false, message: 'Email not attempted' };
-    try {
-      console.log(`Attempting to send credentials to ${email}...`);
-      emailResult = await sendEmployeeCredentials({
-        email: email,
-        username: username,
-        id: body.employeeCode || employeeId,
-        password: password,
-        name: name
-      });
+    // Send email with credentials (non-blocking) - DISABLED
+    let emailResult = { success: false, message: 'Email service disabled' };
+    // try {
+    //   console.log(`Attempting to send credentials to ${email}...`);
+    //   emailResult = await sendEmployeeCredentials({
+    //     email: email,
+    //     username: username,
+    //     id: body.employeeCode || employeeId,
+    //     password: password,
+    //     name: name
+    //   });
       
       if (emailResult.success) {
         console.log(`✅ Email sent successfully to ${email}`);

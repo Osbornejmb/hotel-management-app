@@ -15,7 +15,7 @@ const employeeRoutes = require("./employeeRoutes");
 const requestRoutes = require("./requestRoutes");
 const taskRoutes = require('./taskRoutes'); 
 const attendanceRoutes = require("./attendanceRoutes");
-const { sendEmployeeCredentials, testEmail } = require("./emailService"); 
+// const { sendEmployeeCredentials, testEmail } = require("./emailService"); // Email service disabled
 const notificationRoutes = require('./notificationRoutes');
 
 const app = express();
@@ -99,20 +99,20 @@ app.use('/api/attendances', attendanceRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Test email endpoint
-app.get("/api/test-email", async (req, res) => {
-  try {
-    console.log('Testing email configuration...');
-    const result = await testEmail();
-    if (result) {
-      res.json({ success: true, message: "Email test completed successfully" });
-    } else {
-      res.status(500).json({ success: false, message: "Email test failed" });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+// Test email endpoint - DISABLED
+// app.get("/api/test-email", async (req, res) => {
+//   try {
+//     console.log('Testing email configuration...');
+//     const result = await testEmail();
+//     if (result) {
+//       res.json({ success: true, message: "Email test completed successfully" });
+//     } else {
+//       res.status(500).json({ success: false, message: "Email test failed" });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// });
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
