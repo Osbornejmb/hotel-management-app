@@ -21,7 +21,6 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.19.0",
     "mongoose": "^8.18.1",
-    "node-mailjet": "^6.0.5",
     "nodemailer": "^7.0.9",
     "socket.io": "^4.8.1"
   }
