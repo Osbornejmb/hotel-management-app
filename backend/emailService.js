@@ -14,14 +14,17 @@ if (!senderEmail || !senderPassword) {
 const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
-  secure: smtpPort === 465, // true for 465, false for other ports
+  secure: smtpPort === 465,
   auth: {
     user: senderEmail,
     pass: senderPassword
   },
   tls: {
-    rejectUnauthorized: false // Allow self-signed certificates
-  }
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 30000,
+  socketTimeout: 30000,
+  greetingTimeout: 30000
 });
 
 // Verify connection
