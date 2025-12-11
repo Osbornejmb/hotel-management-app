@@ -10,7 +10,7 @@ if (!senderEmail || !senderPassword) {
   console.error('❌ SMTP credentials missing in .env');
 }
 
-// Create transporter
+// Create transporter with improved settings
 const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
@@ -18,6 +18,18 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: senderEmail,
     pass: senderPassword
+  },
+  tls: {
+    rejectUnauthorized: false // Allow self-signed certificates
+  }
+});
+
+// Verify connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ SMTP Connection Error:', error);
+  } else {
+    console.log('✅ SMTP Server Ready');
   }
 });
 
@@ -63,13 +75,33 @@ const sendEmployeeCredentials = async (employee) => {
 
     const info = await transporter.sendMail(mailOptions);
     
-    console.log("✅ Email sent:", info.response);
+    console.log("✅ Email sent successfully!");
+    console.log("Response:", info.response);
+    console.log("Message ID:", info.messageId);
     return { success: true, message: "Email sent successfully" };
 
   } catch (error) {
-    console.error("❌ Error sending email:", error);
+    console.error("❌ Error sending email:", error.message);
+    console.error("Error details:", error);
     return { success: false, message: "Email failed: " + error.message };
   }
 };
 
-module.exports = { sendEmployeeCredentials };
+// Test email function (for debugging)
+const testEmail = async (testEmail) => {
+  try {
+    console.log("🧪 Testing email with:", testEmail);
+    const result = await sendEmployeeCredentials({
+      email: testEmail,
+      password: "TestPassword123!",
+      name: "Test User",
+      id: "test"
+    });
+    return result;
+  } catch (error) {
+    console.error("Test email error:", error);
+    return { success: false, message: error.message };
+  }
+};
+
+module.exports = { sendEmployeeCredentials, testEmail };
