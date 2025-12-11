@@ -126,7 +126,7 @@ const PORT = process.env.PORT || 5000;
 // Use server.listen instead of app.listen
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Email User: ${process.env.EMAIL_USER ? 'Set' : 'Missing'}`);
-  console.log(`🔑 Email Password: ${process.env.EMAIL_PASSWORD ? 'Set' : 'Missing'}`);
+  console.log(`📧 SMTP Email: ${process.env.SMTP_EMAIL ? 'Set' : 'Missing'}`);
+  console.log(`🔑 SMTP Password: ${process.env.SMTP_PASSWORD ? 'Set' : 'Missing'}`);
   console.log(`🔔 Socket.io server initialized`);
 });

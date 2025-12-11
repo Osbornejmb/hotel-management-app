@@ -1,46 +1,21 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-const senderEmail = process.env.SMTP_EMAIL;
-const senderPassword = process.env.SMTP_PASSWORD;
-const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-const smtpPort = process.env.SMTP_PORT || 587;
+const senderEmail = process.env.SMTP_EMAIL || 'noreply@hotelmanagement.com';
 const senderName = process.env.SENDER_NAME || "Hotel Management System";
+const sendgridApiKey = process.env.SENDGRID_API_KEY;
 
-if (!senderEmail || !senderPassword) {
-  console.error('❌ SMTP credentials missing in .env');
+if (!sendgridApiKey) {
+  console.error('❌ SENDGRID_API_KEY missing in .env');
+} else {
+  sgMail.setApiKey(sendgridApiKey);
+  console.log('✅ SendGrid API Key loaded');
 }
-
-// Create transporter with improved settings
-const transporter = nodemailer.createTransport({
-  host: smtpHost,
-  port: smtpPort,
-  secure: smtpPort === 465,
-  auth: {
-    user: senderEmail,
-    pass: senderPassword
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 30000,
-  socketTimeout: 30000,
-  greetingTimeout: 30000
-});
-
-// Verify connection
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ SMTP Connection Error:', error);
-  } else {
-    console.log('✅ SMTP Server Ready');
-  }
-});
 
 //send employee credentials email
 const sendEmployeeCredentials = async (employee) => {
   try {
-    if (!senderEmail || !senderPassword) {
-      return { success: false, message: "Email service not configured" };
+    if (!sendgridApiKey) {
+      return { success: false, message: "Email service not configured - missing SENDGRID_API_KEY" };
     }
 
     const { email, id, password, name } = employee;
@@ -51,9 +26,10 @@ const sendEmployeeCredentials = async (employee) => {
 
     console.log("📤 Sending email to:", email);
 
-    const mailOptions = {
-      from: `${senderName} <${senderEmail}>`,
+    const msg = {
       to: email,
+      from: senderEmail,
+      replyTo: senderEmail,
       subject: "Your Hotel Management System Account Created",
       html: `
         <div style="font-family: Arial; background:#f4f4f4; padding:20px;">
@@ -76,26 +52,36 @@ const sendEmployeeCredentials = async (employee) => {
       `
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const result = await sgMail.send(msg);
     
     console.log("✅ Email sent successfully!");
-    console.log("Response:", info.response);
-    console.log("Message ID:", info.messageId);
+    console.log("Message ID:", result[0].headers['x-message-id']);
     return { success: true, message: "Email sent successfully" };
 
   } catch (error) {
     console.error("❌ Error sending email:", error.message);
-    console.error("Error details:", error);
-    return { success: false, message: "Email failed: " + error.message };
+    console.error("Error details:", error.response?.body || error);
+    
+    // Provide helpful guidance
+    let suggestion = "Email failed: " + error.message;
+    if (error.code === 'ENOTFOUND') {
+      suggestion += "\n💡 Check: Network connectivity to SendGrid";
+    } else if (error.message.includes('Invalid email')) {
+      suggestion += "\n💡 Check: Recipient email address is valid";
+    } else if (error.message.includes('API Key')) {
+      suggestion += "\n💡 Check: SENDGRID_API_KEY is correct and active";
+    }
+    
+    return { success: false, message: suggestion };
   }
 };
 
 // Test email function (for debugging)
-const testEmail = async (testEmail) => {
+const testEmail = async (testEmailAddress) => {
   try {
-    console.log("🧪 Testing email with:", testEmail);
+    console.log("🧪 Testing email with:", testEmailAddress);
     const result = await sendEmployeeCredentials({
-      email: testEmail,
+      email: testEmailAddress,
       password: "TestPassword123!",
       name: "Test User",
       id: "test"
